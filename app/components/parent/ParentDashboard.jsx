@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { Card, Button } from "../UI";
 import ClubShell from "../ClubShell";
+import MemberCards from "../MemberCards";
 import EventSchedule from "../EventSchedule";
 import MemberOverview from "./MemberOverview";
 import PlayerRecords from "../PlayerRecords";
@@ -70,6 +71,7 @@ export default function ParentDashboard({ user, profile, onLogout }) {
   const tabs = [
     { id: "overview", label: "Hem" },
     { id: "calendar", label: "Kalender" },
+    { id: "membership", label: "Medlemskort" },
     { id: "equipment", label: "Utrustning" },
     { id: "development", label: "Utveckling" },
     { id: "children", label: profile?.role === "player" ? "Min profil" : "Barn", img: "/icons/mascot-head.png" },
@@ -86,6 +88,7 @@ export default function ParentDashboard({ user, profile, onLogout }) {
     {error && <p className="error-banner" role="alert">{error}<button onClick={loadData}>Försök igen</button></p>}
     {loading ? <p role="status">Läser in…</p> : <>
     {activeTab === "overview" && <MemberOverview data={memberData} players={mine} onNavigate={setActiveTab}/>}
+    {activeTab === "membership" && <MemberCards/>}
     {activeTab === "calendar" && <EventSchedule data={memberData} member onNavigate={setActiveTab}/>}
     {activeTab === "children" && <ChildrenView data={data} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)}/>}
     {activeTab === "trainings" && <TrainingsView data={data} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)} onRefresh={loadData}/>}

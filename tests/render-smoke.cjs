@@ -25,4 +25,8 @@ assert.ok(memberHTML.includes('Testspelare'));assert.ok(memberHTML.includes('Sva
 const Players=load('app/components/admin/PlayersTab.jsx').default;
 const rosterHTML=renderToStaticMarkup(React.createElement(Players,{data:{teams:fixture.teams,players:[{id:'roster1',name:'Roster Example',birth_year:2014,gender:'girl',number:null,team_id:null}]},onUpdate:()=>{}}));
 assert.ok(rosterHTML.includes('Filtrera födelseår'));assert.ok(rosterHTML.includes('2014 · Flicka · Ej lagfördelad'));assert.ok(!rosterHTML.includes('#null'));
-console.log('PASS: overview, navigation, calendar, member overview, recovery and roster rendering.');
+const MemberCard=load('app/components/MemberCards.jsx').MemberCard;
+const activeCard=renderToStaticMarkup(React.createElement(MemberCard,{card:{name:'Example Member',member_number:'FCK-123456789ABC',status:'active'}}));
+const inactiveCard=renderToStaticMarkup(React.createElement(MemberCard,{card:{name:'Example Member',member_number:'FCK-123456789ABC',status:'inactive'}}));
+assert.ok(activeCard.includes('FCK-123456789ABC'));assert.ok(activeCard.includes('Kopiera rabattkod'));assert.ok(!inactiveCard.includes('Kopiera rabattkod'));assert.ok(activeCard.includes('/logo.png'));
+console.log('PASS: overview, navigation, calendar, member overview, recovery, roster and member cards.');

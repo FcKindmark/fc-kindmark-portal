@@ -11,6 +11,7 @@ import PaymentsTab from "./PaymentsTab";
 import MessagesTab from "./MessagesTab";
 import UsersTab from "./UsersTab";
 import ClubShell from "../ClubShell";
+import MemberCards from "../MemberCards";
 import OverviewTab from "./OverviewTab";
 import EventSchedule from "../EventSchedule";
 import AttendanceTab from "./AttendanceTab";
@@ -72,6 +73,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
   const tabs = [
     { id: "overview", label: "Översikt" },
     { id: "calendar", label: "Kalender" },
+    { id: "membership", label: "Medlemskort" },
     { id: "attendance", label: "Närvaro" },
     { id: "equipment", label: "Utrustning" },
     { id: "development", label: "Utveckling" },
@@ -89,6 +91,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
     {error && <p className="error-banner" role="alert">{error}<button onClick={loadData}>Försök igen</button></p>}
     {loading ? <p role="status">Läser in…</p> : <>
     {activeTab === "overview" && <OverviewTab data={data} onNavigate={setActiveTab} coach={profile?.role === "coach"}/>}
+    {activeTab === "membership" && <MemberCards admin/>}
     {activeTab === "calendar" && <EventSchedule data={data} onNavigate={setActiveTab}/>}
     {activeTab === "attendance" && <AttendanceTab data={data}/>}
     {activeTab === "equipment" && <PlayerRecords players={data.players} kind="equipment"/>}

@@ -47,9 +47,9 @@ export default function MatchesTab({ data, onUpdate }) {
     setEditingId(match.id);
     setOpponent(match.opponent);
     setDate(match.date);
-    setTime(match.time);
-    setLocation(match.location);
-    setTeamId(match.team_id);
+    setTime(match.time || "");
+    setLocation(match.location || "");
+    setTeamId(match.team_id || "");
     setAdminComment(match.admin_comment || "");
     setShowAdd(true);
   }
@@ -66,7 +66,7 @@ export default function MatchesTab({ data, onUpdate }) {
   }
 
   async function saveMatch() {
-    if (!opponent.trim() || !date.trim() || !time.trim() || !teamId) {
+    if (!opponent.trim() || !date.trim() || !teamId) {
       alert("Fyll i alla fält och välj ett lag");
       return;
     }
@@ -78,14 +78,14 @@ export default function MatchesTab({ data, onUpdate }) {
       if (editingId) {
         const { error } = await supabase
           .from("matches")
-          .update({ opponent: opponent.trim(), date, time, location: location.trim(), team_id: teamId, admin_comment: adminComment.trim() || null })
+          .update({ opponent: opponent.trim(), date, time: time || null, location: location.trim(), team_id: teamId, admin_comment: adminComment.trim() || null })
           .eq("id", editingId);
 
         if (error) throw error;
       } else {
         const { data: matchData, error: matchError } = await supabase
           .from("matches")
-          .insert({ opponent: opponent.trim(), date, time, location: location.trim(), status: "upcoming", team_id: teamId, admin_comment: adminComment.trim() || null })
+          .insert({ opponent: opponent.trim(), date, time: time || null, location: location.trim(), status: "upcoming", team_id: teamId, admin_comment: adminComment.trim() || null })
           .select();
 
         if (matchError) throw matchError;
@@ -197,7 +197,7 @@ export default function MatchesTab({ data, onUpdate }) {
                       <h3 style={{ color: "var(--text-dark)", marginBottom: "5px", cursor: "pointer" }} onClick={() => setExpandedId(expandedId === m.id ? null : m.id)}>
                         {expandedId === m.id ? "▼" : "▶"} mot {m.opponent}
                       </h3>
-                      <p style={{ color: "var(--text-light)", fontSize: "14px", marginBottom: "4px" }}>{m.date} kl {m.time}</p>
+                      <p style={{ color: "var(--text-light)", fontSize: "14px", marginBottom: "4px" }}>{m.date} · {m.time || "Tid ej angiven"}</p>
                       <p style={{ color: "var(--text-light)", fontSize: "14px", marginBottom: "8px" }}>{m.location}</p>
                       {m.admin_comment && <p style={{ color: "var(--text-gray)", fontSize: "13px", fontStyle: "italic", marginBottom: "8px" }}>💬 {m.admin_comment}</p>}
                       <p style={{ color: "var(--text-dark)", fontSize: "13px", fontWeight: "600" }}>

@@ -127,7 +127,7 @@ export default function MatchesView({ data, userEmail, linkedPlayerIds = [], onR
                 >
                   <div>
                     <h3 style={{ color: "var(--text-dark)", marginBottom: "5px" }}>mot {match.opponent}</h3>
-                    <p style={{ color: "var(--text-light)", fontSize: "14px", marginBottom: "4px" }}>{match.date} kl {match.time}</p>
+                    <p style={{ color: "var(--text-light)", fontSize: "14px", marginBottom: "4px" }}>{match.date} · {match.time || "Tid ej angiven"}</p>
                     <p style={{ color: "var(--text-light)", fontSize: "13px", marginBottom: "8px" }}>{match.location}</p>
                     {match.admin_comment && (
                       <p style={{ color: "var(--text-gray)", fontSize: "13px", marginTop: "8px", padding: "8px", background: "var(--beige)", borderRadius: "4px", borderLeft: "3px solid var(--royal-red)" }}>
