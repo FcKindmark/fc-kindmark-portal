@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { Card, Button, Empty, Badge } from "../UI";
+import {dateLabel,memberEventInfo} from "../../lib/schedule";
 import { supabase } from "../../lib/supabaseClient";
 
 export default function TrainingsView({ data, userEmail, linkedPlayerIds = [], onRefresh }) {
@@ -118,6 +119,7 @@ export default function TrainingsView({ data, userEmail, linkedPlayerIds = [], o
       ) : (
         <div style={{ display: "grid", gap: "20px" }}>
           {myTrainings.map((training) => {
+            const information=memberEventInfo(training.admin_comment);
             const childrenInTraining = myChildren.filter((c) => c.team_id === training.team_id);
             
             return (
@@ -133,11 +135,11 @@ export default function TrainingsView({ data, userEmail, linkedPlayerIds = [], o
                   }}
                 >
                   <div>
-                    <h3 style={{ color: "var(--text-dark)", marginBottom: "5px" }}>{training.date} kl {training.time}</h3>
+                    <h3 style={{ color: "var(--text-dark)", marginBottom: "5px" }}>{dateLabel(training.date,{weekday:"long",day:"numeric",month:"long",year:"numeric"})} kl {training.time?.slice(0,5)||"Tid ej angiven"}</h3>
                     <p style={{ color: "var(--text-light)", fontSize: "14px", marginBottom: "4px" }}>{training.location}</p>
-                    {training.admin_comment && (
+                    {information && (
                       <p style={{ color: "var(--text-gray)", fontSize: "13px", marginTop: "8px", padding: "8px", background: "var(--beige)", borderRadius: "4px", borderLeft: "3px solid var(--gold)" }}>
-                        💬 {training.admin_comment}
+                        {information}
                       </p>
                     )}
                   </div>

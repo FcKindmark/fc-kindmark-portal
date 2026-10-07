@@ -111,3 +111,13 @@ assert.ok(choiceHTML.includes('Öppna tränarportalen'));assert.ok(choiceHTML.in
 const combinedPay=renderToStaticMarkup(React.createElement(ParentPayments,{data:{...familyFixture,payments:[{...paymentFixture,id:'supporter-fee',member_id:'own-card',player_id:null,player_name:'Personal Supporter',description:'Stödmedlem'},{...paymentFixture,id:'child-fee',player_id:'child1',player_name:'Linked Child One'},{...paymentFixture,id:'other-fee',member_id:'other-card',player_id:'other',player_name:'Other Family Child'}]},userEmail:'coach-parent@example.com',linkedPlayerIds:['child1','child2'],ownMemberIds:['own-card']}));
 assert.ok(combinedPay.includes('Personal Supporter'));assert.ok(combinedPay.includes('Linked Child One'));assert.ok(!combinedPay.includes('Other Family Child'));
 console.log('PASS: coach choice and combined own-supporter/child payments, excluding other families.');
+
+const TrainingParent=load('app/components/parent/TrainingsView.jsx').default;
+const cleanedTraining=renderToStaticMarkup(React.createElement(TrainingParent,{data:{...fixture,trainings:[{...fixture.trainings[0],time:'20:30:00',admin_comment:'Tid: 20:30–22:00. Kommunens bokningsnr: 96633. Källa: BookingExcel-20261007055135.xlsx. Ta med vattenflaska.'}]},userEmail:'different@example.com',linkedPlayerIds:['p1'],onRefresh:()=>{}}));
+assert.ok(cleanedTraining.includes('20:30–22:00'));assert.ok(cleanedTraining.includes('Ta med vattenflaska'));assert.ok(!cleanedTraining.includes('BookingExcel'));assert.ok(!cleanedTraining.includes('96633'));assert.ok(!cleanedTraining.includes('20:30:00'));
+console.log('PASS: parent training details retain time and coach information while omitting import filenames, booking numbers and seconds.');
+
+const MatchesParent=load('app/components/parent/MatchesView.jsx').default;
+const parentMatches=renderToStaticMarkup(React.createElement(MatchesParent,{data:{...fixture,matches:[{...fixture.matches[0],time:'19:30:00',admin_comment:'Samling 19:00. Källa: BookingExcel-test.xlsx.'},{id:'other-match',date,team_id:'other-team',opponent:'Other Team Opponent'}]},userEmail:'different@example.com',linkedPlayerIds:['p1'],onRefresh:()=>{}}));
+assert.ok(parentMatches.includes('Testmotstånd'));assert.ok(parentMatches.includes('Samling 19:00'));assert.ok(!parentMatches.includes('BookingExcel'));assert.ok(!parentMatches.includes('Other Team Opponent'));assert.ok(!parentMatches.includes('19:30:00'));
+console.log('PASS: newly supplied team match visible to linked parent; other team excluded; clean match information.');

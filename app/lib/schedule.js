@@ -19,3 +19,13 @@ export function shiftMonth(month, delta) {
   const d = new Date(year,number-1+delta,1,12);
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
 }
+
+// Import provenance is for club administration; families need the activity details.
+export function memberEventInfo(comment) {
+  return String(comment || "")
+    .replace(/Kommunens\s+bokningsnr\s*:\s*\d+\.?/gi, "")
+    .replace(/Källa\s*:\s*\S+\.(?:xlsx|xls|csv|ics)\.?/gi, "")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/[ \t]+\n/g, "\n")
+    .trim();
+}

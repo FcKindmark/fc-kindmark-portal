@@ -7,6 +7,7 @@ import ClubShell from "../ClubShell";
 import MemberCards from "../MemberCards";
 import ClubNews from "../ClubNews";
 import EventSchedule from "../EventSchedule";
+import {memberEventInfo} from "../../lib/schedule";
 import MemberOverview from "./MemberOverview";
 import PlayerRecords from "../PlayerRecords";
 import ChildrenView from "./ChildrenView";
@@ -33,13 +34,15 @@ export default function ParentDashboard({ user, profile, onLogout, onBackToStaff
 
   useEffect(() => {
     loadData();
-    const refresh=()=>loadData();
+    const refresh=()=>loadData({silent:true});
     window.addEventListener("focus",refresh);
     return ()=>window.removeEventListener("focus",refresh);
   }, [user.id]);
 
-  async function loadData() {
-    setLoading(true);
+  function navigate(tab){setActiveTab(tab);loadData({silent:true});}
+
+  async function loadData({silent=false}={}) {
+    if(!silent)setLoading(true);
     setError("");
     try {
       const [playersRes, trainingsRes, matchesRes, paymentsRes, messagesRes, teamsRes, profileRes, accessRes, cardsRes] = await Promise.all([
@@ -61,8 +64,8 @@ export default function ParentDashboard({ user, profile, onLogout, onBackToStaff
       if (accessError) setError("Spelarkopplingar kunde inte läsas: " + accessError.message);
       setData({
         players: playersRes.data || [],
-        trainings: trainingsRes.data || [],
-        matches: matchesRes.data || [],
+        trainings: (trainingsRes.data||[]).map(t=>({...t,admin_comment:memberEventInfo(t.admin_comment)})),
+        matches: (matchesRes.data||[]).map(m=>({...m,admin_comment:memberEventInfo(m.admin_comment)})),
         payments: paymentsRes.data || [],
         messages: messagesRes.data || [],
         teams: teamsRes.data || [],
@@ -93,14 +96,14 @@ export default function ParentDashboard({ user, profile, onLogout, onBackToStaff
   const mine = data.players.filter(p => access.some(a => a.player_id === String(p.id)) || [p.mother_email?.toLowerCase(),p.father_email?.toLowerCase()].includes(user.email?.toLowerCase()));
   const teamIds = new Set(mine.map(p => p.team_id).filter(Boolean));
   const memberData = {...data, teams:data.teams.filter(t=>teamIds.has(t.id)), trainings:data.trainings.filter(t=>teamIds.has(t.team_id)), matches:data.matches.filter(m=>teamIds.has(m.team_id))};
-  return <ClubShell tabs={tabs} active={activeTab} onChange={setActiveTab} user={user} role={profile?.role === "player" ? "Spelare" : "Förälder"} onLogout={onLogout}>
+  return <ClubShell tabs={tabs} active={activeTab} onChange={navigate} user={user} role={profile?.role === "player" ? "Spelare" : "Förälder"} onLogout={onLogout}>
     <div className="page-heading"><p>Föräldraportal · Mina barn</p><div className="button-group"><Button variant="secondary" disabled={loading} onClick={loadData}>Uppdatera</Button>{onBackToStaff&&<Button onClick={onBackToStaff}>{staffRole==="admin"?"Till administratörsportalen":"Till tränarportalen"}</Button>}</div></div>
     {error && <p className="error-banner" role="alert">{error}<button onClick={loadData}>Försök igen</button></p>}
     {loading ? <p role="status">Läser in…</p> : <>
-    {activeTab === "overview" && <MemberOverview data={memberData} players={mine} onNavigate={setActiveTab}/>}
+    {activeTab === "overview" && <MemberOverview data={memberData} players={mine} onNavigate={navigate}/>}
     {activeTab === "news" && <ClubNews/>}
     {activeTab === "membership" && <MemberCards/>}
-    {activeTab === "calendar" && <EventSchedule data={memberData} member onNavigate={setActiveTab}/>}
+    {activeTab === "calendar" && <EventSchedule data={memberData} member onNavigate={navigate}/>}
     {activeTab === "children" && <ChildrenView data={data} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)}/>}
     {activeTab === "trainings" && <TrainingsView data={data} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)} onRefresh={loadData}/>}
     {activeTab === "matches" && <MatchesView data={data} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)} onRefresh={loadData}/>}
