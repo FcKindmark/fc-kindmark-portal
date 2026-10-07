@@ -47,3 +47,11 @@ const Fixtures=load('app/components/SupporterDashboard.jsx').SupporterFixtures;
 const supporterHTML=renderToStaticMarkup(React.createElement(Fixtures,{matches:fixture.matches}));
 assert.ok(supporterHTML.includes('Testmotstånd'));assert.ok(!supporterHTML.includes('Testspelare'));
 console.log('PASS: overview, navigation, calendar, recovery, roster, cards, results and supporter fixtures.');
+
+const Payments=load('app/components/admin/PaymentsTab.jsx').default,PaymentForm=load('app/components/admin/PaymentForm.jsx').default;
+const paymentFixture={id:'payment1',player_id:'p1',player_name:'Testspelare',amount:150.5,status:'pending',description:'Test Fee',due_date:'2000-01-01',reference:'TEST-REF',swish:'1230830323'};
+const paymentHTML=renderToStaticMarkup(React.createElement(Payments,{data:{...fixture,payments:[paymentFixture]},onUpdate:()=>{}}));
+for(const text of ['Ändra','Ta bort','Markera betald','Förfallen','TEST-REF','Filtrera betalningsstatus'])assert.ok(paymentHTML.includes(text));
+const paymentFormHTML=renderToStaticMarkup(React.createElement(PaymentForm,{payment:paymentFixture,players:fixture.players,onSave:()=>{},onClose:()=>{},busy:false}));
+for(const text of ['Ändra betalning','Test Fee','Förfallodatum','TEST-REF','150.5'])assert.ok(paymentFormHTML.includes(text));
+console.log('PASS: payment actions, overdue labels and populated edit form.');

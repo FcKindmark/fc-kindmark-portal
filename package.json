@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "node tests/attendance.test.mjs && node tests/schedule.test.mjs && node tests/matches.test.mjs && node tests/member-export.test.mjs"
+    "test": "node tests/attendance.test.mjs && node tests/schedule.test.mjs && node tests/matches.test.mjs && node tests/member-export.test.mjs && node tests/payments.test.mjs"
   },
   "dependencies": {
     "react": "^18.0.0",

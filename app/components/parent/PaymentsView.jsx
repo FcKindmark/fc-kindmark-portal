@@ -1,5 +1,6 @@
 "use client";
 import { Card, Empty, Badge } from "../UI";
+import {overdue,sek} from "../../lib/payments";
 
 export default function PaymentsView({ data, userEmail, linkedPlayerIds = [] }) {
   const players = data?.players || [];
@@ -33,15 +34,18 @@ export default function PaymentsView({ data, userEmail, linkedPlayerIds = [] }) 
                   <p style={{ color: "var(--text-light)", fontSize: "14px" }}>{payment.description || "Betalning"}</p>
                 </div>
                 <Badge variant={payment.status === "paid" ? "success" : "pending"}>
-                  {payment.status === "paid" ? "✓ Betald" : "⏳ Väntande"}
+                  {payment.status === "paid" ? "✓ Betald" : overdue(payment) ? "Förfallen" : "⏳ Väntande"}
                 </Badge>
               </div>
 
               <p style={{ color: "var(--text-dark)", fontWeight: "700", fontSize: "20px", marginBottom: "16px" }}>
-                {payment.amount} SEK
+                {sek(payment.amount)}
               </p>
 
-              {(payment.swish || payment.bankgiro) && (
+              {payment.due_date && <p>Förfallodatum: {payment.due_date}</p>}
+              {payment.reference && <p>Referens / OCR: {payment.reference}</p>}
+              {payment.status === "paid" && payment.paid_date && <p>Betald: {payment.paid_date}</p>}
+              {payment.status !== "paid" && (payment.swish || payment.bankgiro) && (
                 <div style={{ background: "var(--beige-light)", padding: "16px", borderRadius: "8px", border: "2px solid var(--gold)" }}>
                   <h4 style={{ color: "var(--text-dark)", fontWeight: "600", marginBottom: "12px" }}>Betala här:</h4>
                   
