@@ -15,7 +15,7 @@ import MatchesView from "./MatchesView";
 import PaymentsView from "./PaymentsView";
 import MessagesView from "./MessagesView";
 
-export default function ParentDashboard({ user, profile, onLogout }) {
+export default function ParentDashboard({ user, profile, onLogout, onBackToStaff, staffRole }) {
   const [activeTab, setActiveTab] = useState("overview");
   const [data, setData] = useState({
     players: [],
@@ -24,6 +24,7 @@ export default function ParentDashboard({ user, profile, onLogout }) {
     payments: [],
     messages: [],
     teams: [],
+    ownMemberIds: [],
   });
   const [error, setError] = useState("");
   const [access, setAccess] = useState([]);
@@ -32,25 +33,30 @@ export default function ParentDashboard({ user, profile, onLogout }) {
 
   useEffect(() => {
     loadData();
-  }, []);
+    const refresh=()=>loadData();
+    window.addEventListener("focus",refresh);
+    return ()=>window.removeEventListener("focus",refresh);
+  }, [user.id]);
 
   async function loadData() {
     setLoading(true);
     setError("");
     try {
-      const [playersRes, trainingsRes, matchesRes, paymentsRes, messagesRes, teamsRes, profileRes] = await Promise.all([
+      const [playersRes, trainingsRes, matchesRes, paymentsRes, messagesRes, teamsRes, profileRes, accessRes, cardsRes] = await Promise.all([
         supabase.from("players").select("*"),
         supabase.from("trainings").select("*"),
         supabase.from("matches").select("*"),
         supabase.from("payments").select("*"),
         supabase.from("messages").select("*").eq("recipient_email", user.email),
         supabase.from("teams").select("*"),
-        supabase.from("profiles").select("*").eq("email", user.email).single(),
+        supabase.from("profiles").select("*").eq("id", user.id).single(),
+        supabase.from("club_player_access").select("player_id").eq("user_id",user.id),
+        supabase.from("club_member_cards").select("id").eq("user_id",user.id),
       ]);
 
-      const failures = [playersRes, trainingsRes, matchesRes, paymentsRes, messagesRes, teamsRes].filter(r => r.error);
+      const failures = [playersRes, trainingsRes, matchesRes, paymentsRes, messagesRes, teamsRes, cardsRes].filter(r => r.error);
       if (failures.length) setError("Vissa uppgifter kunde inte läsas: " + failures.map(r => r.error.message).join(" · "));
-      const { data: links, error: accessError } = await supabase.from("club_player_access").select("player_id").eq("user_id", user.id);
+      const {data:links,error:accessError}=accessRes;
       setAccess(links || []);
       if (accessError) setError("Spelarkopplingar kunde inte läsas: " + accessError.message);
       setData({
@@ -60,6 +66,7 @@ export default function ParentDashboard({ user, profile, onLogout }) {
         payments: paymentsRes.data || [],
         messages: messagesRes.data || [],
         teams: teamsRes.data || [],
+        ownMemberIds: (cardsRes.data||[]).map(c=>c.id),
       });
 
       setParentInfo(profileRes.data);
@@ -87,6 +94,7 @@ export default function ParentDashboard({ user, profile, onLogout }) {
   const teamIds = new Set(mine.map(p => p.team_id).filter(Boolean));
   const memberData = {...data, teams:data.teams.filter(t=>teamIds.has(t.id)), trainings:data.trainings.filter(t=>teamIds.has(t.team_id)), matches:data.matches.filter(m=>teamIds.has(m.team_id))};
   return <ClubShell tabs={tabs} active={activeTab} onChange={setActiveTab} user={user} role={profile?.role === "player" ? "Spelare" : "Förälder"} onLogout={onLogout}>
+    <div className="page-heading"><p>Föräldraportal · Mina barn</p><div className="button-group"><Button variant="secondary" disabled={loading} onClick={loadData}>Uppdatera</Button>{onBackToStaff&&<Button onClick={onBackToStaff}>{staffRole==="admin"?"Till administratörsportalen":"Till tränarportalen"}</Button>}</div></div>
     {error && <p className="error-banner" role="alert">{error}<button onClick={loadData}>Försök igen</button></p>}
     {loading ? <p role="status">Läser in…</p> : <>
     {activeTab === "overview" && <MemberOverview data={memberData} players={mine} onNavigate={setActiveTab}/>}
@@ -96,7 +104,7 @@ export default function ParentDashboard({ user, profile, onLogout }) {
     {activeTab === "children" && <ChildrenView data={data} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)}/>}
     {activeTab === "trainings" && <TrainingsView data={data} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)} onRefresh={loadData}/>}
     {activeTab === "matches" && <MatchesView data={data} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)} onRefresh={loadData}/>}
-    {activeTab === "payments" && <PaymentsView data={data} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)}/>}
+    {activeTab === "payments" && <PaymentsView data={data} ownMemberIds={data.ownMemberIds} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)}/>}
     {activeTab === "messages" && <MessagesView data={data} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)} onRefresh={loadData}/>}
     {activeTab === "equipment" && <PlayerRecords players={mine} kind="equipment" readOnly/>}
     {activeTab === "development" && <PlayerRecords players={mine} kind="development" readOnly/>}

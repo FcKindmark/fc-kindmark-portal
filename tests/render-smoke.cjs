@@ -93,3 +93,21 @@ assert.ok(usersHTML.includes('+ Lägg till tränare'));assert.ok(usersHTML.inclu
 const coachFormHTML=renderToStaticMarkup(React.createElement(CoachForm,{profiles:[{id:'coach1',email:'coach@example.com',role:'parent'},{id:'admin1',email:'admin@example.com',role:'admin'}],teams:fixture.teams,coach:{id:'coach1'},assigned:['team1'],busy:false,onSave:()=>{},onClose:()=>{}}));
 assert.ok(coachFormHTML.includes('Ändra tränarens lag'));assert.ok(coachFormHTML.includes('coach@example.com'));assert.ok(!coachFormHTML.includes('admin@example.com'));assert.ok(coachFormHTML.includes('checked=""'));assert.ok(coachFormHTML.includes('Spara tränare'));
 console.log('PASS: trainer creation entry point, preselected teams and protected admin options.');
+
+const Children=load('app/components/parent/ChildrenView.jsx').default;
+const familyFixture={...fixture,players:[{id:'child1',name:'Linked Child One',team_id:'team1',mother_email:'different@example.com'},{id:'child2',name:'Linked Child Two',team_id:'team2',father_email:'different@example.com'},{id:'other',name:'Other Family Child',team_id:'team1'}]};
+const linkedChildren=renderToStaticMarkup(React.createElement(Children,{data:familyFixture,userEmail:'coach-parent@example.com',linkedPlayerIds:['child1','child2']}));
+assert.ok(linkedChildren.includes('Linked Child One'));assert.ok(linkedChildren.includes('Linked Child Two'));assert.ok(!linkedChildren.includes('Other Family Child'));
+const Parent=load('app/components/parent/ParentDashboard.jsx').default,Admin=load('app/components/admin/AdminDashboard.jsx').default;
+const familyPortal=renderToStaticMarkup(React.createElement(Parent,{user:{id:'coach-parent',email:'coach-parent@example.com'},profile:{role:'parent'},staffRole:'coach',onBackToStaff:()=>{},onLogout:()=>{}}));
+assert.ok(familyPortal.includes('Till tränarportalen'));assert.ok(familyPortal.includes('Uppdatera'));
+const trainerPortal=renderToStaticMarkup(React.createElement(Admin,{user:{id:'coach-parent',email:'coach-parent@example.com'},profile:{role:'coach'},onOpenFamily:()=>{},onLogout:()=>{}}));
+assert.ok(trainerPortal.includes('Föräldraportal · Mina barn'));
+console.log('PASS: explicit parent links show both children without email matching; unrelated child hidden; coach/family switching and refresh controls visible.');
+
+const Choice=load('app/components/PortalChoice.jsx').default;
+const choiceHTML=renderToStaticMarkup(React.createElement(Choice,{onSelect:()=>{},onLogout:()=>{}}));
+assert.ok(choiceHTML.includes('Öppna tränarportalen'));assert.ok(choiceHTML.includes('Öppna föräldraportalen'));assert.ok(choiceHTML.includes('150 SEK'));
+const combinedPay=renderToStaticMarkup(React.createElement(ParentPayments,{data:{...familyFixture,payments:[{...paymentFixture,id:'supporter-fee',member_id:'own-card',player_id:null,player_name:'Personal Supporter',description:'Stödmedlem'},{...paymentFixture,id:'child-fee',player_id:'child1',player_name:'Linked Child One'},{...paymentFixture,id:'other-fee',member_id:'other-card',player_id:'other',player_name:'Other Family Child'}]},userEmail:'coach-parent@example.com',linkedPlayerIds:['child1','child2'],ownMemberIds:['own-card']}));
+assert.ok(combinedPay.includes('Personal Supporter'));assert.ok(combinedPay.includes('Linked Child One'));assert.ok(!combinedPay.includes('Other Family Child'));
+console.log('PASS: coach choice and combined own-supporter/child payments, excluding other families.');

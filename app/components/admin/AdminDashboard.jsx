@@ -18,7 +18,7 @@ import EventSchedule from "../EventSchedule";
 import AttendanceTab from "./AttendanceTab";
 import PlayerRecords from "../PlayerRecords";
 
-export default function AdminDashboard({ user, profile, onLogout }) {
+export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }) {
   const [memberAdd,setMemberAdd]=useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const [data, setData] = useState({
@@ -96,6 +96,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
 
   const allowedTabs = profile?.role === "coach" ? tabs.filter(t => ["overview","calendar","players","trainings","matches","attendance","development"].includes(t.id)) : tabs;
   return <ClubShell tabs={allowedTabs} active={activeTab} onChange={setActiveTab} user={user} role={profile?.role === "coach" ? "Tränare" : "Admin"} onLogout={onLogout}>
+    {onOpenFamily&&<div className="page-heading"><p>Du är i {profile?.role === "coach" ? "tränarportalen" : "administratörsportalen"}.</p><Button variant="secondary" onClick={onOpenFamily}>Föräldraportal · Mina barn</Button></div>}
     {error && <p className="error-banner" role="alert">{error}<button onClick={loadData}>Försök igen</button></p>}
     {loading ? <p role="status">Läser in…</p> : <>
     {activeTab === "overview" && <OverviewTab data={data} onNavigate={setActiveTab} coach={profile?.role === "coach"}/>}
