@@ -1,4 +1,6 @@
 -- Club-specific migration, reviewed against the actual UUID schema.
+-- Legacy RSVP foreign keys are NOT VALID to preserve orphaned historical records.
+-- New writes are checked; existing orphan rows require separate manual reconciliation.
 create table public.club_player_access(user_id uuid not null references auth.users(id) on delete cascade,player_id uuid not null references public.players(id) on delete cascade,primary key(user_id,player_id));
 create table public.club_attendance(training_id uuid not null references public.trainings(id) on delete cascade,player_id uuid not null references public.players(id) on delete cascade,present boolean not null,recorded_at timestamptz not null default now(),primary key(training_id,player_id));
 create table public.club_equipment(id uuid primary key default gen_random_uuid(),player_id uuid not null references public.players(id) on delete cascade,size text not null check(length(trim(size))>0),package text not null check(package in ('basic','full')),status text not null check(status in ('ordered','received','delivered')),created_at timestamptz not null default now());
@@ -15,8 +17,8 @@ alter table public.training_attendance add constraint training_rsvp_unique uniqu
 alter table public.match_attendance add constraint match_rsvp_unique unique(match_id,player_id);
 alter table public.players add constraint players_team_fk foreign key(team_id) references public.teams(id) on delete restrict;
 alter table public.trainings add constraint trainings_team_fk foreign key(team_id) references public.teams(id) on delete restrict;
-alter table public.training_attendance add constraint training_rsvp_training_fk foreign key(training_id) references public.trainings(id) on delete cascade,add constraint training_rsvp_player_fk foreign key(player_id) references public.players(id) on delete cascade;
-alter table public.match_attendance add constraint match_rsvp_match_fk foreign key(match_id) references public.matches(id) on delete cascade,add constraint match_rsvp_player_fk foreign key(player_id) references public.players(id) on delete cascade;
+alter table public.training_attendance add constraint training_rsvp_training_fk foreign key(training_id) references public.trainings(id) on delete cascade not valid,add constraint training_rsvp_player_fk foreign key(player_id) references public.players(id) on delete cascade not valid;
+alter table public.match_attendance add constraint match_rsvp_match_fk foreign key(match_id) references public.matches(id) on delete cascade not valid,add constraint match_rsvp_player_fk foreign key(player_id) references public.players(id) on delete cascade not valid;
 create or replace function public.is_admin() returns boolean language sql stable security invoker set search_path='' as $$ select coalesce(auth.jwt()->'app_metadata'->>'club_role'='admin',false) $$;
 create function public.club_staff_team(team uuid) returns boolean language sql stable security invoker set search_path='' as $$ select public.is_admin() or (coalesce(auth.jwt()->'app_metadata'->>'club_role'='coach',false) and coalesce(auth.jwt()->'app_metadata'->'club_team_ids','[]'::jsonb) ? team::text) $$;
 create function public.club_owns_player(player uuid) returns boolean language sql stable security invoker set search_path='' as $$ select exists(select 1 from public.club_player_access a where a.user_id=auth.uid() and a.player_id=player) $$;
