@@ -113,7 +113,8 @@ export default function EconomyTab({
     const {
       error
     } = await supabase.storage.from('club-economy').upload(path, f, {
-      upsert: false
+      upsert: false,
+      contentType: ({pdf:'application/pdf',csv:'text/csv',jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',xls:'application/vnd.ms-excel',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})[f.name.split('.').pop().toLowerCase()] || f.type
     });
     if (error) throw error;
     return path;

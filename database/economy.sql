@@ -83,12 +83,13 @@ begin
        for pid in select distinct v::uuid from jsonb_array_elements_text(payload->'payment_ids') v order by v::uuid loop
          select * into pay from public.payments where id=pid for update;
          if not found then raise exception 'Betalningen saknas'; end if;
+         if pay.amount is null or pay.amount<=0 then raise exception 'Betalningen saknar ett giltigt belopp';end if;
          if exists(select 1 from public.club_econ_payment_links pl join public.club_econ_journal h on h.id=pl.journal_id where pl.payment_id=pid and not exists(select 1 from public.club_econ_journal r where r.reversal_of=h.id)) then raise exception 'Betalningen är redan kopplad till bokföring'; end if;
          total_alloc:=total_alloc+pay.amount;
          if pay.payment_kind='membership' then member_alloc:=member_alloc+pay.amount; end if;
          insert into public.club_econ_payment_links(journal_id,payment_id,previous_state) values(eid,pid,jsonb_build_object('status',pay.status,'paid_date',pay.paid_date,'paid_reference',pay.paid_reference));
          -- Preserve an earlier manually confirmed bank reference; otherwise populate from the bank row.
-         if pay.status<>'paid' then update public.payments set status='paid',paid_date=b.date,paid_reference=coalesce(nullif(b.reference,''),'Bankrad '||b.id::text) where id=pid; end if;
+         if pay.status is distinct from 'paid' then update public.payments set status='paid',paid_date=b.date,paid_reference=coalesce(nullif(b.reference,''),'Bankrad '||b.id::text) where id=pid; end if;
        end loop;
        select coalesce(sum(l.credit-l.debit),0) into credit_income from public.club_econ_lines l join public.club_econ_accounts a on a.code=l.account where l.journal_id=eid and a.kind='income';
        select coalesce(sum(l.credit-l.debit),0) into member_credit from public.club_econ_lines l where l.journal_id=eid and l.account='3901';
