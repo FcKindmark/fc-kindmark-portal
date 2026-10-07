@@ -16,6 +16,7 @@ export function paymentPayload(form, players, members=[]) {
   }
   if(form.status==='paid' && !(form.paid_reference || '').trim()) throw new Error('Ange transaktionsreferensen från den mottagna betalningen.');
   const member=members.find(m=>m.id===form.member_id);
+  if(member?.membership_type==='supporter' && form.payment_kind==='membership' && Number(raw)!==150) throw new Error('Stödmedlemsavgiften är alltid 150 SEK.');
   if(form.member_id && !member) throw new Error('Välj en giltig medlem.');
   if(form.payment_kind==='membership' && (!Number.isInteger(Number(form.membership_year)) || Number(form.membership_year)<1900 || Number(form.membership_year)>2200)) throw new Error('Ange vilket år medlemsavgiften gäller.');
   if(member && (member.player_id || null)!==(player?.id || null)) throw new Error('Medlemmen och spelarkopplingen måste stämma överens.');

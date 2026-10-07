@@ -17,6 +17,7 @@ export default function PlayersTab({ data, onUpdate, readOnly = false }) {
     (!genderFilter || p.gender === genderFilter) &&
     (!teamFilter || (teamFilter === "unassigned" ? !p.team_id : p.team_id === teamFilter))
   ).sort((a, b) => (a.birth_year || 9999) - (b.birth_year || 9999) || a.name.localeCompare(b.name, "sv"));
+  const [membershipCategory,setMembershipCategory]=useState("new");
   const [birthYear, setBirthYear] = useState("");
   const [gender, setGender] = useState("");
   const [showAdd, setShowAdd] = useState(false);
@@ -44,6 +45,7 @@ export default function PlayersTab({ data, onUpdate, readOnly = false }) {
 
   function resetForm() {
     setEditingId(null);
+    setMembershipCategory("new");
     setName("");
     setPosition("Forward");
     setNumber("");
@@ -85,7 +87,7 @@ export default function PlayersTab({ data, onUpdate, readOnly = false }) {
           .eq("id", editingId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("players").insert(playerData);
+        const { error } = await supabase.from("players").insert({...playerData,membership_category:membershipCategory});
         if (error) throw error;
       }
 
@@ -137,6 +139,7 @@ export default function PlayersTab({ data, onUpdate, readOnly = false }) {
           <Card style={{ maxWidth: "900px", width: "95%" }}>
             <h3 style={{ marginBottom: "20px", color: "var(--text-dark)" }}>{editingId ? "Redigera spelare" : "Lägg till ny spelare"}</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
+              {!editingId && <label className="field">Medlemskategori<select value={membershipCategory} onChange={e=>setMembershipCategory(e.target.value)}><option value="new">Ny medlem</option><option value="full">Full medlem</option><option value="supporter">Stödmedlem · 150 SEK</option></select></label>}
               <div>
                 <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "var(--text-dark)" }}>Namn</label>
                 <Input placeholder="Spelarens namn" value={name} onChange={(e) => setName(e.target.value)} />

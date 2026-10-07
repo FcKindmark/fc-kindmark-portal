@@ -70,3 +70,10 @@ const Fees=load('app/components/admin/MembershipFees.jsx').default;
 const feesHTML=renderToStaticMarkup(React.createElement(Fees,{members:[{id:'c1',player_id:'p1',name:'Testspelare',membership_no:1001,fee_plan:'new',status:'active'}],payments:[],onUpdate:()=>{}}));
 for(const text of ['Ny medlem','Full medlem','Avgift saknas','1001','Spara priser'])assert.ok(feesHTML.includes(text));
 console.log('PASS: new/full pricing, unpriced membership and automatic fee controls.');
+
+const supportFees=renderToStaticMarkup(React.createElement(Fees,{members:[{id:'s1',name:'Supporter Example',membership_no:1031,membership_type:'supporter',status:'active'}],payments:[],onUpdate:()=>{}}));
+assert.ok(supportFees.includes('Stödmedlem'));assert.ok(supportFees.includes('Supporter Example'));assert.ok(supportFees.includes('150 SEK'));
+const ParentPayments=load('app/components/parent/PaymentsView.jsx').default;
+const supportPay=renderToStaticMarkup(React.createElement(ParentPayments,{data:{players:[],payments:[{...paymentFixture,player_id:null,player_name:'Supporter Example',reference:'1031-2026'}]},memberPayments:true}));
+assert.ok(supportPay.includes('Supporter Example'));assert.ok(supportPay.includes('1031-2026'));
+console.log('PASS: fixed supporter price and own supporter payment view.');

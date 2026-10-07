@@ -2,6 +2,7 @@
 import {useEffect,useState} from "react";
 import {supabase} from "../lib/supabaseClient";
 import ClubShell from "./ClubShell";
+import SupporterPayments from "./SupporterPayments";
 import MemberCards from "./MemberCards";
 import ClubNews from "./ClubNews";
 import {Card,Button,Empty} from "./UI";
@@ -12,6 +13,6 @@ export function SupporterFixtures({matches}) {
 export default function SupporterDashboard({user,onLogout}) {
   const [active,setActive]=useState("overview"),[matches,setMatches]=useState([]),[error,setError]=useState("");
   useEffect(()=>{let cancelled=false;supabase.from("matches").select("id,opponent,date,time,location,club_score,opponent_score").order("date").then(r=>{if(!cancelled){setMatches(r.data||[]);setError(r.error?.message||"");}});return()=>{cancelled=true;};},[]);
-  const tabs=[{id:"overview",label:"Hem"},{id:"matches",label:"Matcher"},{id:"news",label:"Klubbinformation"},{id:"membership",label:"Medlemskort"}];
-  return <ClubShell tabs={tabs} active={active} onChange={setActive} user={user} role="Stödmedlem" onLogout={onLogout}>{error && <p role="alert" className="error-banner">{error}</p>}{active==="overview" && <><div className="overview-hero"><p className="eyebrow">FC KINDMARK · STÖDMEDLEM</p><h1>En del av klubben.</h1><p>Tack för att du stödjer FC Kindmark. Här hittar du klubbens matcher, information och ditt personliga medlemskort.</p><div className="match-actions"><Button onClick={()=>setActive("membership")}>Öppna mitt medlemskort</Button><Button variant="secondary" onClick={()=>setActive("matches")}>Se matcher</Button></div></div><ClubNews/></>}{active==="matches" && <SupporterFixtures matches={matches}/>} {active==="news" && <ClubNews/>}{active==="membership" && <MemberCards/>}</ClubShell>;
+  const tabs=[{id:"overview",label:"Hem"},{id:"matches",label:"Matcher"},{id:"news",label:"Klubbinformation"},{id:"membership",label:"Medlemskort"},{id:"payments",label:"Betalningar"}];
+  return <ClubShell tabs={tabs} active={active} onChange={setActive} user={user} role="Stödmedlem" onLogout={onLogout}>{error && <p role="alert" className="error-banner">{error}</p>}{active==="overview" && <><div className="overview-hero"><p className="eyebrow">FC KINDMARK · STÖDMEDLEM</p><h1>En del av klubben.</h1><p>Tack för att du stödjer FC Kindmark. Här hittar du klubbens matcher, information och ditt personliga medlemskort.</p><div className="match-actions"><Button onClick={()=>setActive("membership")}>Öppna mitt medlemskort</Button><Button variant="secondary" onClick={()=>setActive("matches")}>Se matcher</Button></div></div><ClubNews/></>}{active==="matches" && <SupporterFixtures matches={matches}/>} {active==="news" && <ClubNews/>}{active==="membership" && <MemberCards/>}{active==="payments" && <SupporterPayments user={user}/>}</ClubShell>;
 }

@@ -27,3 +27,7 @@ assert.throws(()=>paymentPayload({...memberForm,player_id:''},players,members));
 const url=new URL(swishPaymentLink({swish:'1230830323',amount:150.50,reference:'1001-2026'}));
 assert.equal(url.hostname,'app.swish.nu');assert.equal(url.searchParams.get('sw'),'1230830323');assert.equal(url.searchParams.get('amt'),'150.50');assert.equal(url.searchParams.get('msg'),'1001-2026');
 assert.equal(swishPaymentLink({swish:'bad',amount:10}),null);
+
+const supporter=[{id:'s1',name:'Supporter Example',membership_no:1031,membership_type:'supporter',player_id:null}];
+assert.equal(paymentPayload({...form,player_id:'',member_id:'s1',payment_kind:'membership',membership_year:2026,amount:150},[],supporter).amount,150);
+assert.throws(()=>paymentPayload({...form,player_id:'',member_id:'s1',payment_kind:'membership',membership_year:2026,amount:200},[],supporter));
