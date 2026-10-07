@@ -104,7 +104,7 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
   const allowedTabs = profile?.role === "coach" ? tabs.filter(t => ["overview","calendar","players","trainings","matches","attendance","development"].includes(t.id)) : tabs;
   return <ClubShell tabs={allowedTabs} active={activeTab} onChange={tab=>{setMemberAdd(null);setActiveTab(tab);}} user={user} role={profile?.role === "coach" ? "Tränare" : "Admin"} onLogout={onLogout}>
     {onOpenFamily&&<div className="page-heading"><p>Du är i {profile?.role === "coach" ? "tränarportalen" : "administratörsportalen"}.</p><Button variant="secondary" onClick={onOpenFamily}>Föräldraportal · Mina barn</Button></div>}
-    {profile?.role !== "coach" && <div className="page-heading"><Button onClick={()=>setShowMemberChoice(true)}>+ Lägg till medlem</Button></div>}
+    {activeTab === "overview" && profile?.role !== "coach" && <div className="page-heading"><Button onClick={()=>setShowMemberChoice(true)}>+ Lägg till medlem</Button></div>}
     {showMemberChoice && profile?.role !== "coach" && <AddMemberChoice onChoose={chooseMember} onClose={()=>setShowMemberChoice(false)}/>}
     {error && <p className="error-banner" role="alert">{error}<button onClick={loadData}>Försök igen</button></p>}
     {loading ? <p role="status">Läser in…</p> : <>
