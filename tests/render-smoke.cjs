@@ -80,7 +80,7 @@ console.log('PASS: fixed supporter price and own supporter payment view.');
 
 const CardsAdmin=load('app/components/MemberCards.jsx').default;
 const adminMemberHTML=renderToStaticMarkup(React.createElement(CardsAdmin,{admin:true}));
-assert.ok(adminMemberHTML.includes('+ Lägg till medlem'));assert.ok(!adminMemberHTML.includes('id="new-member-name"'));
+assert.ok(!adminMemberHTML.includes('+ Lägg till medlem'));assert.ok(!adminMemberHTML.includes('id="new-member-name"'));
 const memberAddHTML=renderToStaticMarkup(React.createElement(CardsAdmin,{admin:true,initialShowAdd:true}));
 for(const text of ['Medlemmens namn','Ny medlem','Medlem','Stödmedlem','Spara medlem'])assert.ok(memberAddHTML.includes(text));
 const paymentsAdd=renderToStaticMarkup(React.createElement(Payments,{data:fixture,onUpdate:()=>{},onAddMember:()=>{}}));
@@ -89,7 +89,7 @@ console.log('PASS: visible member creation button, category form and payments sh
 
 const Users=load('app/components/admin/UsersTab.jsx').default,CoachForm=load('app/components/admin/CoachForm.jsx').default;
 const usersHTML=renderToStaticMarkup(React.createElement(Users,{data:{...fixture,profiles:[]},onUpdate:()=>{}}));
-assert.ok(usersHTML.includes('+ Lägg till medlem'));assert.ok(usersHTML.includes('Tränare och lag'));
+assert.ok(!usersHTML.includes('+ Lägg till medlem'));assert.ok(usersHTML.includes('Tränare och lag'));
 const coachFormHTML=renderToStaticMarkup(React.createElement(CoachForm,{profiles:[{id:'coach1',email:'coach@example.com',role:'parent'},{id:'admin1',email:'admin@example.com',role:'admin'}],teams:fixture.teams,coach:{id:'coach1'},assigned:['team1'],busy:false,onSave:()=>{},onClose:()=>{}}));
 assert.ok(coachFormHTML.includes('Ändra tränarens lag'));assert.ok(coachFormHTML.includes('coach@example.com'));assert.ok(!coachFormHTML.includes('admin@example.com'));assert.ok(coachFormHTML.includes('checked=""'));assert.ok(coachFormHTML.includes('Spara tränare'));
 console.log('PASS: trainer creation entry point, preselected teams and protected admin options.');

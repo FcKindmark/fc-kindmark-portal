@@ -110,18 +110,18 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
     {loading ? <p role="status">Läser in…</p> : <>
     {activeTab === "overview" && <OverviewTab data={data} onNavigate={setActiveTab} coach={profile?.role === "coach"}/>}
     {activeTab === "news" && <ClubNews admin/>}
-    {activeTab === "membership" && <MemberCards key={memberAdd?.key || "members"} admin initialShowAdd={Boolean(memberAdd)} initialMembershipType={memberAdd?.kind} onAddMember={()=>setShowMemberChoice(true)} onCloseAdd={()=>setMemberAdd(null)} onUpdate={loadData}/>}
+    {activeTab === "membership" && <MemberCards key={memberAdd?.key || "members"} admin initialShowAdd={Boolean(memberAdd)} initialMembershipType={memberAdd?.kind} onCloseAdd={()=>setMemberAdd(null)} onUpdate={loadData}/>}
     {activeTab === "calendar" && <EventSchedule data={data} onNavigate={setActiveTab}/>}
     {activeTab === "attendance" && <AttendanceTab data={data} canDelete={profile?.role !== "coach"}/>}
     {activeTab === "equipment" && <PlayerRecords players={data.players} kind="equipment" canDelete={profile?.role !== "coach"}/>}
     {activeTab === "development" && <PlayerRecords players={data.players} kind="development" canDelete={profile?.role !== "coach"}/>}
-    {activeTab === "players" && <PlayersTab key={memberAdd?.key || "players"} data={data} initialShowAdd={memberAdd?.kind === "player"} onCloseAdd={()=>setMemberAdd(null)} onAddMember={()=>setShowMemberChoice(true)} onUpdate={loadData} readOnly={profile?.role === "coach"}/>}
+    {activeTab === "players" && <PlayersTab key={memberAdd?.key || "players"} data={data} initialShowAdd={memberAdd?.kind === "player"} onCloseAdd={()=>setMemberAdd(null)} onUpdate={loadData} readOnly={profile?.role === "coach"}/>}
     {activeTab === "teams" && <TeamsTab data={data} onUpdate={loadData}/>}
     {activeTab === "trainings" && <TrainingsTab data={data} onUpdate={loadData} canDelete={profile?.role !== "coach"}/>}
     {activeTab === "matches" && <MatchesTab data={data} onUpdate={loadData} canDelete={profile?.role !== "coach"}/>}
-    {activeTab === "payments" && <PaymentsTab data={data} onUpdate={loadData} onAddMember={()=>setShowMemberChoice(true)}/>}
+    {activeTab === "payments" && <PaymentsTab data={data} onUpdate={loadData}/>}
     {activeTab === "messages" && <MessagesTab data={data} onUpdate={loadData}/>}
-    {activeTab === "users" && <UsersTab key={memberAdd?.key || "users"} data={data} initialShowCoach={memberAdd?.kind === "coach"} onCloseAdd={()=>setMemberAdd(null)} onAddMember={()=>setShowMemberChoice(true)} currentUserId={user.id} onUpdate={loadData}/>}
+    {activeTab === "users" && <UsersTab key={memberAdd?.key || "users"} data={data} initialShowCoach={memberAdd?.kind === "coach"} onCloseAdd={()=>setMemberAdd(null)} currentUserId={user.id} onUpdate={loadData}/>}
     </>}
   </ClubShell>;
 }

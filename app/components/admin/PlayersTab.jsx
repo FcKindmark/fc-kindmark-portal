@@ -5,7 +5,7 @@ import { supabase } from "../../lib/supabaseClient";
 import PlayerAccount from "./PlayerAccount";
 import PlayerActions from "./PlayerActions";
 
-export default function PlayersTab({ data, onUpdate, readOnly = false, initialShowAdd = false, onCloseAdd, onAddMember }) {
+export default function PlayersTab({ data, onUpdate, readOnly = false, initialShowAdd = false, onCloseAdd }) {
   const players = data?.players || [];
   const teams = data?.teams || [];
   const [action, setAction] = useState(null);
@@ -127,7 +127,6 @@ export default function PlayersTab({ data, onUpdate, readOnly = false, initialSh
     <>
       <div style={{ marginBottom: "30px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h2 style={{ fontSize: "24px", fontWeight: "700", color: "var(--text-dark)" }}>Spelare</h2>
-        {!readOnly && <Button variant="primary" onClick={() => { if(onAddMember){onAddMember();return;} resetForm(); setShowAdd(true); }}>+ Lägg till medlem</Button>}
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginBottom: "20px" }}>
