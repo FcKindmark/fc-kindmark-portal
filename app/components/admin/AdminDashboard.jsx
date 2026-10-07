@@ -42,7 +42,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
     setLoading(true);
     setError("");
     try {
-      const [playersRes, teamsRes, trainingsRes, matchesRes, paymentsRes, messagesRes, profilesRes, adminRes, cardsRes] = await Promise.all([
+      const [playersRes, teamsRes, trainingsRes, matchesRes, paymentsRes, messagesRes, profilesRes, adminRes, cardsRes, coachTeamsRes] = await Promise.all([
         supabase.from("players").select("*"),
         supabase.from("teams").select("*"),
         supabase.from("trainings").select("*"),
@@ -50,17 +50,20 @@ export default function AdminDashboard({ user, profile, onLogout }) {
         profile?.role === "coach" ? Promise.resolve({data: []}) : supabase.from("payments").select("*"),
         profile?.role === "coach" ? Promise.resolve({data: []}) : supabase.from("messages").select("*"),
         profile?.role === "coach" ? Promise.resolve({data: []}) : supabase.from("profiles").select("*"),
-        supabase.from("profiles").select("*").eq("email", user.email).single(),
+        supabase.from("profiles").select("*").eq("id", user.id).single(),
         profile?.role === "coach" ? Promise.resolve({data: []}) : supabase.from("club_member_cards").select("*"),
+        profile?.role === "coach" ? supabase.from("club_coach_teams").select("team_id").eq("user_id",user.id) : Promise.resolve({data: []}),
       ]);
 
-      const failures = [playersRes, teamsRes, trainingsRes, matchesRes, paymentsRes, messagesRes, profilesRes, cardsRes].filter(r => r.error);
+      const failures = [playersRes, teamsRes, trainingsRes, matchesRes, paymentsRes, messagesRes, profilesRes, cardsRes, coachTeamsRes].filter(r => r.error);
       if (failures.length) setError("Vissa uppgifter kunde inte läsas: " + failures.map(r => r.error.message).join(" · "));
+      const assigned=new Set((coachTeamsRes.data||[]).map(c=>c.team_id));
+      const teamRows=(rows,key)=>profile?.role==="coach"?(rows||[]).filter(r=>assigned.has(r[key])):rows||[];
       setData({
-        players: playersRes.data || [],
-        teams: teamsRes.data || [],
-        trainings: trainingsRes.data || [],
-        matches: matchesRes.data || [],
+        players: teamRows(playersRes.data,"team_id"),
+        teams: teamRows(teamsRes.data,"id"),
+        trainings: teamRows(trainingsRes.data,"team_id"),
+        matches: teamRows(matchesRes.data,"team_id"),
         payments: paymentsRes.data || [],
         messages: messagesRes.data || [],
         profiles: profilesRes.data || [],
@@ -108,7 +111,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
     {activeTab === "matches" && <MatchesTab data={data} onUpdate={loadData} canDelete={profile?.role !== "coach"}/>}
     {activeTab === "payments" && <PaymentsTab data={data} onUpdate={loadData} onAddMember={()=>{setMemberAdd(true);setActiveTab("membership");}}/>}
     {activeTab === "messages" && <MessagesTab data={data} onUpdate={loadData}/>}
-    {activeTab === "users" && <UsersTab data={data} onUpdate={loadData}/>}
+    {activeTab === "users" && <UsersTab data={data} currentUserId={user.id} onUpdate={loadData}/>}
     </>}
   </ClubShell>;
 }

@@ -86,3 +86,10 @@ for(const text of ['Medlemmens namn','Ny medlem','Full medlem','Stödmedlem','Sp
 const paymentsAdd=renderToStaticMarkup(React.createElement(Payments,{data:fixture,onUpdate:()=>{},onAddMember:()=>{}}));
 assert.ok(paymentsAdd.includes('+ Lägg till medlem'));
 console.log('PASS: visible member creation button, category form and payments shortcut.');
+
+const Users=load('app/components/admin/UsersTab.jsx').default,CoachForm=load('app/components/admin/CoachForm.jsx').default;
+const usersHTML=renderToStaticMarkup(React.createElement(Users,{data:{...fixture,profiles:[]},onUpdate:()=>{}}));
+assert.ok(usersHTML.includes('+ Lägg till tränare'));assert.ok(usersHTML.includes('Tränare och lag'));
+const coachFormHTML=renderToStaticMarkup(React.createElement(CoachForm,{profiles:[{id:'coach1',email:'coach@example.com',role:'parent'},{id:'admin1',email:'admin@example.com',role:'admin'}],teams:fixture.teams,coach:{id:'coach1'},assigned:['team1'],busy:false,onSave:()=>{},onClose:()=>{}}));
+assert.ok(coachFormHTML.includes('Ändra tränarens lag'));assert.ok(coachFormHTML.includes('coach@example.com'));assert.ok(!coachFormHTML.includes('admin@example.com'));assert.ok(coachFormHTML.includes('checked=""'));assert.ok(coachFormHTML.includes('Spara tränare'));
+console.log('PASS: trainer creation entry point, preselected teams and protected admin options.');

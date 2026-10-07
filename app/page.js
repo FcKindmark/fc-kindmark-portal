@@ -32,7 +32,7 @@ export default function App() {
 
   useEffect(() => {
     if (user) loadProfile(user);
-  }, [user?.id]);
+  }, [user]);
 
   async function checkAuth() {
     const { data } = await supabase.auth.getSession();
@@ -86,13 +86,14 @@ export default function App() {
     return <LoginScreen onLogin={handleLogin} />;
   }
 
-  const isAdmin = ["admin", "coach"].includes(user?.app_metadata?.club_role);
+  const role = user?.app_metadata?.club_role === "admin" ? "admin" : profile?.role === "coach" ? "coach" : "parent";
+  const isAdmin = ["admin", "coach"].includes(role);
 
   if (!isAdmin && supporter === null) return <p role="status">Läser medlemskap…</p>;
   if (!isAdmin && supporter) return <SupporterDashboard user={user} onLogout={logout}/>;
   return isAdmin ? (
-    <AdminDashboard user={user} profile={{...profile, role: user?.app_metadata?.club_role || profile?.role}} onLogout={logout} />
+    <AdminDashboard user={user} profile={{...profile, role}} onLogout={logout} />
   ) : (
-    <ParentDashboard user={user} profile={{...profile, role: user?.app_metadata?.club_role || profile?.role}} onLogout={logout} />
+    <ParentDashboard user={user} profile={{...profile, role}} onLogout={logout} />
   );
 }
