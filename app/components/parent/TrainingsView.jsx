@@ -100,6 +100,13 @@ export default function TrainingsView({ data, userEmail, linkedPlayerIds = [], o
     setLoading(false);
   }
 
+  async function clearReply(trainingId,playerId){
+    if(!confirm("Ta bort ditt svar för denna träning?"))return;
+    setLoading(true);
+    const r=await supabase.from("training_attendance").delete().eq("training_id",trainingId).eq("player_id",playerId).select("id");
+    if(r.error || !r.data?.length)alert(r.error?.message || "Svaret kunde inte tas bort.");else {await loadAttendance();if(onRefresh)await onRefresh();}
+    setLoading(false);
+  }
   return (
     <>
       <div style={{ marginBottom: "30px" }}>
@@ -162,6 +169,7 @@ export default function TrainingsView({ data, userEmail, linkedPlayerIds = [], o
                             >
                               ✗ Kommer inte
                             </Button>
+                            {isAttending !== undefined && <Button variant="danger" disabled={loading} onClick={()=>clearReply(training.id,child.id)}>Ta bort svar</Button>}
                           </div>
                         </div>
                       );

@@ -32,3 +32,8 @@ body{background:var(--beige)}h1,h2,h3{font-weight:700}.club-sidebar{width:248px;
 .match-call-row input { width:20px; height:20px; accent-color:#aa8320; }
 .match-call-row small { margin-left:auto; }
 .match-child-call { padding:16px; background:var(--beige-light); border-radius:12px; margin-top:16px; }
+
+.match-call-label { display:flex; align-items:center; gap:12px; flex:1; }
+.match-call-row { flex-wrap:wrap; }
+
+.player-actions-panel { padding:20px; margin-top:16px; border:1px solid var(--border-color); border-radius:14px; background:var(--white); }

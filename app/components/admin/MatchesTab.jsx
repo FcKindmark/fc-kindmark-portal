@@ -29,7 +29,7 @@ function MatchResult({ match, onUpdate }) {
   </form>;
 }
 
-export default function MatchesTab({ data, onUpdate }) {
+export default function MatchesTab({ data, onUpdate, canDelete=false }) {
   const matches = [...(data?.matches || [])].sort((a,b)=>a.date.localeCompare(b.date));
   const teams = data?.teams || [], players = data?.players || [];
   const [form, setForm] = useState(null);
@@ -66,6 +66,13 @@ export default function MatchesTab({ data, onUpdate }) {
       await loadCalls();
     } catch(e) {setError(e.message);} setBusy(false);
   }
+  async function clearAnswer(matchId,playerId){
+    if(!confirm("Ta bort detta svar på matchkallelsen? Kallelsen finns kvar."))return;
+    setBusy(true);setError("");
+    const r=await supabase.from("club_match_replies").delete().eq("match_id",matchId).eq("player_id",playerId).select("player_id");
+    if(r.error || !r.data?.length)setError(r.error?.message || "Svaret kunde inte tas bort.");else await loadCalls();
+    setBusy(false);
+  }
   async function deleteMatch(id) {
     if (!confirm("Ta bort matchen och dess kallelser?")) return;
     setBusy(true); setError("");
@@ -90,7 +97,7 @@ export default function MatchesTab({ data, onUpdate }) {
         <p className="preserve-lines">{m.admin_comment}</p>
         <p>{selected.length} kallade · {answered.filter(r=>r.attending).length} kommer · {answered.filter(r=>!r.attending).length} kan inte komma · {selected.length-answered.length} svar väntas</p>
         <div className="match-actions"><Button aria-expanded={expandedId===m.id} onClick={()=>setExpandedId(expandedId===m.id ? null : m.id)}>Öppna resultat och kallelser</Button><Button variant="secondary" onClick={()=>setForm({...m,time:m.time||"",location:m.location||"",team_id:m.team_id||"",admin_comment:m.admin_comment||""})}>Redigera</Button><Button variant="danger" disabled={busy} onClick={()=>deleteMatch(m.id)}>Ta bort</Button></div>
-        {expandedId===m.id && <div className="match-management"><MatchResult match={m} onUpdate={onUpdate}/><section><h4>Välj spelare att kalla</h4><p className="muted">Markeringen sparas direkt i portalen. När en kallelse tas bort raderas även svaret. Inga mejl skickas här.</p>{!squad.length && <p>Inga spelare i matchens lag.</p>}{squad.map(p=>{const called=selected.some(c=>c.player_id===p.id),reply=answered.find(r=>r.player_id===p.id);return <label className="match-call-row" key={p.id}><input type="checkbox" checked={called} disabled={busy} onChange={e=>callPlayer(m,p,e.target.checked)}/><span>{p.name}</span><small>{called ? replyLabel(reply?.attending) : "Ej kallad"}</small></label>;})}</section></div>}
+        {expandedId===m.id && <div className="match-management"><MatchResult match={m} onUpdate={onUpdate}/><section><h4>Välj spelare att kalla</h4><p className="muted">Markeringen sparas direkt i portalen. När en kallelse tas bort raderas även svaret. Inga mejl skickas här.</p>{!squad.length && <p>Inga spelare i matchens lag.</p>}{squad.map(p=>{const called=selected.some(c=>c.player_id===p.id),reply=answered.find(r=>r.player_id===p.id);return <div className="match-call-row" key={p.id}><label className="match-call-label"><input type="checkbox" checked={called} disabled={busy} onChange={e=>callPlayer(m,p,e.target.checked)}/><span>{p.name}</span><small>{called ? replyLabel(reply?.attending) : "Ej kallad"}</small></label>{canDelete && reply && <Button variant="danger" disabled={busy} onClick={()=>clearAnswer(m.id,p.id)}>Ta bort svar</Button>}</div>;})}</section></div>}
       </Card>;
     })}</div>
   </section>;

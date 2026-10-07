@@ -25,6 +25,17 @@ assert.ok(memberHTML.includes('Testspelare'));assert.ok(memberHTML.includes('Sva
 const Players=load('app/components/admin/PlayersTab.jsx').default;
 const rosterHTML=renderToStaticMarkup(React.createElement(Players,{data:{teams:fixture.teams,players:[{id:'roster1',name:'Roster Example',birth_year:2014,gender:'girl',number:null,team_id:null}]},onUpdate:()=>{}}));
 assert.ok(rosterHTML.includes('Filtrera födelseår'));assert.ok(rosterHTML.includes('2014 · Flicka · Ej lagfördelad'));assert.ok(!rosterHTML.includes('#null'));
+assert.ok(rosterHTML.includes('Lägg till förälder'));assert.ok(rosterHTML.includes('Lägg till i lag'));assert.ok(!rosterHTML.includes('Ta bort från lag'));
+const assignedRoster=renderToStaticMarkup(React.createElement(Players,{data:fixture,onUpdate:()=>{}}));
+assert.ok(assignedRoster.includes('Ta bort från lag'));
+const coachRoster=renderToStaticMarkup(React.createElement(Players,{data:fixture,onUpdate:()=>{},readOnly:true}));
+for(const label of ['Lägg till förälder','Lägg till i lag','Ta bort från lag','Ta bort spelare'])assert.ok(!coachRoster.includes(label));
+const Actions=load('app/components/admin/PlayerActions.jsx').default;
+const actionProps={player:fixture.players[0],teams:fixture.teams,accounts:[{id:'parent1',full_name:'Example Guardian',email:'guardian@example.com'}],onClose:()=>{},onUpdate:()=>{}};
+const parentAction=renderToStaticMarkup(React.createElement(Actions,{...actionProps,mode:'parent'}));
+assert.ok(parentAction.includes('Example Guardian'));assert.ok(parentAction.includes('Förälderns konto'));
+const teamAction=renderToStaticMarkup(React.createElement(Actions,{...actionProps,mode:'team'}));
+assert.ok(teamAction.includes('Testlag'));assert.ok(teamAction.includes('Spara lag'));
 const MemberCard=load('app/components/MemberCards.jsx').MemberCard;
 const activeCard=renderToStaticMarkup(React.createElement(MemberCard,{card:{name:'Example Member',member_number:'FCK-123456789ABC',status:'active'}}));
 const inactiveCard=renderToStaticMarkup(React.createElement(MemberCard,{card:{name:'Example Member',member_number:'FCK-123456789ABC',status:'inactive'}}));

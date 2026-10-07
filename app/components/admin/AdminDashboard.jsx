@@ -96,13 +96,13 @@ export default function AdminDashboard({ user, profile, onLogout }) {
     {activeTab === "news" && <ClubNews admin/>}
     {activeTab === "membership" && <MemberCards admin/>}
     {activeTab === "calendar" && <EventSchedule data={data} onNavigate={setActiveTab}/>}
-    {activeTab === "attendance" && <AttendanceTab data={data}/>}
-    {activeTab === "equipment" && <PlayerRecords players={data.players} kind="equipment"/>}
-    {activeTab === "development" && <PlayerRecords players={data.players} kind="development"/>}
+    {activeTab === "attendance" && <AttendanceTab data={data} canDelete={profile?.role !== "coach"}/>}
+    {activeTab === "equipment" && <PlayerRecords players={data.players} kind="equipment" canDelete={profile?.role !== "coach"}/>}
+    {activeTab === "development" && <PlayerRecords players={data.players} kind="development" canDelete={profile?.role !== "coach"}/>}
     {activeTab === "players" && <PlayersTab data={data} onUpdate={loadData} readOnly={profile?.role === "coach"}/>}
     {activeTab === "teams" && <TeamsTab data={data} onUpdate={loadData}/>}
-    {activeTab === "trainings" && <TrainingsTab data={data} onUpdate={loadData}/>}
-    {activeTab === "matches" && <MatchesTab data={data} onUpdate={loadData}/>}
+    {activeTab === "trainings" && <TrainingsTab data={data} onUpdate={loadData} canDelete={profile?.role !== "coach"}/>}
+    {activeTab === "matches" && <MatchesTab data={data} onUpdate={loadData} canDelete={profile?.role !== "coach"}/>}
     {activeTab === "payments" && <PaymentsTab data={data} onUpdate={loadData}/>}
     {activeTab === "messages" && <MessagesTab data={data} onUpdate={loadData}/>}
     {activeTab === "users" && <UsersTab data={data} onUpdate={loadData}/>}

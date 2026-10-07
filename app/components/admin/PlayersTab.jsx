@@ -2,10 +2,12 @@
 import { useState } from "react";
 import { Card, Input, Button, Empty, Badge } from "../UI";
 import { supabase } from "../../lib/supabaseClient";
+import PlayerActions from "./PlayerActions";
 
 export default function PlayersTab({ data, onUpdate, readOnly = false }) {
   const players = data?.players || [];
   const teams = data?.teams || [];
+  const [action, setAction] = useState(null);
   const [yearFilter, setYearFilter] = useState("");
   const [genderFilter, setGenderFilter] = useState("");
   const [teamFilter, setTeamFilter] = useState("");
@@ -95,13 +97,21 @@ export default function PlayersTab({ data, onUpdate, readOnly = false }) {
     setLoading(false);
   }
 
+  async function removeFromTeam(player){
+    if(!confirm(`Ta bort ${player.name} från laget? Spelaren och historiken finns kvar.`))return;
+    setLoading(true);
+    const r=await supabase.from("players").update({team_id:null}).eq("id",player.id).select("id");
+    if(r.error || !r.data?.length)alert(r.error?.message || "Spelaren kunde inte tas bort från laget.");else await onUpdate();
+    setLoading(false);
+  }
   async function deletePlayer(id) {
-    if (!confirm("Är du säker på att du vill ta bort denna spelare?")) return;
+    if (!confirm("Ta bort spelaren permanent? Även medlemskort, rabattkod, utrustning, bedömningar, närvaro, kallelser, kontokopplingar och spelarens betalningsposter tas bort. Kontona och genomförda bankbetalningar påverkas inte.")) return;
 
     setLoading(true);
     try {
-      const { error } = await supabase.from("players").delete().eq("id", id);
+      const { data: deleted, error } = await supabase.rpc("club_delete_player", {target:id});
       if (error) throw error;
+      if (!deleted) throw new Error("Spelaren kunde inte tas bort.");
       onUpdate();
     } catch (err) {
       alert("Fel: " + err.message);
@@ -193,9 +203,10 @@ export default function PlayersTab({ data, onUpdate, readOnly = false }) {
                   </div>
                   {!readOnly && <div style={{ display: "flex", gap: "8px" }}>
                     <Button variant="secondary" onClick={() => startEdit(player)} style={{ padding: "8px 12px", fontSize: "12px" }}>Redigera</Button>
-                    <Button variant="danger" onClick={() => deletePlayer(player.id)} disabled={loading} style={{ padding: "8px 12px", fontSize: "12px" }}>Ta bort</Button>
+                    <Button variant="danger" onClick={() => deletePlayer(player.id)} disabled={loading} style={{ padding: "8px 12px", fontSize: "12px" }}>Ta bort spelare</Button>
                   </div>}
                 </div>
+                {!readOnly && <><div className="match-actions"><Button disabled={loading} variant="secondary" onClick={()=>setAction({id:player.id,mode:"parent"})}>Lägg till förälder</Button><Button disabled={loading} variant="primary" onClick={()=>setAction({id:player.id,mode:"team"})}>Lägg till i lag</Button>{player.team_id && <Button disabled={loading} variant="danger" onClick={()=>removeFromTeam(player)}>Ta bort från lag</Button>}</div>{action?.id===player.id && <PlayerActions key={`${player.id}-${action.mode}`} player={player} teams={teams} accounts={data.profiles||[]} mode={action.mode} onClose={()=>setAction(null)} onUpdate={onUpdate}/>}</>}
                 {player.mother_email && <p style={{ color: "var(--text-light)", fontSize: "12px" }}>Mamma: {player.mother_email}</p>}
                 {player.father_email && <p style={{ color: "var(--text-light)", fontSize: "12px" }}>Pappa: {player.father_email}</p>}
               </div>

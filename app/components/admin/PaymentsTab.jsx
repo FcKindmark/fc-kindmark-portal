@@ -97,6 +97,13 @@ export default function PaymentsTab({ data, onUpdate }) {
     setLoading(false);
   }
 
+  async function deletePayment(payment){
+    if(!confirm(`Ta bort betalningsposten för ${payment.player_name}, ${payment.amount} SEK? Detta återbetalar inte en genomförd betalning.`))return;
+    setLoading(true);
+    const result=await supabase.from("payments").delete().eq("id",payment.id).select("id");
+    if(result.error || !result.data?.length)alert("Fel: " + (result.error?.message || "Posten kunde inte tas bort."));else await onUpdate();
+    setLoading(false);
+  }
   return (
     <>
       <div style={{ marginBottom: "30px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -168,6 +175,7 @@ export default function PaymentsTab({ data, onUpdate }) {
                 )}
 
                 <div style={{ display: "flex", gap: "10px" }}>
+                  <Button variant="danger" disabled={loading} onClick={()=>deletePayment(p)}>Ta bort</Button>
                   {p.status === "pending" && (
                     <Button variant="primary" onClick={() => updatePaymentStatus(p.id, "paid")} disabled={loading} style={{ flex: 1, fontSize: "12px", padding: "8px" }}>
                       Markera betald

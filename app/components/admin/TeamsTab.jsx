@@ -63,6 +63,13 @@ export default function TeamsTab({ data, onUpdate }) {
     setLoading(false);
   }
 
+  async function deleteTeam(team){
+    if(!confirm(`Ta bort laget ${team.name}? Lagets träningar, matcher och tillhörande svar och närvaro tas bort. Spelarna finns kvar utan lag.`))return;
+    setLoading(true);
+    const result=await supabase.rpc("club_delete_team",{target:team.id});
+    if(result.error || !result.data)alert("Fel: " + (result.error?.message || "Laget kunde inte tas bort."));else await onUpdate();
+    setLoading(false);
+  }
   return (
     <>
       <div style={{ marginBottom: "30px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -100,6 +107,7 @@ export default function TeamsTab({ data, onUpdate }) {
 
             return (
               <Card key={team.id}>
+                <Button variant="danger" disabled={loading} onClick={()=>deleteTeam(team)}>Ta bort lag</Button>
                 <div
                   onClick={() => setExpandedTeam(expandedTeam === team.id ? null : team.id)}
                   style={{

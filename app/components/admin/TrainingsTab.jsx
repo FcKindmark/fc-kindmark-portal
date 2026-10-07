@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Card, Input, Button, Empty } from "../UI";
 import { supabase } from "../../lib/supabaseClient";
 
-export default function TrainingsTab({ data, onUpdate }) {
+export default function TrainingsTab({ data, onUpdate, canDelete=false }) {
   const trainings = data?.trainings || [];
   const teams = data?.teams || [];
   const players = data?.players || [];
@@ -112,6 +112,13 @@ export default function TrainingsTab({ data, onUpdate }) {
     setLoading(false);
   }
 
+  async function clearAnswer(trainingId,playerId){
+    if(!confirm("Ta bort detta svar på träningskallelsen?"))return;
+    setLoading(true);
+    const r=await supabase.from("training_attendance").delete().eq("training_id",trainingId).eq("player_id",playerId).select("id");
+    if(r.error || !r.data?.length)alert(r.error?.message || "Svaret kunde inte tas bort.");else await loadAttendance();
+    setLoading(false);
+  }
   return (
     <>
       <div style={{ marginBottom: "30px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -222,6 +229,7 @@ export default function TrainingsTab({ data, onUpdate }) {
                               }}>
                                 {status === true ? "✓ Kommer" : status === false ? "✗ Kommer inte" : "? Väntar"}
                               </span>
+                              {canDelete && status !== undefined && <Button variant="danger" disabled={loading} onClick={()=>clearAnswer(t.id,player.id)}>Ta bort svar</Button>}
                             </div>
                           );
                         })}
