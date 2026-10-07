@@ -89,7 +89,7 @@ console.log('PASS: visible member creation button, category form and payments sh
 
 const Users=load('app/components/admin/UsersTab.jsx').default,CoachForm=load('app/components/admin/CoachForm.jsx').default;
 const usersHTML=renderToStaticMarkup(React.createElement(Users,{data:{...fixture,profiles:[]},onUpdate:()=>{}}));
-assert.ok(usersHTML.includes('+ Lägg till tränare'));assert.ok(usersHTML.includes('Tränare och lag'));
+assert.ok(usersHTML.includes('+ Lägg till medlem'));assert.ok(usersHTML.includes('Tränare och lag'));
 const coachFormHTML=renderToStaticMarkup(React.createElement(CoachForm,{profiles:[{id:'coach1',email:'coach@example.com',role:'parent'},{id:'admin1',email:'admin@example.com',role:'admin'}],teams:fixture.teams,coach:{id:'coach1'},assigned:['team1'],busy:false,onSave:()=>{},onClose:()=>{}}));
 assert.ok(coachFormHTML.includes('Ändra tränarens lag'));assert.ok(coachFormHTML.includes('coach@example.com'));assert.ok(!coachFormHTML.includes('admin@example.com'));assert.ok(coachFormHTML.includes('checked=""'));assert.ok(coachFormHTML.includes('Spara tränare'));
 console.log('PASS: trainer creation entry point, preselected teams and protected admin options.');
@@ -128,3 +128,16 @@ assert.ok(playerAccountHTML.includes('Spelarens eget konto'));assert.ok(playerAc
 const selfProfile=renderToStaticMarkup(React.createElement(Children,{data:familyFixture,self:true,userEmail:'player@example.com',linkedPlayerIds:['child1']}));
 assert.ok(selfProfile.includes('Min profil'));assert.ok(selfProfile.includes('Linked Child One'));assert.ok(!selfProfile.includes('Linked Child Two'));assert.ok(!selfProfile.includes('Mina barn'));
 console.log('PASS: own-player account entry, protected coach accounts excluded, own profile shown without sibling access.');
+
+const AddChoice=load('app/components/admin/AddMemberChoice.jsx').default;
+const addChoiceHTML=renderToStaticMarkup(React.createElement(AddChoice,{onChoose:()=>{},onClose:()=>{}}));
+for(const label of ['Spelare','Ny medlem','Full medlem','Stödmedlem','Tränare'])assert.ok(addChoiceHTML.includes(label));
+const createPlayerHTML=renderToStaticMarkup(React.createElement(Players,{data:fixture,initialShowAdd:true,onUpdate:()=>{}}));
+assert.ok(createPlayerHTML.includes('Lägg till ny spelare'));
+for(const category of ['new','full','supporter']){
+ const selectedMemberHTML=renderToStaticMarkup(React.createElement(CardsAdmin,{admin:true,initialShowAdd:true,initialMembershipType:category}));
+ assert.ok(selectedMemberHTML.includes(`value="${category}" selected=""`));
+}
+const createCoachHTML=renderToStaticMarkup(React.createElement(Users,{data:{...fixture,profiles:[]},initialShowCoach:true,currentUserId:'admin',onUpdate:()=>{}}));
+assert.ok(createCoachHTML.includes('Tränarens konto'));
+console.log('PASS: universal member choices open player/member/coach forms with selected membership pricing.');

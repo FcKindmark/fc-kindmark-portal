@@ -17,9 +17,16 @@ import OverviewTab from "./OverviewTab";
 import EventSchedule from "../EventSchedule";
 import AttendanceTab from "./AttendanceTab";
 import PlayerRecords from "../PlayerRecords";
+import AddMemberChoice from "./AddMemberChoice";
 
 export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }) {
-  const [memberAdd,setMemberAdd]=useState(false);
+  const [memberAdd,setMemberAdd]=useState(null);
+  const [showMemberChoice,setShowMemberChoice]=useState(false);
+  function chooseMember(kind){
+    setShowMemberChoice(false);
+    setMemberAdd({kind,key:Date.now()});
+    setActiveTab(kind === "player" ? "players" : kind === "coach" ? "users" : "membership");
+  }
   const [activeTab, setActiveTab] = useState("overview");
   const [data, setData] = useState({
     players: [],
@@ -95,24 +102,26 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
   ];
 
   const allowedTabs = profile?.role === "coach" ? tabs.filter(t => ["overview","calendar","players","trainings","matches","attendance","development"].includes(t.id)) : tabs;
-  return <ClubShell tabs={allowedTabs} active={activeTab} onChange={setActiveTab} user={user} role={profile?.role === "coach" ? "Tränare" : "Admin"} onLogout={onLogout}>
+  return <ClubShell tabs={allowedTabs} active={activeTab} onChange={tab=>{setMemberAdd(null);setActiveTab(tab);}} user={user} role={profile?.role === "coach" ? "Tränare" : "Admin"} onLogout={onLogout}>
     {onOpenFamily&&<div className="page-heading"><p>Du är i {profile?.role === "coach" ? "tränarportalen" : "administratörsportalen"}.</p><Button variant="secondary" onClick={onOpenFamily}>Föräldraportal · Mina barn</Button></div>}
+    {profile?.role !== "coach" && <div className="page-heading"><Button onClick={()=>setShowMemberChoice(true)}>+ Lägg till medlem</Button></div>}
+    {showMemberChoice && profile?.role !== "coach" && <AddMemberChoice onChoose={chooseMember} onClose={()=>setShowMemberChoice(false)}/>}
     {error && <p className="error-banner" role="alert">{error}<button onClick={loadData}>Försök igen</button></p>}
     {loading ? <p role="status">Läser in…</p> : <>
     {activeTab === "overview" && <OverviewTab data={data} onNavigate={setActiveTab} coach={profile?.role === "coach"}/>}
     {activeTab === "news" && <ClubNews admin/>}
-    {activeTab === "membership" && <MemberCards admin initialShowAdd={memberAdd} onCloseAdd={()=>setMemberAdd(false)} onUpdate={loadData}/>}
+    {activeTab === "membership" && <MemberCards key={memberAdd?.key || "members"} admin initialShowAdd={Boolean(memberAdd)} initialMembershipType={memberAdd?.kind} onAddMember={()=>setShowMemberChoice(true)} onCloseAdd={()=>setMemberAdd(null)} onUpdate={loadData}/>}
     {activeTab === "calendar" && <EventSchedule data={data} onNavigate={setActiveTab}/>}
     {activeTab === "attendance" && <AttendanceTab data={data} canDelete={profile?.role !== "coach"}/>}
     {activeTab === "equipment" && <PlayerRecords players={data.players} kind="equipment" canDelete={profile?.role !== "coach"}/>}
     {activeTab === "development" && <PlayerRecords players={data.players} kind="development" canDelete={profile?.role !== "coach"}/>}
-    {activeTab === "players" && <PlayersTab data={data} onUpdate={loadData} readOnly={profile?.role === "coach"}/>}
+    {activeTab === "players" && <PlayersTab key={memberAdd?.key || "players"} data={data} initialShowAdd={memberAdd?.kind === "player"} onCloseAdd={()=>setMemberAdd(null)} onAddMember={()=>setShowMemberChoice(true)} onUpdate={loadData} readOnly={profile?.role === "coach"}/>}
     {activeTab === "teams" && <TeamsTab data={data} onUpdate={loadData}/>}
     {activeTab === "trainings" && <TrainingsTab data={data} onUpdate={loadData} canDelete={profile?.role !== "coach"}/>}
     {activeTab === "matches" && <MatchesTab data={data} onUpdate={loadData} canDelete={profile?.role !== "coach"}/>}
-    {activeTab === "payments" && <PaymentsTab data={data} onUpdate={loadData} onAddMember={()=>{setMemberAdd(true);setActiveTab("membership");}}/>}
+    {activeTab === "payments" && <PaymentsTab data={data} onUpdate={loadData} onAddMember={()=>setShowMemberChoice(true)}/>}
     {activeTab === "messages" && <MessagesTab data={data} onUpdate={loadData}/>}
-    {activeTab === "users" && <UsersTab data={data} currentUserId={user.id} onUpdate={loadData}/>}
+    {activeTab === "users" && <UsersTab key={memberAdd?.key || "users"} data={data} initialShowCoach={memberAdd?.kind === "coach"} onCloseAdd={()=>setMemberAdd(null)} onAddMember={()=>setShowMemberChoice(true)} currentUserId={user.id} onUpdate={loadData}/>}
     </>}
   </ClubShell>;
 }

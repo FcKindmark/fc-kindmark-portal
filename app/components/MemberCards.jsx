@@ -27,7 +27,7 @@ export function MemberCard({ card }) {
   </article>;
 }
 
-export default function MemberCards({ admin = false, initialShowAdd = false, onCloseAdd, onUpdate }) {
+export default function MemberCards({ admin = false, initialShowAdd = false, initialMembershipType = "supporter", onAddMember, onCloseAdd, onUpdate }) {
   const [showAdd,setShowAdd]=useState(initialShowAdd);
   function closeAdd(){setShowAdd(false);onCloseAdd?.();}
   const [cards, setCards] = useState([]);
@@ -35,7 +35,7 @@ export default function MemberCards({ admin = false, initialShowAdd = false, onC
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
-  const [membershipType, setMembershipType] = useState("supporter");
+  const [membershipType, setMembershipType] = useState(["new","full","supporter"].includes(initialMembershipType)?initialMembershipType:"supporter");
   const [accountId, setAccountId] = useState("");
   const [accounts, setAccounts] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -79,7 +79,7 @@ export default function MemberCards({ admin = false, initialShowAdd = false, onC
   }
   const visible = cards.filter(c => `${c.name} ${c.membership_no || ""} ${c.member_number}`.toLocaleLowerCase("sv").includes(search.toLocaleLowerCase("sv")));
   return <section>
-    <div className="page-heading"><h2>{admin ? "Medlemmar och medlemskort" : "Medlemskort"}</h2>{admin && <Button onClick={()=>setShowAdd(true)}>+ Lägg till medlem</Button>}</div>
+    <div className="page-heading"><h2>{admin ? "Medlemmar och medlemskort" : "Medlemskort"}</h2>{admin && <Button onClick={()=>onAddMember?onAddMember():setShowAdd(true)}>+ Lägg till medlem</Button>}</div>
     <p>Visa ditt aktiva medlemskort hos klubbens anslutna partners. Rabatt och användning följer respektive partners villkor. Ditt kort har ett kort medlemsnummer och en separat rabattkod.</p>
     {admin && <><label htmlFor="member-card-search">Sök namn eller medlemsnummer</label><input id="member-card-search" value={search} onChange={e => setSearch(e.target.value)}/>{showAdd && <form onSubmit={addCard} className="member-card-add"><label htmlFor="new-member-name">Medlemmens namn</label><input id="new-member-name" autoFocus required value={name} onChange={e => setName(e.target.value)}/><label htmlFor="new-member-type">Medlemstyp</label><select id="new-member-type" value={membershipType} onChange={e=>setMembershipType(e.target.value)}><option value="new">Ny medlem</option><option value="full">Full medlem</option><option value="supporter">Stödmedlem · 150 SEK</option></select><label htmlFor="new-member-account">Koppla till registrerat konto</label><select id="new-member-account" value={accountId} onChange={e=>setAccountId(e.target.value)}><option value="">Koppla senare</option>{accounts.map(a=><option key={a.id} value={a.id}>{a.full_name || a.email} · {a.email}</option>)}</select><Button type="submit" variant="primary" disabled={saving}>Spara medlem</Button><Button variant="secondary" disabled={saving} onClick={closeAdd}>Avbryt</Button></form>}<p>{visible.length} medlemskort</p><div className="match-actions"><Button disabled={loading} onClick={()=>downloadMemberCodes(cards,true)}>Exportera aktiva koder till LEGEA (CSV)</Button><Button variant="secondary" disabled={loading} onClick={()=>downloadMemberCodes(cards,false)}>Exportera alla kort (CSV)</Button></div><p className="muted">Exporten innehåller medlemsnummer, namn, medlemstyp och status. Den omfattar alla kort, oavsett sökfilter. Stödmedlemmen registrerar ett konto först; koppla sedan rätt konto till kortet för personlig portalåtkomst.</p></>}
     {error && <p className="error-banner" role="alert">{error}<button onClick={load}>Försök igen</button></p>}

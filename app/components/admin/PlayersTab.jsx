@@ -5,7 +5,7 @@ import { supabase } from "../../lib/supabaseClient";
 import PlayerAccount from "./PlayerAccount";
 import PlayerActions from "./PlayerActions";
 
-export default function PlayersTab({ data, onUpdate, readOnly = false }) {
+export default function PlayersTab({ data, onUpdate, readOnly = false, initialShowAdd = false, onCloseAdd, onAddMember }) {
   const players = data?.players || [];
   const teams = data?.teams || [];
   const [action, setAction] = useState(null);
@@ -21,7 +21,7 @@ export default function PlayersTab({ data, onUpdate, readOnly = false }) {
   const [membershipCategory,setMembershipCategory]=useState("new");
   const [birthYear, setBirthYear] = useState("");
   const [gender, setGender] = useState("");
-  const [showAdd, setShowAdd] = useState(false);
+  const [showAdd, setShowAdd] = useState(initialShowAdd && !readOnly);
   const [editingId, setEditingId] = useState(null);
   const [name, setName] = useState("");
   const [position, setPosition] = useState("Forward");
@@ -56,6 +56,7 @@ export default function PlayersTab({ data, onUpdate, readOnly = false }) {
     setMotherEmail("");
     setFatherEmail("");
     setShowAdd(false);
+    onCloseAdd?.();
   }
 
   async function savePlayer() {
@@ -126,7 +127,7 @@ export default function PlayersTab({ data, onUpdate, readOnly = false }) {
     <>
       <div style={{ marginBottom: "30px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h2 style={{ fontSize: "24px", fontWeight: "700", color: "var(--text-dark)" }}>Spelare</h2>
-        {!readOnly && <Button variant="primary" onClick={() => { resetForm(); setShowAdd(true); }}>+ Lägg till spelare</Button>}
+        {!readOnly && <Button variant="primary" onClick={() => { if(onAddMember){onAddMember();return;} resetForm(); setShowAdd(true); }}>+ Lägg till medlem</Button>}
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginBottom: "20px" }}>

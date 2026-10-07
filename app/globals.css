@@ -40,3 +40,12 @@ body{background:var(--beige)}h1,h2,h3{font-weight:700}.club-sidebar{width:248px;
 .payment-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}.payment-summary strong{display:block;font-size:24px}.payment-filters{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:20px}.payment-filters input{flex:1;min-width:200px}.payment-list{display:grid;gap:16px}.payment-row-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}.payment-amount{font-weight:700;font-size:22px}.payment-details{margin-bottom:16px;overflow-wrap:anywhere}.payment-fieldset{border:0;padding:0;margin:0;min-width:0}.payment-summary .club-card{padding:18px}@media(max-width:600px){.payment-summary{grid-template-columns:1fr}.payment-summary .club-card{display:flex;justify-content:space-between;align-items:center}.payment-summary strong{font-size:20px}.payment-filters input{min-width:100%}}
 
 .payment-bank-details{margin-bottom:20px}.payment-verification{display:flex;align-items:flex-start;gap:10px;font-size:14px}.payment-verification input{width:20px;height:20px;flex-shrink:0;margin-top:3px}
+
+.add-member-dialog { width: min(560px, calc(100% - 32px)); max-height: 85dvh; overflow-y: auto; margin: auto; padding: 24px; border: 1px solid var(--border-color); border-radius: 20px; background: var(--white); color: var(--text-dark); }
+.add-member-dialog::backdrop { background: rgba(20, 24, 32, .45); }
+.add-member-choices { display: grid; gap: 12px; margin-top: 20px; }
+.add-member-choices button { display: grid; gap: 5px; text-align: left; padding: 16px; border: 1px solid var(--border-color); border-left: 4px solid #dfbc4e; border-radius: 12px; background: #fffdf6; color: var(--text-dark); cursor: pointer; }
+.add-member-choices button strong { font-size: 17px; }
+.add-member-choices button span { color: var(--text-light); font-size: 14px; }
+.add-member-choices button:hover { background: #faf0cf; }
+.add-member-choices button:focus-visible { outline: 3px solid #a07a12; outline-offset: 2px; }
