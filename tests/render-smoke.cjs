@@ -37,9 +37,9 @@ assert.ok(parentAction.includes('Example Guardian'));assert.ok(parentAction.incl
 const teamAction=renderToStaticMarkup(React.createElement(Actions,{...actionProps,mode:'team'}));
 assert.ok(teamAction.includes('Testlag'));assert.ok(teamAction.includes('Spara lag'));
 const MemberCard=load('app/components/MemberCards.jsx').MemberCard;
-const activeCard=renderToStaticMarkup(React.createElement(MemberCard,{card:{name:'Example Member',member_number:'FCK-123456789ABC',status:'active'}}));
-const inactiveCard=renderToStaticMarkup(React.createElement(MemberCard,{card:{name:'Example Member',member_number:'FCK-123456789ABC',status:'inactive'}}));
-assert.ok(activeCard.includes('FCK-123456789ABC'));assert.ok(activeCard.includes('Kopiera rabattkod'));assert.ok(!inactiveCard.includes('Kopiera rabattkod'));assert.ok(activeCard.includes('/logo.png'));
+const activeCard=renderToStaticMarkup(React.createElement(MemberCard,{card:{name:'Example Member',member_number:'FCK-1001',status:'active'}}));
+const inactiveCard=renderToStaticMarkup(React.createElement(MemberCard,{card:{name:'Example Member',member_number:'FCK-1001',status:'inactive'}}));
+assert.ok(activeCard.includes('FCK-1001'));assert.ok(activeCard.includes('Kopiera rabattkod'));assert.ok(!inactiveCard.includes('Kopiera rabattkod'));assert.ok(activeCard.includes('/logo.png'));
 const Matches=load('app/components/admin/MatchesTab.jsx').default;
 const matchHTML=renderToStaticMarkup(React.createElement(Matches,{data:{...fixture,matches:[{...fixture.matches[0],club_score:0,opponent_score:0}]},onUpdate:()=>{}}));
 assert.ok(matchHTML.includes('FC Kindmark 0–0'));assert.ok(matchHTML.includes('Öppna resultat och kallelser'));
@@ -60,8 +60,8 @@ const paidFormHTML=renderToStaticMarkup(React.createElement(PaymentForm,{payment
 assert.ok(paidFormHTML.includes('transaktionsreferens'));assert.ok(paidFormHTML.includes('Jag har kontrollerat'));assert.ok(paymentHTML.includes('5246-1142'));
 console.log('PASS: club payment details and receipt verification form.');
 
-const shortCard=renderToStaticMarkup(React.createElement(MemberCard,{card:{name:'Example Member',membership_no:1001,member_number:'FCK-123456789ABC',status:'active'}}));
-assert.ok(shortCard.includes('1001'));assert.ok(shortCard.includes('FCK-123456789ABC'));
+const shortCard=renderToStaticMarkup(React.createElement(MemberCard,{card:{name:'Example Member',membership_no:1001,member_number:'FCK-1001',status:'active'}}));
+assert.ok(shortCard.includes('1001'));assert.ok(shortCard.includes('FCK-1001'));
 const linkedPayment=renderToStaticMarkup(React.createElement(PaymentForm,{payment:{...paymentFixture,member_id:'c1',membership_no:1001,payment_kind:'membership',membership_year:2026},players:fixture.players,members:[{id:'c1',membership_no:1001,player_id:'p1',name:'Testspelare'}],onSave:()=>{},onClose:()=>{},busy:false}));
 assert.ok(linkedPayment.includes('1001-2026'));assert.ok(linkedPayment.includes('Ursprungligt bankmeddelande'));assert.ok(paymentHTML.includes('Exportera medlemsbetalningar'));
 console.log('PASS: short member numbers, annual report actions and payment/member linking form.');
