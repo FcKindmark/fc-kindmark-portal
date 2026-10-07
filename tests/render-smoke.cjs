@@ -63,7 +63,7 @@ console.log('PASS: club payment details and receipt verification form.');
 const shortCard=renderToStaticMarkup(React.createElement(MemberCard,{card:{name:'Example Member',membership_no:1001,member_number:'FCK-1001',status:'active'}}));
 assert.ok(shortCard.includes('1001'));assert.ok(shortCard.includes('FCK-1001'));
 const linkedPayment=renderToStaticMarkup(React.createElement(PaymentForm,{payment:{...paymentFixture,member_id:'c1',membership_no:1001,payment_kind:'membership',membership_year:2026},players:fixture.players,members:[{id:'c1',membership_no:1001,player_id:'p1',name:'Testspelare'}],onSave:()=>{},onClose:()=>{},busy:false}));
-assert.ok(linkedPayment.includes('1001-2026'));assert.ok(linkedPayment.includes('Ursprungligt bankmeddelande'));assert.ok(paymentHTML.includes('Exportera medlemsbetalningar'));
+assert.ok(linkedPayment.includes('1001-2026'));assert.ok(linkedPayment.includes('Ursprungligt bankmeddelande'));const reportsHTML=renderToStaticMarkup(React.createElement(Payments,{data:{...fixture,payments:[paymentFixture]},initialView:'reports',onUpdate:()=>{}}));assert.ok(reportsHTML.includes('Exportera medlemsbetalningar'));
 console.log('PASS: short member numbers, annual report actions and payment/member linking form.');
 
 const Fees=load('app/components/admin/MembershipFees.jsx').default;
@@ -84,7 +84,7 @@ assert.ok(!adminMemberHTML.includes('+ Lägg till medlem'));assert.ok(!adminMemb
 const memberAddHTML=renderToStaticMarkup(React.createElement(CardsAdmin,{admin:true,initialShowAdd:true}));
 for(const text of ['Medlemmens namn','Ny medlem','Medlem','Stödmedlem','Spara medlem'])assert.ok(memberAddHTML.includes(text));
 const paymentsAdd=renderToStaticMarkup(React.createElement(Payments,{data:fixture,onUpdate:()=>{},onAddMember:()=>{}}));
-assert.ok(paymentsAdd.includes('+ Lägg till medlem'));
+assert.ok(!paymentsAdd.includes('+ Lägg till medlem'));
 console.log('PASS: visible member creation button, category form and payments shortcut.');
 
 const Users=load('app/components/admin/UsersTab.jsx').default,CoachForm=load('app/components/admin/CoachForm.jsx').default;
@@ -143,3 +143,9 @@ for(const category of ['new','full','supporter']){
 const createCoachHTML=renderToStaticMarkup(React.createElement(Users,{data:{...fixture,profiles:[]},initialShowCoach:true,currentUserId:'admin',onUpdate:()=>{}}));
 assert.ok(createCoachHTML.includes('Tränarens konto'));
 console.log('PASS: universal member choices open player/member/coach forms with selected membership pricing.');
+
+assert.ok(!paymentHTML.includes("Spara priser och skapa saknade avgifter"));
+assert.ok(!paymentHTML.includes("Exportera medlemsbetalningar"));
+assert.ok(paymentHTML.includes("Betalningsinstruktioner</summary>"));
+assert.ok(reportsHTML.includes("Medlemsbetalningar – årslista"));
+console.log("PASS: payments list separates fee settings and reports, with expandable instructions.");
