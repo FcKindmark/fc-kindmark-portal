@@ -1,0 +1,32 @@
+begin;
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"464a9f89-ae01-4c5a-98f1-5984354118d8","app_metadata":{"club_role":"admin"}}',true);
+do $$declare bank uuid; eid uuid; doc uuid; payid uuid; caught boolean; begin
+ insert into public.club_econ_documents(name,path,kind,party,document_date,amount) values('TEST','test/'||gen_random_uuid(),'statement','TEST','2099-01-01',0) returning id into doc;
+ insert into public.club_econ_bank(date,amount,description,fingerprint,import_name,statement_document) values('2099-02-01',950,'TEST','test-'||gen_random_uuid(),'TEST',doc) returning id into bank;
+ insert into public.payments(player_name,amount,status,reference,payment_kind) values('TEST member payment',500,'pending','TEST-500','other') returning id into payid;
+ eid:=public.club_econ_entry('post',jsonb_build_object('date','2099-02-01','description','TEST combined receipt','bank_id',bank,'payment_ids',jsonb_build_array(payid),'lines','[{"account":"1930","debit":950,"credit":0},{"account":"3901","debit":0,"credit":500},{"account":"3001","debit":0,"credit":450}]'::jsonb));
+ if not exists(select 1 from public.club_econ_journal where id=eid and status='posted' and number=1) then raise exception 'Posting failed'; end if;
+ if not exists(select 1 from public.payments where id=payid and status='paid' and paid_date='2099-02-01') then raise exception 'Member payment was not confirmed';end if;
+ caught:=false;begin update public.payments set amount=1 where id=payid;exception when others then caught:=true;end;if not caught then raise exception 'Linked payment amount editable';end if;
+ caught:=false;begin perform public.club_econ_entry('post',jsonb_build_object('date','2099-02-01','description','TEST duplicate','bank_id',bank,'lines','[{"account":"1930","debit":950,"credit":0},{"account":"3901","debit":0,"credit":950}]'::jsonb));exception when others then caught:=true;end;if not caught then raise exception 'Duplicate accepted';end if;
+ caught:=false;begin perform public.club_econ_entry('delete',jsonb_build_object('id',eid));exception when others then caught:=true;end;if not caught then raise exception 'Posted deletion accepted';end if;
+ caught:=false;begin perform public.club_econ_entry('post','{"date":"2099-02-01","description":"TEST unbalanced","lines":[{"account":"1930","debit":100,"credit":0},{"account":"3901","debit":0,"credit":99}]}');exception when others then caught:=true;end;if not caught then raise exception 'Unbalanced accepted';end if;
+ caught:=false;begin delete from public.club_econ_lines where journal_id=eid;exception when insufficient_privilege then caught:=true;end;if not caught then raise exception 'Direct write accepted';end if;
+ caught:=false;begin delete from public.club_econ_documents where id=doc;exception when others then caught:=true;end;if not caught then raise exception 'Evidence deletion accepted';end if;
+ perform public.club_econ_entry('reverse',jsonb_build_object('id',eid,'date','2099-02-01','reason','TEST correction'));
+ if not exists(select 1 from public.payments where id=payid and status='pending') then raise exception 'Reversal did not restore payment';end if;
+ if (select sum(l.debit-l.credit) from public.club_econ_journal j join public.club_econ_lines l on l.journal_id=j.id where j.bank_id=bank and l.account='1930')<>0 then raise exception 'Reversal failed';end if;
+ perform public.club_econ_entry('post',jsonb_build_object('date','2099-02-01','description','TEST corrected','bank_id',bank,'lines','[{"account":"1930","debit":950,"credit":0},{"account":"3901","debit":0,"credit":950}]'::jsonb));
+ caught:=false;begin perform public.club_econ_lock_year(2099,949);exception when others then caught:=true;end;if not caught then raise exception 'Wrong bank balance accepted';end if;
+ perform public.club_econ_lock_year(2099,950);
+ caught:=false;begin perform public.club_econ_entry('save','{"date":"2099-03-01","description":"TEST locked","lines":[{"account":"1930","debit":100,"credit":0},{"account":"3901","debit":0,"credit":100}]}');exception when others then caught:=true;end;if not caught then raise exception 'Locked year editable';end if;
+ caught:=false;begin perform public.club_econ_entry('save','{"date":"2098-03-01","description":"TEST previous year","lines":[{"account":"1930","debit":100,"credit":0},{"account":"3901","debit":0,"credit":100}]}');exception when others then caught:=true;end;if not caught then raise exception 'Prior-year edits changed locked balance';end if;
+end $$;
+select set_config('request.jwt.claims','{"sub":"374e427a-43bb-4944-ae3a-514b0d8569b8","app_metadata":{"club_role":"parent"}}',true);
+do $$declare caught boolean:=false;begin
+ if exists(select 1 from public.club_econ_documents) then raise exception 'Parent sees documents';end if;
+ begin perform public.club_econ_entry('save','{}');exception when others then caught:=true;end;if not caught then raise exception 'Parent can write journal';end if;
+end $$;
+select 'PASS: split posting, duplicate prevention, immutable entries, evidence, balanced journal, reversals, bank reconciliation, locked years and parent isolation' as result;
+rollback;

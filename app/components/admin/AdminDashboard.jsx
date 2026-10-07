@@ -8,6 +8,7 @@ import TeamsTab from "./TeamsTab";
 import TrainingsTab from "./TrainingsTab";
 import MatchesTab from "./MatchesTab";
 import PaymentsTab from "./PaymentsTab";
+import EconomyTab from "./EconomyTab";
 import MessagesTab from "./MessagesTab";
 import UsersTab from "./UsersTab";
 import ClubShell from "../ClubShell";
@@ -84,6 +85,12 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
     setLoading(false);
   }
 
+  async function refreshPayments(){
+    const result=await supabase.from("payments").select("*");
+    if(result.error){setError(result.error.message);return;}
+    setData(previous=>({...previous,payments:result.data||[]}));
+  }
+
   const tabs = [
     { id: "overview", label: "Översikt" },
     { id: "calendar", label: "Kalender" },
@@ -97,6 +104,7 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
     { id: "trainings", label: "Träningar", icon: "📅" },
     { id: "matches", label: "Matcher", icon: "🏆" },
     { id: "payments", label: "Betalningar", icon: "💳" },
+    { id: "economy", label: "Ekonomi" },
     { id: "messages", label: "Meddelanden", icon: "💬" },
     { id: "users", label: "Användare", icon: "👥" },
   ];
@@ -120,6 +128,7 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
     {activeTab === "trainings" && <TrainingsTab data={data} onUpdate={loadData} canDelete={profile?.role !== "coach"}/>}
     {activeTab === "matches" && <MatchesTab data={data} onUpdate={loadData} canDelete={profile?.role !== "coach"}/>}
     {activeTab === "payments" && <PaymentsTab data={data} onUpdate={loadData}/>}
+    {activeTab === "economy" && profile?.role !== "coach" && <EconomyTab payments={data.payments} onPaymentsChanged={refreshPayments}/>}
     {activeTab === "messages" && <MessagesTab data={data} onUpdate={loadData}/>}
     {activeTab === "users" && <UsersTab key={memberAdd?.key || "users"} data={data} initialShowCoach={memberAdd?.kind === "coach"} onCloseAdd={()=>setMemberAdd(null)} currentUserId={user.id} onUpdate={loadData}/>}
     </>}

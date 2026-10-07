@@ -1,0 +1,1 @@
+alter policy econ_files_remove on storage.objects using(bucket_id='club-economy' and (select public.is_admin()) and not exists(select 1 from public.club_econ_documents d where d.path=storage.objects.name));
