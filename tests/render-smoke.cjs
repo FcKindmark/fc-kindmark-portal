@@ -55,3 +55,7 @@ for(const text of ['Ändra','Ta bort','Markera betald','Förfallen','TEST-REF','
 const paymentFormHTML=renderToStaticMarkup(React.createElement(PaymentForm,{payment:paymentFixture,players:fixture.players,onSave:()=>{},onClose:()=>{},busy:false}));
 for(const text of ['Ändra betalning','Test Fee','Förfallodatum','TEST-REF','150.5'])assert.ok(paymentFormHTML.includes(text));
 console.log('PASS: payment actions, overdue labels and populated edit form.');
+
+const paidFormHTML=renderToStaticMarkup(React.createElement(PaymentForm,{payment:{...paymentFixture,status:'paid'},players:fixture.players,onSave:()=>{},onClose:()=>{},busy:false}));
+assert.ok(paidFormHTML.includes('transaktionsreferens'));assert.ok(paidFormHTML.includes('Jag har kontrollerat'));assert.ok(paymentHTML.includes('5246-1142'));
+console.log('PASS: club payment details and receipt verification form.');
