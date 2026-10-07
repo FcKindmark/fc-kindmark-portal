@@ -22,4 +22,7 @@ const calendarHTML=renderToStaticMarkup(React.createElement(Calendar,{data:fixtu
 assert.ok(calendarHTML.includes('Testmotstånd'));assert.ok(calendarHTML.includes('18:30'));assert.ok(calendarHTML.includes('Nästa månad'));assert.ok(calendarHTML.includes('Kalendervy'));
 const memberHTML=renderToStaticMarkup(React.createElement(Member,{data:fixture,players:fixture.players,onNavigate:()=>{}}));
 assert.ok(memberHTML.includes('Testspelare'));assert.ok(memberHTML.includes('Svara på kallelser'));assert.ok(memberHTML.includes('Inga väntande betalningar'));
-console.log('PASS: overview, accessible navigation, calendar event rendering and member overview SSR.');
+const Players=load('app/components/admin/PlayersTab.jsx').default;
+const rosterHTML=renderToStaticMarkup(React.createElement(Players,{data:{teams:fixture.teams,players:[{id:'roster1',name:'Roster Example',birth_year:2014,gender:'girl',number:null,team_id:null}]},onUpdate:()=>{}}));
+assert.ok(rosterHTML.includes('Filtrera födelseår'));assert.ok(rosterHTML.includes('2014 · Flicka · Ej lagfördelad'));assert.ok(!rosterHTML.includes('#null'));
+console.log('PASS: overview, navigation, calendar, member overview, recovery and roster rendering.');

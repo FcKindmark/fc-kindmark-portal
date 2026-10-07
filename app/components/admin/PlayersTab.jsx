@@ -6,6 +6,17 @@ import { supabase } from "../../lib/supabaseClient";
 export default function PlayersTab({ data, onUpdate, readOnly = false }) {
   const players = data?.players || [];
   const teams = data?.teams || [];
+  const [yearFilter, setYearFilter] = useState("");
+  const [genderFilter, setGenderFilter] = useState("");
+  const [teamFilter, setTeamFilter] = useState("");
+  const years = [...new Set(players.map(p => p.birth_year).filter(Boolean))].sort();
+  const filteredPlayers = players.filter(p =>
+    (!yearFilter || String(p.birth_year) === yearFilter) &&
+    (!genderFilter || p.gender === genderFilter) &&
+    (!teamFilter || (teamFilter === "unassigned" ? !p.team_id : p.team_id === teamFilter))
+  ).sort((a, b) => (a.birth_year || 9999) - (b.birth_year || 9999) || a.name.localeCompare(b.name, "sv"));
+  const [birthYear, setBirthYear] = useState("");
+  const [gender, setGender] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [name, setName] = useState("");
@@ -20,7 +31,9 @@ export default function PlayersTab({ data, onUpdate, readOnly = false }) {
     setEditingId(player.id);
     setName(player.name);
     setPosition(player.position || "Forward");
-    setNumber(player.number);
+    setNumber(player.number ?? "");
+    setBirthYear(player.birth_year ?? "");
+    setGender(player.gender || "");
     setTeamId(player.team_id || "");
     setMotherEmail(player.mother_email || "");
     setFatherEmail(player.father_email || "");
@@ -32,6 +45,8 @@ export default function PlayersTab({ data, onUpdate, readOnly = false }) {
     setName("");
     setPosition("Forward");
     setNumber("");
+    setBirthYear("");
+    setGender("");
     setTeamId("");
     setMotherEmail("");
     setFatherEmail("");
@@ -44,11 +59,17 @@ export default function PlayersTab({ data, onUpdate, readOnly = false }) {
       return;
     }
 
+    if (birthYear && (!Number.isInteger(Number(birthYear)) || Number(birthYear) < 1900 || Number(birthYear) > new Date().getFullYear())) {
+      alert("Ange ett giltigt födelseår");
+      return;
+    }
     setLoading(true);
     try {
       const playerData = {
         name: name.trim(),
         position,
+        birth_year: birthYear ? Number(birthYear) : null,
+        gender: gender || null,
         number: number === "" ? null : parseInt(number, 10),
         team_id: teamId || null,
         mother_email: motherEmail.trim() || null,
@@ -95,6 +116,12 @@ export default function PlayersTab({ data, onUpdate, readOnly = false }) {
         {!readOnly && <Button variant="primary" onClick={() => { resetForm(); setShowAdd(true); }}>+ Lägg till spelare</Button>}
       </div>
 
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginBottom: "20px" }}>
+        <select aria-label="Filtrera födelseår" value={yearFilter} onChange={e => setYearFilter(e.target.value)}><option value="">Alla födelseår</option>{years.map(y => <option key={y} value={y}>{y}</option>)}</select>
+        <select aria-label="Filtrera kön" value={genderFilter} onChange={e => setGenderFilter(e.target.value)}><option value="">Pojkar och flickor</option><option value="boy">Pojkar</option><option value="girl">Flickor</option></select>
+        <select aria-label="Filtrera lag" value={teamFilter} onChange={e => setTeamFilter(e.target.value)}><option value="">Alla lag</option><option value="unassigned">Ej lagfördelade</option>{teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select>
+        <span>{filteredPlayers.length} spelare</span>
+      </div>
       {showAdd && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0, 0, 0, 0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, backdropFilter: "blur(4px)" }} onClick={(e) => { if (e.target === e.currentTarget) resetForm(); }}>
           <Card style={{ maxWidth: "900px", width: "95%" }}>
@@ -127,6 +154,14 @@ export default function PlayersTab({ data, onUpdate, readOnly = false }) {
                 </select>
               </div>
               <div>
+                <label htmlFor="player-birth-year">Födelseår</label>
+                <Input id="player-birth-year" type="number" min="1900" max={new Date().getFullYear()} value={birthYear} onChange={e => setBirthYear(e.target.value)} />
+              </div>
+              <div>
+                <label htmlFor="player-gender">Pojke / flicka</label>
+                <select id="player-gender" value={gender} onChange={e => setGender(e.target.value)}><option value="">Ej angivet</option><option value="boy">Pojke</option><option value="girl">Flicka</option></select>
+              </div>
+              <div>
                 <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "var(--text-dark)" }}>Mammas e-post</label>
                 <Input type="email" placeholder="mamma@email.com" value={motherEmail} onChange={(e) => setMotherEmail(e.target.value)} />
               </div>
@@ -143,17 +178,18 @@ export default function PlayersTab({ data, onUpdate, readOnly = false }) {
         </div>
       )}
 
-      {players.length === 0 ? (
+      {filteredPlayers.length === 0 ? (
         <Empty message="Inga spelare än" />
       ) : (
         <Card>
           <div style={{ display: "grid", gap: "15px" }}>
-            {players.map((player) => (
+            {filteredPlayers.map((player) => (
               <div key={player.id} style={{ padding: "15px", background: "var(--beige-light)", borderRadius: "8px", borderLeft: "4px solid var(--royal-blue)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "8px" }}>
                   <div>
-                    <h3 style={{ color: "var(--text-dark)", marginBottom: "5px" }}>#{player.number} {player.name}</h3>
-                    <p style={{ color: "var(--text-light)", fontSize: "13px", marginBottom: "4px" }}>{player.position}</p>
+                    <h3 style={{ color: "var(--text-dark)", marginBottom: "5px" }}>{player.number != null ? `#${player.number} ` : ""}{player.name}</h3>
+                    <p style={{ color: "var(--text-light)", fontSize: "13px", marginBottom: "4px" }}>{[player.birth_year, player.gender === "boy" ? "Pojke" : player.gender === "girl" ? "Flicka" : null, teams.find(t => t.id === player.team_id)?.name || "Ej lagfördelad"].filter(Boolean).join(" · ")}</p>
+                    {player.position && <p style={{ color: "var(--text-light)", fontSize: "13px" }}>{player.position}</p>}
                   </div>
                   {!readOnly && <div style={{ display: "flex", gap: "8px" }}>
                     <Button variant="secondary" onClick={() => startEdit(player)} style={{ padding: "8px 12px", fontSize: "12px" }}>Redigera</Button>
