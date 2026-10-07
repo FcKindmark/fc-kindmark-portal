@@ -65,3 +65,8 @@ assert.ok(shortCard.includes('1001'));assert.ok(shortCard.includes('FCK-12345678
 const linkedPayment=renderToStaticMarkup(React.createElement(PaymentForm,{payment:{...paymentFixture,member_id:'c1',membership_no:1001,payment_kind:'membership',membership_year:2026},players:fixture.players,members:[{id:'c1',membership_no:1001,player_id:'p1',name:'Testspelare'}],onSave:()=>{},onClose:()=>{},busy:false}));
 assert.ok(linkedPayment.includes('1001-2026'));assert.ok(linkedPayment.includes('Ursprungligt bankmeddelande'));assert.ok(paymentHTML.includes('Exportera medlemsbetalningar'));
 console.log('PASS: short member numbers, annual report actions and payment/member linking form.');
+
+const Fees=load('app/components/admin/MembershipFees.jsx').default;
+const feesHTML=renderToStaticMarkup(React.createElement(Fees,{members:[{id:'c1',player_id:'p1',name:'Testspelare',membership_no:1001,fee_plan:'new',status:'active'}],payments:[],onUpdate:()=>{}}));
+for(const text of ['Ny medlem','Full medlem','Avgift saknas','1001','Spara priser'])assert.ok(feesHTML.includes(text));
+console.log('PASS: new/full pricing, unpriced membership and automatic fee controls.');

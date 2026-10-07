@@ -1,10 +1,10 @@
 begin;
+select set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-000000000077","role":"authenticated","app_metadata":{"club_role":"admin"}}',true);
 insert into public.teams(id,name,age_group) values('00000000-0000-0000-0000-000000000091','Temporary deletion test','Test');
 insert into public.players(id,name,team_id) values('00000000-0000-0000-0000-000000000092','Temporary player','00000000-0000-0000-0000-000000000091');
 insert into public.trainings(id,date,time,team_id) values('00000000-0000-0000-0000-000000000093',current_date,'18:30','00000000-0000-0000-0000-000000000091');
 insert into public.matches(id,date,opponent,team_id) values('00000000-0000-0000-0000-000000000094',current_date,'Temporary opponent','00000000-0000-0000-0000-000000000091');
 insert into public.club_equipment(player_id,size,package,status) values('00000000-0000-0000-0000-000000000092','M','basic','ordered');
-insert into public.club_member_cards(name,player_id) values('Temporary member','00000000-0000-0000-0000-000000000092');
 insert into public.payments(player_name,amount,player_id,status) values('Temporary player',150,'00000000-0000-0000-0000-000000000092','pending');
 insert into public.club_attendance(training_id,player_id,present) values('00000000-0000-0000-0000-000000000093','00000000-0000-0000-0000-000000000092',true);
 insert into public.club_match_calls(match_id,player_id) values('00000000-0000-0000-0000-000000000094','00000000-0000-0000-0000-000000000092');
