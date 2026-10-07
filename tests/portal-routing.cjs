@@ -15,6 +15,7 @@ function route({role='parent',mode=null,supporter=false,children=false,metadata=
 }
 function expectPortal(input,path){const element=route(input);assert.equal(element.type,components.get('./components/'+path));return element;}
 expectPortal({},'parent/ParentDashboard');
+const player=expectPortal({role:'player',children:true},'parent/ParentDashboard');assert.equal(player.props.profile.role,'player');assert.equal(player.props.onBackToStaff,undefined);
 expectPortal({role:'parent',mode:'coach',metadata:{club_role:'parent'}},'parent/ParentDashboard');
 expectPortal({role:'coach',supporter:true,children:true},'PortalChoice');
 const coach=expectPortal({role:'coach',mode:'coach',supporter:true},'admin/AdminDashboard');assert.equal(typeof coach.props.onOpenFamily,'function');

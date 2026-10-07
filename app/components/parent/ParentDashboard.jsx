@@ -97,17 +97,17 @@ export default function ParentDashboard({ user, profile, onLogout, onBackToStaff
   const teamIds = new Set(mine.map(p => p.team_id).filter(Boolean));
   const memberData = {...data, teams:data.teams.filter(t=>teamIds.has(t.id)), trainings:data.trainings.filter(t=>teamIds.has(t.team_id)), matches:data.matches.filter(m=>teamIds.has(m.team_id))};
   return <ClubShell tabs={tabs} active={activeTab} onChange={navigate} user={user} role={profile?.role === "player" ? "Spelare" : "Förälder"} onLogout={onLogout}>
-    <div className="page-heading"><p>Föräldraportal · Mina barn</p><div className="button-group"><Button variant="secondary" disabled={loading} onClick={loadData}>Uppdatera</Button>{onBackToStaff&&<Button onClick={onBackToStaff}>{staffRole==="admin"?"Till administratörsportalen":"Till tränarportalen"}</Button>}</div></div>
+    <div className="page-heading"><p>{profile?.role==="player"?"Spelarportal · Min profil":"Föräldraportal · Mina barn"}</p><div className="button-group"><Button variant="secondary" disabled={loading} onClick={loadData}>Uppdatera</Button>{onBackToStaff&&<Button onClick={onBackToStaff}>{staffRole==="admin"?"Till administratörsportalen":"Till tränarportalen"}</Button>}</div></div>
     {error && <p className="error-banner" role="alert">{error}<button onClick={loadData}>Försök igen</button></p>}
     {loading ? <p role="status">Läser in…</p> : <>
-    {activeTab === "overview" && <MemberOverview data={memberData} players={mine} onNavigate={navigate}/>}
+    {activeTab === "overview" && <MemberOverview self={profile?.role==="player"} data={memberData} players={mine} onNavigate={navigate}/>}
     {activeTab === "news" && <ClubNews/>}
     {activeTab === "membership" && <MemberCards/>}
     {activeTab === "calendar" && <EventSchedule data={memberData} member onNavigate={navigate}/>}
-    {activeTab === "children" && <ChildrenView data={data} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)}/>}
-    {activeTab === "trainings" && <TrainingsView data={data} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)} onRefresh={loadData}/>}
-    {activeTab === "matches" && <MatchesView data={data} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)} onRefresh={loadData}/>}
-    {activeTab === "payments" && <PaymentsView data={data} ownMemberIds={data.ownMemberIds} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)}/>}
+    {activeTab === "children" && <ChildrenView self={profile?.role==="player"} data={data} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)}/>}
+    {activeTab === "trainings" && <TrainingsView self={profile?.role==="player"} data={data} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)} onRefresh={loadData}/>}
+    {activeTab === "matches" && <MatchesView self={profile?.role==="player"} data={data} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)} onRefresh={loadData}/>}
+    {activeTab === "payments" && <PaymentsView self={profile?.role==="player"} data={data} ownMemberIds={data.ownMemberIds} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)}/>}
     {activeTab === "messages" && <MessagesView data={data} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)} onRefresh={loadData}/>}
     {activeTab === "equipment" && <PlayerRecords players={mine} kind="equipment" readOnly/>}
     {activeTab === "development" && <PlayerRecords players={mine} kind="development" readOnly/>}

@@ -3,7 +3,7 @@ import PaymentInstructions from "../PaymentInstructions";
 import { Card, Empty, Badge } from "../UI";
 import {overdue,sek,CLUB_SWISH,CLUB_BANKGIRO} from "../../lib/payments";
 
-export default function PaymentsView({ data, userEmail, linkedPlayerIds = [], memberPayments = false, ownMemberIds = [] }) {
+export default function PaymentsView({ data, userEmail, linkedPlayerIds = [], memberPayments = false, ownMemberIds = [], self=false }) {
   const players = data?.players || [];
   const payments = data?.payments || [];
 
@@ -25,7 +25,7 @@ export default function PaymentsView({ data, userEmail, linkedPlayerIds = [], me
 
 <Card className="payment-bank-details"><strong>FC Kindmark Idrottsförening</strong><p>Swish: {CLUB_SWISH} · Bankgiro: {CLUB_BANKGIRO}</p><p className="muted">Ange spelarens namn och betalningsreferens i meddelandet. Klubben bekräftar betalningen när pengarna har kommit in.</p></Card>
       {myPayments.length === 0 ? (
-        <Empty message={memberPayments ? "Inga medlemsbetalningar" : "Inga betalningar för dig eller dina barn"} />
+        <Empty message={memberPayments ? "Inga medlemsbetalningar" : self?"Inga betalningar registrerade":"Inga betalningar för dig eller dina barn"} />
       ) : (
         <div style={{ display: "grid", gap: "20px" }}>
           {myPayments.map((payment) => (

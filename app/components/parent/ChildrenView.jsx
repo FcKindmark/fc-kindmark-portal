@@ -2,7 +2,7 @@
 
 import { Card, Empty, Badge } from "../UI";
 
-export default function ChildrenView({ data, userEmail, linkedPlayerIds = [] }) {
+export default function ChildrenView({ data, userEmail, linkedPlayerIds = [], self = false }) {
   const players = data?.players || [];
   
   const myChildren = players.filter((p) => 
@@ -12,11 +12,11 @@ export default function ChildrenView({ data, userEmail, linkedPlayerIds = [] }) 
   return (
     <>
       <div style={{ marginBottom: "30px" }}>
-        <h2 style={{ fontSize: "24px", fontWeight: "700", color: "var(--text-dark)" }}>Mina barn</h2>
+        <h2 style={{ fontSize: "24px", fontWeight: "700", color: "var(--text-dark)" }}>{self?"Min profil":"Mina barn"}</h2>
       </div>
 
       {myChildren.length === 0 ? (
-        <Empty message="Inga barn registrerade" />
+        <Empty message={self?"Ingen spelarprofil kopplad ännu":"Inga barn registrerade"} />
       ) : (
         <div style={{ display: "grid", gap: "20px" }}>
           {myChildren.map((child) => (

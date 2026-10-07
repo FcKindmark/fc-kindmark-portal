@@ -5,7 +5,7 @@ import { supabase } from "../../lib/supabaseClient";
 import {dateLabel,memberEventInfo} from "../../lib/schedule";
 import { resultLabel, replyLabel } from "../../lib/matches";
 
-export default function MatchesView({data,userEmail,linkedPlayerIds=[],onRefresh}) {
+export default function MatchesView({data,userEmail,linkedPlayerIds=[],onRefresh,self=false}) {
   const mine=(data?.players || []).filter(p=>linkedPlayerIds.includes(String(p.id)) || [p.mother_email?.toLowerCase(),p.father_email?.toLowerCase()].filter(Boolean).includes(userEmail?.toLowerCase()));
   const teamIds=new Set(mine.map(p=>p.team_id).filter(Boolean));
   const matches=(data?.matches || []).filter(m=>teamIds.has(m.team_id)).sort((a,b)=>a.date.localeCompare(b.date));
@@ -32,7 +32,7 @@ export default function MatchesView({data,userEmail,linkedPlayerIds=[],onRefresh
     if(r.error || !r.data?.length)setError(r.error?.message || "Svaret kunde inte tas bort.");else await load();
     setBusy(false);
   }
-  return <section><h2>Matcher och kallelser</h2>{error && <p className="error-banner" role="alert">{error}<button onClick={load}>Försök igen</button></p>}{loading && <p role="status">Läser kallelser…</p>}{!matches.length && <Empty message="Inga matcher för dina barn ännu"/>}<div className="match-list">{matches.map(m=>{
+  return <section><h2>Matcher och kallelser</h2>{error && <p className="error-banner" role="alert">{error}<button onClick={load}>Försök igen</button></p>}{loading && <p role="status">Läser kallelser…</p>}{!matches.length && <Empty message={self?"Inga matcher för dig ännu":"Inga matcher för dina barn ännu"}/>}<div className="match-list">{matches.map(m=>{
     const children=mine.filter(p=>p.team_id===m.team_id);
     return <Card key={m.id}><h3>FC Kindmark – {m.opponent}</h3><p>{dateLabel(m.date,{weekday:"long",day:"numeric",month:"long",year:"numeric"})} · {m.time?.slice(0,5) || "Tid ej angiven"} · {m.location || "Plats ej angiven"}</p><p className="match-score">{resultLabel(m)}</p>{memberEventInfo(m.admin_comment)&&<p className="preserve-lines">{memberEventInfo(m.admin_comment)}</p>}{!loading && children.map(p=>{
       const called=calls.some(c=>c.match_id===m.id && c.player_id===p.id), reply=replies.find(r=>r.match_id===m.id && r.player_id===p.id);

@@ -4,7 +4,7 @@ import { Card, Button, Empty, Badge } from "../UI";
 import {dateLabel,memberEventInfo} from "../../lib/schedule";
 import { supabase } from "../../lib/supabaseClient";
 
-export default function TrainingsView({ data, userEmail, linkedPlayerIds = [], onRefresh }) {
+export default function TrainingsView({ data, userEmail, linkedPlayerIds = [], onRefresh, self=false }) {
   const players = data?.players || [];
   const trainings = data?.trainings || [];
   const [expandedTraining, setExpandedTraining] = useState(null);
@@ -115,7 +115,7 @@ export default function TrainingsView({ data, userEmail, linkedPlayerIds = [], o
       </div>
 
       {myTrainings.length === 0 ? (
-        <Empty message="Inga träningar för dina barn ännu" />
+        <Empty message={self?"Inga träningar för dig ännu":"Inga träningar för dina barn ännu"} />
       ) : (
         <div style={{ display: "grid", gap: "20px" }}>
           {myTrainings.map((training) => {

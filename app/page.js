@@ -88,7 +88,7 @@ export default function App() {
   if(profileError)return <main className="club-card"><p role="alert">Kunde inte läsa kontot: {profileError}</p><button onClick={()=>setProfileAttempt(n=>n+1)}>Försök igen</button><button onClick={logout}>Logga ut</button></main>;
   if(!profileReady)return <p role="status">Läser konto…</p>;
 
-  const role = user?.app_metadata?.club_role === "admin" ? "admin" : profile?.role === "coach" ? "coach" : "parent";
+  const role = user?.app_metadata?.club_role === "admin" ? "admin" : profile?.role === "coach" ? "coach" : profile?.role === "player" ? "player" : "parent";
   const isAdmin = ["admin", "coach"].includes(role);
 
   if (!isAdmin && supporter === null) return <p role="status">Läser medlemskap…</p>;
@@ -97,6 +97,6 @@ export default function App() {
   return isAdmin && portalMode!=="parent" ? (
     <AdminDashboard user={user} profile={{...profile, role}} onLogout={logout} onOpenFamily={role==="coach"?()=>setPortalMode("parent"):undefined} />
   ) : (
-    <ParentDashboard user={user} profile={{...profile, role: "parent"}} onLogout={logout} onBackToStaff={role==="coach"?()=>setPortalMode("coach"):undefined} staffRole={role} />
+    <ParentDashboard user={user} profile={{...profile, role: role==="player"?"player":"parent"}} onLogout={logout} onBackToStaff={role==="coach"?()=>setPortalMode("coach"):undefined} staffRole={role} />
   );
 }

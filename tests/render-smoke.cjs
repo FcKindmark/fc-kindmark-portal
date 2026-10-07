@@ -121,3 +121,10 @@ const MatchesParent=load('app/components/parent/MatchesView.jsx').default;
 const parentMatches=renderToStaticMarkup(React.createElement(MatchesParent,{data:{...fixture,matches:[{...fixture.matches[0],time:'19:30:00',admin_comment:'Samling 19:00. Källa: BookingExcel-test.xlsx.'},{id:'other-match',date,team_id:'other-team',opponent:'Other Team Opponent'}]},userEmail:'different@example.com',linkedPlayerIds:['p1'],onRefresh:()=>{}}));
 assert.ok(parentMatches.includes('Testmotstånd'));assert.ok(parentMatches.includes('Samling 19:00'));assert.ok(!parentMatches.includes('BookingExcel'));assert.ok(!parentMatches.includes('Other Team Opponent'));assert.ok(!parentMatches.includes('19:30:00'));
 console.log('PASS: newly supplied team match visible to linked parent; other team excluded; clean match information.');
+
+const PlayerAccount=load('app/components/admin/PlayerAccount.jsx').default;
+const playerAccountHTML=renderToStaticMarkup(React.createElement(PlayerAccount,{player:fixture.players[0],accounts:[{id:'own-player',role:'parent',email:'player@example.com'},{id:'protected-coach',role:'coach',email:'coach@example.com'}],onUpdate:()=>{},onClose:()=>{}}));
+assert.ok(playerAccountHTML.includes('Spelarens eget konto'));assert.ok(playerAccountHTML.includes('player@example.com'));assert.ok(!playerAccountHTML.includes('coach@example.com'));assert.ok(rosterHTML.includes('Lägg till spelarkonto'));assert.ok(!coachRoster.includes('Lägg till spelarkonto'));
+const selfProfile=renderToStaticMarkup(React.createElement(Children,{data:familyFixture,self:true,userEmail:'player@example.com',linkedPlayerIds:['child1']}));
+assert.ok(selfProfile.includes('Min profil'));assert.ok(selfProfile.includes('Linked Child One'));assert.ok(!selfProfile.includes('Linked Child Two'));assert.ok(!selfProfile.includes('Mina barn'));
+console.log('PASS: own-player account entry, protected coach accounts excluded, own profile shown without sibling access.');

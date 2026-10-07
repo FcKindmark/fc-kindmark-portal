@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Card, Input, Button, Empty, Badge } from "../UI";
 import { supabase } from "../../lib/supabaseClient";
+import PlayerAccount from "./PlayerAccount";
 import PlayerActions from "./PlayerActions";
 
 export default function PlayersTab({ data, onUpdate, readOnly = false }) {
@@ -209,7 +210,7 @@ export default function PlayersTab({ data, onUpdate, readOnly = false }) {
                     <Button variant="danger" onClick={() => deletePlayer(player.id)} disabled={loading} style={{ padding: "8px 12px", fontSize: "12px" }}>Ta bort spelare</Button>
                   </div>}
                 </div>
-                {!readOnly && <><div className="match-actions"><Button disabled={loading} variant="secondary" onClick={()=>setAction({id:player.id,mode:"parent"})}>Lägg till förälder</Button><Button disabled={loading} variant="primary" onClick={()=>setAction({id:player.id,mode:"team"})}>Lägg till i lag</Button>{player.team_id && <Button disabled={loading} variant="danger" onClick={()=>removeFromTeam(player)}>Ta bort från lag</Button>}</div>{action?.id===player.id && <PlayerActions key={`${player.id}-${action.mode}`} player={player} teams={teams} accounts={data.profiles||[]} mode={action.mode} onClose={()=>setAction(null)} onUpdate={onUpdate}/>}</>}
+                {!readOnly && <><div className="match-actions"><Button disabled={loading} variant="secondary" onClick={()=>setAction({id:player.id,mode:"parent"})}>Lägg till förälder</Button><Button disabled={loading} variant="secondary" onClick={()=>setAction({id:player.id,mode:"player"})}>Lägg till spelarkonto</Button><Button disabled={loading} variant="primary" onClick={()=>setAction({id:player.id,mode:"team"})}>Lägg till i lag</Button>{player.team_id && <Button disabled={loading} variant="danger" onClick={()=>removeFromTeam(player)}>Ta bort från lag</Button>}</div>{action?.id===player.id && (action.mode==="player"?<PlayerAccount key={player.id} player={player} accounts={data.profiles||[]} onClose={()=>setAction(null)} onUpdate={onUpdate}/>:<PlayerActions key={`${player.id}-${action.mode}`} player={player} teams={teams} accounts={data.profiles||[]} mode={action.mode} onClose={()=>setAction(null)} onUpdate={onUpdate}/>)}</>}
                 {player.mother_email && <p style={{ color: "var(--text-light)", fontSize: "12px" }}>Mamma: {player.mother_email}</p>}
                 {player.father_email && <p style={{ color: "var(--text-light)", fontSize: "12px" }}>Pappa: {player.father_email}</p>}
               </div>
