@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "./lib/supabaseClient";
+import PasswordRecovery from "./components/PasswordRecovery";
 import LoginScreen from "./components/LoginScreen";
 import AdminDashboard from "./components/admin/AdminDashboard";
 import ParentDashboard from "./components/parent/ParentDashboard";
@@ -11,10 +12,14 @@ import ParentDashboard from "./components/parent/ParentDashboard";
 export default function App() {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
+  const [recovering, setRecovering] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("recovery") === "1") setRecovering(true);
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (_event === "PASSWORD_RECOVERY") setRecovering(true);
+      if (_event === "SIGNED_OUT") setRecovering(false);
       setUser(session?.user || null);
       setProfile(null);
       setLoading(false);
@@ -67,6 +72,10 @@ export default function App() {
         Läser in...
       </div>
     );
+  }
+
+  if (recovering) {
+    return <PasswordRecovery user={user} onDone={()=>{setRecovering(false);window.history.replaceState(null,"",window.location.pathname);}}/>;
   }
 
   if (!user) {

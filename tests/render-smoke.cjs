@@ -6,6 +6,15 @@ const props={tabs:[{id:'overview',label:'Översikt'},{id:'players',label:'Spelar
 const html=renderToStaticMarkup(React.createElement(Shell,props,React.createElement(Overview,{data:{players:[],teams:[],trainings:[],matches:[]},onNavigate:()=>{}})));
 assert.ok(html.includes('aria-current="page"'));assert.ok(html.includes('Inga kommande träningar'));
 if(process.argv[2]){fs.mkdirSync(path.dirname(process.argv[2]),{recursive:true});fs.writeFileSync(process.argv[2],`<!doctype html><html lang="sv"><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>${fs.readFileSync('app/globals.css','utf8').replace(/@tailwind[^;]+;/g,'')}</style></head><body>${html.replace('/logo.png',path.resolve('public/logo.png'))}</body></html>`);}
+process.env.NEXT_PUBLIC_SUPABASE_URL='https://example.supabase.co';
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY='test-public-key';
+const Recovery=load('app/components/PasswordRecovery.jsx').default;
+const resetForm=renderToStaticMarkup(React.createElement(Recovery,{user:{id:'test'},onDone:()=>{}}));
+assert.ok(resetForm.includes('new-password'));assert.ok(resetForm.includes('Bekräfta lösenord'));
+const expiredForm=renderToStaticMarkup(React.createElement(Recovery,{user:null,onDone:()=>{}}));
+assert.ok(expiredForm.includes('Länken är ogiltig'));assert.ok(!expiredForm.includes('id="new-password"'));
+const Login=load('app/components/LoginScreen.jsx').default;
+assert.ok(renderToStaticMarkup(React.createElement(Login,{onLogin:()=>{}})).includes('Glömt lösenordet?'));
 const Calendar=load('app/components/EventSchedule.jsx').default,Member=load('app/components/parent/MemberOverview.jsx').default;
 const date = new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Stockholm'}).format(new Date());
 const fixture={players:[{id:'p1',name:'Testspelare',team_id:'team1'}],teams:[{id:'team1',name:'Testlag'}],trainings:[{id:'t1',date,time:'18:30',location:'Testsal',team_id:'team1'}],matches:[{id:'m1',date,time:'19:30',opponent:'Testmotstånd',team_id:'team1'}],payments:[],messages:[]};
