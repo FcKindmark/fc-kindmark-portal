@@ -1,0 +1,11 @@
+"use client";
+import { useEffect,useState } from "react";
+import { supabase } from "../lib/supabaseClient";
+import { Card,Button,Empty } from "./UI";
+export default function ClubNews({admin=false}) {
+  const [news,setNews]=useState([]),[form,setForm]=useState({title:"",body:"",published:false}),[error,setError]=useState(""),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
+  async function load(){setLoading(true);const r=await supabase.from("club_news").select("*").order("created_at",{ascending:false});setNews(r.data||[]);setError(r.error?.message||"");setLoading(false);}
+  useEffect(()=>{load();},[]);
+  async function save(e){e.preventDefault();setBusy(true);const values={title:form.title.trim(),body:form.body.trim(),published:form.published};const r=await (form.id ? supabase.from("club_news").update(values).eq("id",form.id) : supabase.from("club_news").insert(values)).select("id");if(r.error || !r.data?.length)setError(r.error?.message||"Informationen kunde inte sparas.");else{setForm({title:"",body:"",published:false});await load();}setBusy(false);}
+  return <section><h2>Klubbinformation</h2>{error && <p role="alert" className="error-banner">{error}</p>}{admin && <Card><form className="match-edit-form" onSubmit={save}><label htmlFor="news-title">Rubrik</label><input id="news-title" required value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/><label htmlFor="news-body">Information</label><textarea id="news-body" required value={form.body} onChange={e=>setForm({...form,body:e.target.value})}/><label><input type="checkbox" checked={form.published} onChange={e=>setForm({...form,published:e.target.checked})}/> Publicera för medlemmar och stödmedlemmar</label><div className="match-actions"><Button type="submit" disabled={busy}>Spara information</Button>{form.id && <Button variant="secondary" onClick={()=>setForm({title:"",body:"",published:false})}>Avbryt</Button>}</div></form></Card>}{loading ? <p role="status">Läser information…</p> : !news.length ? <Empty message="Ingen klubbinformation publicerad ännu"/> : <div className="match-list">{news.map(n=><Card key={n.id}><h3>{n.title}</h3><p className="preserve-lines">{n.body}</p>{admin && <><p>{n.published ? "Publicerad" : "Utkast"}</p><Button variant="secondary" onClick={()=>setForm(n)}>Redigera</Button></>}</Card>)}</div>}</section>;
+}

@@ -6,11 +6,13 @@ import PasswordRecovery from "./components/PasswordRecovery";
 import LoginScreen from "./components/LoginScreen";
 import AdminDashboard from "./components/admin/AdminDashboard";
 import ParentDashboard from "./components/parent/ParentDashboard";
+import SupporterDashboard from "./components/SupporterDashboard";
 
 
 
 export default function App() {
   const [user, setUser] = useState(null);
+  const [supporter, setSupporter] = useState(null);
   const [profile, setProfile] = useState(null);
   const [recovering, setRecovering] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -19,7 +21,7 @@ export default function App() {
     if (new URLSearchParams(window.location.search).get("recovery") === "1") setRecovering(true);
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (_event === "PASSWORD_RECOVERY") setRecovering(true);
-      if (_event === "SIGNED_OUT") setRecovering(false);
+      if (_event === "SIGNED_OUT") { setRecovering(false); setSupporter(null); }
       setUser(session?.user || null);
       setProfile(null);
       setLoading(false);
@@ -44,6 +46,8 @@ export default function App() {
   }
 
   async function loadProfile(userObj) {
+    const membership = await supabase.from("club_member_cards").select("id").eq("user_id",userObj.id).eq("membership_type","supporter").limit(1);
+    setSupporter(Boolean(membership.data?.length));
     const { data } = await supabase
       .from("profiles")
       .select("*")
@@ -84,6 +88,8 @@ export default function App() {
 
   const isAdmin = ["admin", "coach"].includes(user?.app_metadata?.club_role);
 
+  if (!isAdmin && supporter === null) return <p role="status">Läser medlemskap…</p>;
+  if (!isAdmin && supporter) return <SupporterDashboard user={user} onLogout={logout}/>;
   return isAdmin ? (
     <AdminDashboard user={user} profile={{...profile, role: user?.app_metadata?.club_role || profile?.role}} onLogout={logout} />
   ) : (

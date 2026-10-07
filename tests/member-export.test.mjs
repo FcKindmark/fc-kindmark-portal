@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {memberExportRows} from '../app/lib/memberExport.js';
+import {csvText} from '../app/lib/attendance.js';
+const cards=[{name:'Member Example',member_number:'FCK-123',status:'active',membership_type:'member'},{name:'=FORMULA',member_number:'FCK-456',status:'inactive',membership_type:'supporter'}];
+assert.equal(memberExportRows(cards).length,2);
+assert.equal(memberExportRows(cards,false).length,3);
+assert.equal(memberExportRows(cards,false)[2][2],'Stödmedlem');
+assert.ok(csvText(memberExportRows(cards,false)).includes("'=FORMULA"));
+assert.equal(memberExportRows(cards)[1][0],'FCK-123');
+console.log('PASS: active-only export, all cards, Swedish member types and formula escaping.');

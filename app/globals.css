@@ -22,3 +22,13 @@ body{background:var(--beige)}h1,h2,h3{font-weight:700}.club-sidebar{width:248px;
 .member-card-number strong { display:block; font-family:monospace; font-size:19px; letter-spacing:1px; margin-top:8px; user-select:all; overflow-wrap:anywhere; }
 .member-card-footer { display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; font-size:12px; color:#756028; border-top:1px solid #dccb95; padding-top:16px; margin:24px 0 18px; }
 .member-card-add { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin:20px 0; }
+
+.match-list { display:grid; gap:20px; margin-top:20px; }
+.match-actions { display:flex; flex-wrap:wrap; gap:10px; margin:16px 0; }
+.match-management { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr)); gap:24px; border-top:1px solid var(--border-color); margin-top:20px; padding-top:20px; }
+.match-result-form,.match-edit-form { display:grid; gap:12px; align-content:start; }
+.match-score { font-size:20px; font-weight:700; color:#806420; margin:12px 0; }
+.match-call-row { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--border-color); }
+.match-call-row input { width:20px; height:20px; accent-color:#aa8320; }
+.match-call-row small { margin-left:auto; }
+.match-child-call { padding:16px; background:var(--beige-light); border-radius:12px; margin-top:16px; }

@@ -1,9 +1,9 @@
 "use client";
 import { useState } from "react";
-const symbols = { overview: "◫", calendar: "▦", attendance: "✓", equipment: "◇", development: "↗", players: "♙", children: "♙", teams: "⚑", trainings: "▦", matches: "⚽", payments: "▤", messages: "✉", users: "♧" };
+const symbols = { membership: "◈", news: "☷", overview: "◫", calendar: "▦", attendance: "✓", equipment: "◇", development: "↗", players: "♙", children: "♙", teams: "⚑", trainings: "▦", matches: "⚽", payments: "▤", messages: "✉", users: "♧" };
 export default function ClubShell({ tabs, active, onChange, user, role, onLogout, children }) {
   const [expanded, setExpanded] = useState(false);
-  const primary = ["overview", "calendar", "children", "players", "messages"].map(id => tabs.find(t => t.id === id)).filter(Boolean);
+  const primary = (role === "Stödmedlem" ? ["overview","matches","news","membership"] : ["overview", "calendar", "children", "players", "messages"]).map(id => tabs.find(t => t.id === id)).filter(Boolean);
   function navigate(id) { onChange(id); setExpanded(false); }
   return <div className="club-shell"><aside className="club-sidebar">
     <div className="club-brand"><img src="/logo.png" alt="FC Kindmark"/><div><strong>FC KINDMARK</strong><span>Medlemsportal</span></div></div>
