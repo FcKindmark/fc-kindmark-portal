@@ -41,7 +41,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
     setLoading(true);
     setError("");
     try {
-      const [playersRes, teamsRes, trainingsRes, matchesRes, paymentsRes, messagesRes, profilesRes, adminRes] = await Promise.all([
+      const [playersRes, teamsRes, trainingsRes, matchesRes, paymentsRes, messagesRes, profilesRes, adminRes, cardsRes] = await Promise.all([
         supabase.from("players").select("*"),
         supabase.from("teams").select("*"),
         supabase.from("trainings").select("*"),
@@ -50,9 +50,10 @@ export default function AdminDashboard({ user, profile, onLogout }) {
         profile?.role === "coach" ? Promise.resolve({data: []}) : supabase.from("messages").select("*"),
         profile?.role === "coach" ? Promise.resolve({data: []}) : supabase.from("profiles").select("*"),
         supabase.from("profiles").select("*").eq("email", user.email).single(),
+        profile?.role === "coach" ? Promise.resolve({data: []}) : supabase.from("club_member_cards").select("*"),
       ]);
 
-      const failures = [playersRes, teamsRes, trainingsRes, matchesRes, paymentsRes, messagesRes, profilesRes].filter(r => r.error);
+      const failures = [playersRes, teamsRes, trainingsRes, matchesRes, paymentsRes, messagesRes, profilesRes, cardsRes].filter(r => r.error);
       if (failures.length) setError("Vissa uppgifter kunde inte läsas: " + failures.map(r => r.error.message).join(" · "));
       setData({
         players: playersRes.data || [],
@@ -62,6 +63,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
         payments: paymentsRes.data || [],
         messages: messagesRes.data || [],
         profiles: profilesRes.data || [],
+        memberCards: cardsRes.data || [],
       });
 
       setAdminInfo(adminRes.data);

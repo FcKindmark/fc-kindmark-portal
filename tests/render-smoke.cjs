@@ -59,3 +59,9 @@ console.log('PASS: payment actions, overdue labels and populated edit form.');
 const paidFormHTML=renderToStaticMarkup(React.createElement(PaymentForm,{payment:{...paymentFixture,status:'paid'},players:fixture.players,onSave:()=>{},onClose:()=>{},busy:false}));
 assert.ok(paidFormHTML.includes('transaktionsreferens'));assert.ok(paidFormHTML.includes('Jag har kontrollerat'));assert.ok(paymentHTML.includes('5246-1142'));
 console.log('PASS: club payment details and receipt verification form.');
+
+const shortCard=renderToStaticMarkup(React.createElement(MemberCard,{card:{name:'Example Member',membership_no:1001,member_number:'FCK-123456789ABC',status:'active'}}));
+assert.ok(shortCard.includes('1001'));assert.ok(shortCard.includes('FCK-123456789ABC'));
+const linkedPayment=renderToStaticMarkup(React.createElement(PaymentForm,{payment:{...paymentFixture,member_id:'c1',membership_no:1001,payment_kind:'membership',membership_year:2026},players:fixture.players,members:[{id:'c1',membership_no:1001,player_id:'p1',name:'Testspelare'}],onSave:()=>{},onClose:()=>{},busy:false}));
+assert.ok(linkedPayment.includes('1001-2026'));assert.ok(linkedPayment.includes('Ursprungligt bankmeddelande'));assert.ok(paymentHTML.includes('Exportera medlemsbetalningar'));
+console.log('PASS: short member numbers, annual report actions and payment/member linking form.');

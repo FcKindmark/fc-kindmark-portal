@@ -1,7 +1,7 @@
 import { csvText } from './attendance.js';
 import { stockholmToday } from './schedule.js';
 export function memberExportRows(cards, activeOnly = true) {
-  return [['Medlemsnummer / rabattkod','Namn','Medlemstyp','Status'], ...cards.filter(c=>!activeOnly || c.status==='active').map(c=>[c.member_number,c.name,c.membership_type==='supporter' ? 'Stödmedlem' : 'Medlem',c.status==='active' ? 'Aktiv' : 'Inaktiv'])];
+  return [['Rabattkod','Namn','Medlemstyp','Status','Medlemsnummer'], ...cards.filter(c=>!activeOnly || c.status==='active').map(c=>[c.member_number,c.name,c.membership_type==='supporter' ? 'Stödmedlem' : 'Medlem',c.status==='active' ? 'Aktiv' : 'Inaktiv',c.membership_no || ''])];
 }
 export function downloadMemberCodes(cards, activeOnly = true) {
   const url=URL.createObjectURL(new Blob([csvText(memberExportRows(cards,activeOnly))],{type:'text/csv;charset=utf-8'}));

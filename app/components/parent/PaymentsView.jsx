@@ -1,4 +1,5 @@
 "use client";
+import PaymentInstructions from "../PaymentInstructions";
 import { Card, Empty, Badge } from "../UI";
 import {overdue,sek,CLUB_SWISH,CLUB_BANKGIRO} from "../../lib/payments";
 
@@ -43,8 +44,9 @@ export default function PaymentsView({ data, userEmail, linkedPlayerIds = [] }) 
                 {sek(payment.amount)}
               </p>
 
+              <PaymentInstructions payment={payment}/>
               {payment.due_date && <p>Förfallodatum: {payment.due_date}</p>}
-              {payment.reference && <p>Referens / OCR: {payment.reference}</p>}
+              {payment.reference && <p>Betalningsreferens / meddelande: {payment.reference}</p>}
               {payment.status === "paid" && payment.paid_date && <p>Betald: {payment.paid_date}</p>}
               {payment.status !== "paid" && (payment.swish || payment.bankgiro) && (
                 <div style={{ background: "var(--beige-light)", padding: "16px", borderRadius: "8px", border: "2px solid var(--gold)" }}>
