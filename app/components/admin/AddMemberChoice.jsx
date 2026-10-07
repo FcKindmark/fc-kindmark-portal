@@ -3,9 +3,8 @@ import { useEffect, useRef } from "react";
 import { Button } from "../UI";
 
 const choices = [
-  ["player", "Spelare", "Lägg till spelare, välj lag och medlemskategori."],
-  ["new", "Ny medlem", "Medlemskort med avgiften för nya medlemmar."],
-  ["full", "Full medlem", "Medlemskort med ordinarie medlemsavgift."],
+  ["player", "Spelare", "Välj Ny medlem eller Medlem i spelarens formulär."],
+  ["new", "Medlem", "Lägg till medlem utan spelarprofil och välj medlemskategori."],
   ["supporter", "Stödmedlem", "Medlemskort och medlemsavgift på 150 SEK."],
   ["coach", "Tränare", "Koppla ett registrerat konto till lag. Stödmedlemskap ingår."],
 ];

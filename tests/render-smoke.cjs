@@ -68,7 +68,7 @@ console.log('PASS: short member numbers, annual report actions and payment/membe
 
 const Fees=load('app/components/admin/MembershipFees.jsx').default;
 const feesHTML=renderToStaticMarkup(React.createElement(Fees,{members:[{id:'c1',player_id:'p1',name:'Testspelare',membership_no:1001,fee_plan:'new',status:'active'}],payments:[],onUpdate:()=>{}}));
-for(const text of ['Ny medlem','Full medlem','Avgift saknas','1001','Spara priser'])assert.ok(feesHTML.includes(text));
+for(const text of ['Ny medlem','Medlem','Avgift saknas','1001','Spara priser'])assert.ok(feesHTML.includes(text));
 console.log('PASS: new/full pricing, unpriced membership and automatic fee controls.');
 
 const supportFees=renderToStaticMarkup(React.createElement(Fees,{members:[{id:'s1',name:'Supporter Example',membership_no:1031,membership_type:'supporter',status:'active'}],payments:[],onUpdate:()=>{}}));
@@ -82,7 +82,7 @@ const CardsAdmin=load('app/components/MemberCards.jsx').default;
 const adminMemberHTML=renderToStaticMarkup(React.createElement(CardsAdmin,{admin:true}));
 assert.ok(adminMemberHTML.includes('+ Lägg till medlem'));assert.ok(!adminMemberHTML.includes('id="new-member-name"'));
 const memberAddHTML=renderToStaticMarkup(React.createElement(CardsAdmin,{admin:true,initialShowAdd:true}));
-for(const text of ['Medlemmens namn','Ny medlem','Full medlem','Stödmedlem','Spara medlem'])assert.ok(memberAddHTML.includes(text));
+for(const text of ['Medlemmens namn','Ny medlem','Medlem','Stödmedlem','Spara medlem'])assert.ok(memberAddHTML.includes(text));
 const paymentsAdd=renderToStaticMarkup(React.createElement(Payments,{data:fixture,onUpdate:()=>{},onAddMember:()=>{}}));
 assert.ok(paymentsAdd.includes('+ Lägg till medlem'));
 console.log('PASS: visible member creation button, category form and payments shortcut.');
@@ -131,9 +131,11 @@ console.log('PASS: own-player account entry, protected coach accounts excluded, 
 
 const AddChoice=load('app/components/admin/AddMemberChoice.jsx').default;
 const addChoiceHTML=renderToStaticMarkup(React.createElement(AddChoice,{onChoose:()=>{},onClose:()=>{}}));
-for(const label of ['Spelare','Ny medlem','Full medlem','Stödmedlem','Tränare'])assert.ok(addChoiceHTML.includes(label));
+for(const label of ['Spelare','Medlem','Stödmedlem','Tränare'])assert.ok(addChoiceHTML.includes(label));
 const createPlayerHTML=renderToStaticMarkup(React.createElement(Players,{data:fixture,initialShowAdd:true,onUpdate:()=>{}}));
 assert.ok(createPlayerHTML.includes('Lägg till ny spelare'));
+assert.ok(createPlayerHTML.includes('<option value="full">Medlem</option>'));
+assert.ok(!createPlayerHTML.includes('Stödmedlem')); 
 for(const category of ['new','full','supporter']){
  const selectedMemberHTML=renderToStaticMarkup(React.createElement(CardsAdmin,{admin:true,initialShowAdd:true,initialMembershipType:category}));
  assert.ok(selectedMemberHTML.includes(`value="${category}" selected=""`));

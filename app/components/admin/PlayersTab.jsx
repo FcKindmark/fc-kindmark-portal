@@ -141,7 +141,7 @@ export default function PlayersTab({ data, onUpdate, readOnly = false, initialSh
           <Card style={{ maxWidth: "900px", width: "95%" }}>
             <h3 style={{ marginBottom: "20px", color: "var(--text-dark)" }}>{editingId ? "Redigera spelare" : "Lägg till ny spelare"}</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
-              {!editingId && <label className="field">Medlemskategori<select value={membershipCategory} onChange={e=>setMembershipCategory(e.target.value)}><option value="new">Ny medlem</option><option value="full">Full medlem</option><option value="supporter">Stödmedlem · 150 SEK</option></select></label>}
+              {!editingId && <label className="field">Medlemskategori<select value={membershipCategory} onChange={e=>setMembershipCategory(e.target.value)}><option value="new">Ny medlem</option><option value="full">Medlem</option></select></label>}
               <div>
                 <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "var(--text-dark)" }}>Namn</label>
                 <Input placeholder="Spelarens namn" value={name} onChange={(e) => setName(e.target.value)} />
