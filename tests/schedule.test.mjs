@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const source = fs.readFileSync(new URL('../app/lib/schedule.js', import.meta.url),'utf8');
+const {monthDays,shiftMonth,scheduleEvents} = await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+assert.equal(monthDays('2024-02').filter(Boolean).length,29);
+assert.equal(monthDays('2026-02').filter(Boolean).length,28);
+assert.equal(monthDays('2026-10').indexOf('2026-10-01'),3);
+assert.equal(shiftMonth('2026-12',1),'2027-01');
+assert.equal(shiftMonth('2026-01',-1),'2025-12');
+const events = scheduleEvents({trainings:[{id:'t1',date:'2026-10-07',time:'19:00'},{id:'t2',date:null}],matches:[{id:'m1',date:'2026-10-07',time:'18:00',opponent:'Test'}]});
+assert.deepEqual(events.map(e=>e.id),['m1','t1']);
+assert.equal(events[0].title,'Match mot Test');
+assert.equal(events[1].kind,'training');
+console.log('PASS: leap years, Monday calendar alignment, year boundaries, event order and invalid dates.');

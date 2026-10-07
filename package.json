@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "node tests/attendance.test.mjs"
+    "test": "node tests/attendance.test.mjs && node tests/schedule.test.mjs"
   },
   "dependencies": {
     "react": "^18.0.0",
