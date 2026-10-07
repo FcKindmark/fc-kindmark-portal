@@ -77,3 +77,12 @@ const ParentPayments=load('app/components/parent/PaymentsView.jsx').default;
 const supportPay=renderToStaticMarkup(React.createElement(ParentPayments,{data:{players:[],payments:[{...paymentFixture,player_id:null,player_name:'Supporter Example',reference:'1031-2026'}]},memberPayments:true}));
 assert.ok(supportPay.includes('Supporter Example'));assert.ok(supportPay.includes('1031-2026'));
 console.log('PASS: fixed supporter price and own supporter payment view.');
+
+const CardsAdmin=load('app/components/MemberCards.jsx').default;
+const adminMemberHTML=renderToStaticMarkup(React.createElement(CardsAdmin,{admin:true}));
+assert.ok(adminMemberHTML.includes('+ Lägg till medlem'));assert.ok(!adminMemberHTML.includes('id="new-member-name"'));
+const memberAddHTML=renderToStaticMarkup(React.createElement(CardsAdmin,{admin:true,initialShowAdd:true}));
+for(const text of ['Medlemmens namn','Ny medlem','Full medlem','Stödmedlem','Spara medlem'])assert.ok(memberAddHTML.includes(text));
+const paymentsAdd=renderToStaticMarkup(React.createElement(Payments,{data:fixture,onUpdate:()=>{},onAddMember:()=>{}}));
+assert.ok(paymentsAdd.includes('+ Lägg till medlem'));
+console.log('PASS: visible member creation button, category form and payments shortcut.');

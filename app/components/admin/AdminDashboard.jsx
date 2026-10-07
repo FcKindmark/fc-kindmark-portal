@@ -19,6 +19,7 @@ import AttendanceTab from "./AttendanceTab";
 import PlayerRecords from "../PlayerRecords";
 
 export default function AdminDashboard({ user, profile, onLogout }) {
+  const [memberAdd,setMemberAdd]=useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const [data, setData] = useState({
     players: [],
@@ -76,7 +77,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
   const tabs = [
     { id: "overview", label: "Översikt" },
     { id: "calendar", label: "Kalender" },
-    { id: "membership", label: "Medlemskort" },
+    { id: "membership", label: "Medlemmar" },
     { id: "news", label: "Klubbinformation" },
     { id: "attendance", label: "Närvaro" },
     { id: "equipment", label: "Utrustning" },
@@ -96,7 +97,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
     {loading ? <p role="status">Läser in…</p> : <>
     {activeTab === "overview" && <OverviewTab data={data} onNavigate={setActiveTab} coach={profile?.role === "coach"}/>}
     {activeTab === "news" && <ClubNews admin/>}
-    {activeTab === "membership" && <MemberCards admin/>}
+    {activeTab === "membership" && <MemberCards admin initialShowAdd={memberAdd} onCloseAdd={()=>setMemberAdd(false)} onUpdate={loadData}/>}
     {activeTab === "calendar" && <EventSchedule data={data} onNavigate={setActiveTab}/>}
     {activeTab === "attendance" && <AttendanceTab data={data} canDelete={profile?.role !== "coach"}/>}
     {activeTab === "equipment" && <PlayerRecords players={data.players} kind="equipment" canDelete={profile?.role !== "coach"}/>}
@@ -105,7 +106,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
     {activeTab === "teams" && <TeamsTab data={data} onUpdate={loadData}/>}
     {activeTab === "trainings" && <TrainingsTab data={data} onUpdate={loadData} canDelete={profile?.role !== "coach"}/>}
     {activeTab === "matches" && <MatchesTab data={data} onUpdate={loadData} canDelete={profile?.role !== "coach"}/>}
-    {activeTab === "payments" && <PaymentsTab data={data} onUpdate={loadData}/>}
+    {activeTab === "payments" && <PaymentsTab data={data} onUpdate={loadData} onAddMember={()=>{setMemberAdd(true);setActiveTab("membership");}}/>}
     {activeTab === "messages" && <MessagesTab data={data} onUpdate={loadData}/>}
     {activeTab === "users" && <UsersTab data={data} onUpdate={loadData}/>}
     </>}

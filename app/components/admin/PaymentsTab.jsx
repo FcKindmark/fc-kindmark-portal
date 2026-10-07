@@ -8,7 +8,7 @@ import {downloadMembershipReport,confirmedMemberCount,membershipPayments} from "
 import PaymentInstructions from "../PaymentInstructions";
 import MembershipFees from "./MembershipFees";
 import PaymentForm from "./PaymentForm";
-export default function PaymentsTab({data,onUpdate}) {
+export default function PaymentsTab({data,onUpdate,onAddMember}) {
   const payments=data?.payments || [],players=data?.players || [],members=data?.memberCards || [];
   const [editor,setEditor]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[query,setQuery]=useState(''),[filter,setFilter]=useState('all');
   const today=stockholmToday();
@@ -24,7 +24,7 @@ export default function PaymentsTab({data,onUpdate}) {
   async function status(payment){if(payment.status!=='paid'){setError('');setEditor({payment:{...payment,status:'paid',paid_date:today}});return;}if(!confirm('Markera betalningen som väntande igen?'))return;try{await write(()=>supabase.from('payments').update({status:'pending',paid_date:null,paid_reference:null}).eq('id',payment.id).select('id'),'Betalningsstatus har uppdaterats.');}catch{}}
   async function remove(payment){if(!confirm(`Ta bort betalningsposten för ${payment.player_name}, ${sek(payment.amount)}? En genomförd bankbetalning återbetalas inte.`))return;try{await write(()=>supabase.from('payments').delete().eq('id',payment.id).select('id'),'Betalningsposten har tagits bort.');}catch{}}
   return <>
-    <div className="page-heading"><h2>Betalningar</h2><Button disabled={busy} onClick={()=>{setError('');setEditor({payment:null});}}>+ Lägg till betalning</Button></div>
+    <div className="page-heading"><h2>Betalningar</h2><div className="button-group">{onAddMember && <Button onClick={onAddMember}>+ Lägg till medlem</Button>}<Button disabled={busy} onClick={()=>{setError('');setEditor({payment:null});}}>+ Lägg till betalning</Button></div></div>
     {error && !editor && <p role="alert" className="error-banner">{error}</p>}{notice && <p role="status">{notice}</p>}
     <Card className="payment-bank-details"><strong>FC Kindmark Idrottsförening</strong><p>Swish: {CLUB_SWISH} · Bankgiro: {CLUB_BANKGIRO}</p><p className="muted">Matcha namn, belopp och referens med den mottagna betalningen innan du markerar den som betald.</p></Card>
     <MembershipFees members={members} payments={payments} onUpdate={onUpdate}/>
