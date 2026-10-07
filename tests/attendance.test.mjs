@@ -1,0 +1,14 @@
+import { readFileSync } from 'node:fs';
+import assert from 'node:assert/strict';
+const source = readFileSync(new URL('../app/lib/attendance.js', import.meta.url),'utf8');
+const {attendanceRows,csvText} = await import('data:text/javascript;base64,' + Buffer.from(source).toString('base64'));
+const trainings=[{id:'1',date:'2026-09-30',time:'18:30'},{id:'2',date:'2026-10-01',time:'19:00'}];
+const records=[{training_id:'1',player_id:'p',present:true},{training_id:'2',player_id:'p',present:false}];
+const players=[{id:'p',name:'Åsa; "A"'}];
+assert.equal(attendanceRows(trainings,records,players,'2026-10-01','2026-10-31').length,1);
+assert.equal(attendanceRows(trainings,records,players,'2026-10-01','2026-10-31')[0][4],'Frånvarande');
+assert.equal(attendanceRows(trainings,[],players).length,0);
+assert.match(csvText([['=SUM(A1)', 'Åsa; "A"']]), /'\=SUM/);
+assert.match(csvText([['Åsa; "A"']]), /"Åsa; ""A"""/);
+assert.ok(csvText([]).startsWith('\uFEFF'));
+console.log('PASS: date boundaries, actual attendance, unanswered records, Swedish CSV, formula escaping.');
