@@ -162,3 +162,29 @@ body{background:var(--beige)}h1,h2,h3{font-weight:700}.club-sidebar{width:248px;
 @media(max-width:380px){.club-brand strong{font-size:15px}.club-brand span{font-size:12px}.club-brand>div{gap:6px}.club-brand img{width:36px;height:43px}.mobile-nav>button{font-size:11px}.mobile-nav>button>span:first-child{font-size:25px}}
 
 @media(min-width:761px){.club-brand strong{font-size:17px}.club-brand span{font-size:14px}}
+
+/* Larger controls throughout the administrator workspace. */
+.admin-portal .club-sidebar nav button{font-size:18px;min-height:48px}
+.admin-portal .nav-symbol{font-size:28px;width:30px}
+.admin-portal .workspace-header{font-size:18px}
+.admin-portal .profile-link,.admin-portal .club-sidebar footer button{font-size:17px}
+.admin-portal .account-block strong{font-size:17px}
+.admin-portal .account-block div span{font-size:14px}
+.admin-portal .club-button{font-size:16px;min-height:46px}
+.admin-portal .field{font-size:16px}
+.admin-portal .section-heading h2{font-size:20px}
+.admin-portal .welcome-panel p,.admin-portal .stat-card p,.admin-portal .event-list-row p{font-size:15px}
+.admin-portal .event-list-row h3,.admin-portal .team-row strong{font-size:17px}
+.admin-portal .text-link,.admin-portal .team-row .muted{font-size:14px}
+@media(max-width:760px){
+ .admin-portal .mobile-nav>button{font-size:13px;min-height:60px;gap:8px}
+ .admin-portal .mobile-nav>button>span:first-child{font-size:30px}
+ .admin-portal .mobile-more>button{font-size:18px;min-height:48px}
+ .admin-portal .workspace-header{font-size:17px}
+ .admin-portal .profile-link{font-size:16px}
+ .admin-portal .club-content{padding-bottom:135px}
+}
+@media(max-width:380px){
+ .admin-portal .mobile-nav>button{font-size:12px}
+ .admin-portal .mobile-nav>button>span:first-child{font-size:28px}
+}

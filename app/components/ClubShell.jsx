@@ -18,7 +18,7 @@ export default function ClubShell({ tabs, active, onChange, user, role, onLogout
   async function openProfile(){setExpanded(false);if(!account)await loadProfile();setShowProfile(true);}
   const primary = (role === "Stödmedlem" ? ["overview","matches","news","membership"] : (tabs.some(t=>t.id==="calls")?["overview","calendar","calls","matches","children","messages"]:["overview", "calendar", "matches", "children", "players", "messages"])).map(id => tabs.find(t => t.id === id)).filter(Boolean);
   function navigate(id) { onChange(id); setExpanded(false); }
-  return <PortraitProvider key={user.id} userId={user.id}><div className="club-shell"><aside className="club-sidebar">
+  return <PortraitProvider key={user.id} userId={user.id}><div className={`club-shell${role === "Admin" ? " admin-portal" : ""}`}><aside className="club-sidebar">
     <div className="club-brand"><img src="/logo.png" alt="FC Kindmark"/><div><strong>FC KINDMARK</strong><span>Medlemsportal</span></div></div>
     <div className="sidebar-caption">DIN KLUBB</div>
     <nav aria-label="Klubbportal">{tabs.map(tab => <button key={tab.id} aria-current={active === tab.id ? "page" : undefined} className={active === tab.id ? "active" : ""} onClick={() => navigate(tab.id)}><span className="nav-symbol" aria-hidden="true">{symbols[tab.id] || "•"}</span>{tab.label}{tab.count>0&&<span className="nav-count">{tab.count}</span>}</button>)}</nav>
