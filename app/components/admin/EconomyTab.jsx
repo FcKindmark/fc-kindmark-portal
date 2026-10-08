@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
-import { Card, Button, Input, Select } from '../UI';
+import { Card, Button, Input, Select, Modal } from '../UI';
+import SettlementPanel from './SettlementPanel';
+import { invoiceSettlement, incomingInvoice } from '../../lib/economy-settlements';
 import { money, cents, parseCSV, decodeBankCSV, guessBankColumns, documentCandidates, documentBankProposal, bankRows, fingerprints, suggestAccount, entryForBank, report, matchedBank, journalRows, downloadCSV, downloadArchive } from '../../lib/economy';
 import usePortalView from "../../lib/usePortalView";
 import { readInvoice, invoicePartner } from '../../lib/economy-documents';
@@ -63,6 +65,7 @@ export default function EconomyTab({
     [error, setError] = useState(''),
     [notice, setNotice] = useState(''),
     [entry, setEntry] = useState(null),
+    [settlement, setSettlement] = useState(null),
     [document, setDocument] = useState(null),
     [file, setFile] = useState(null),
     [partner, setPartner] = useState(null),
@@ -207,6 +210,7 @@ export default function EconomyTab({
       }
       setDocument(null);
       setFile(null);
+      if (['sales','sponsor','grant','purchase','receipt'].includes(payload.kind) && !payload.is_proforma) setSettlement({invoiceId:result.data.id});
       setNotice('Underlaget är sparat. Bokför med en verifikation när uppgifterna är kontrollerade.');
     });
   }
@@ -327,7 +331,8 @@ export default function EconomyTab({
       id: j.status === 'posted' ? undefined : j.id,
       correction_of: j.status === 'posted' ? j.id : undefined,
       reason: '',
-      payment_ids: data.payment_links.filter(l=>l.journal_id===j.id).map(l=>l.payment_id),
+      payment_ids: data.settlement_selections?.find(s=>s.journal_id===j.id)?.payment_ids || data.payment_links.filter(l=>l.journal_id===j.id).map(l=>l.payment_id),
+      document_allocations: (data.document_links || []).filter(a=>a.journal_id===j.id).map(a=>({document_id:a.document_id,amount:a.amount,account:a.account})),
       lines: data.lines.filter(l => l.journal_id === j.id).map(l => ({
         account: l.account,
         debit: l.debit,
@@ -408,13 +413,26 @@ export default function EconomyTab({
   const balance = entry ? entry.lines.reduce((s, l) => s + cents(l.debit) - cents(l.credit), 0) : 0;
   const partnerReceived = p => {
     const ids = new Set(data.journal.filter(j => j.partner_id === p.id && j.status === 'posted' && j.year === year).map(j => j.id));
-    return data.lines.filter(l => ids.has(l.journal_id) && l.account === '1930').reduce((s, l) => s + cents(l.debit) - cents(l.credit), 0) / 100;
+    const legacy=data.lines.filter(l => ids.has(l.journal_id) && l.account === '1930').reduce((s,l)=>s+cents(l.debit)-cents(l.credit),0);
+    const allocated=(data.document_links || []).filter(a=>data.documents.some(d=>d.id===a.document_id && d.partner_id===p.id) && data.journal.some(j=>j.id===a.journal_id && j.status==='posted' && j.bank_id && j.year===year && !ids.has(j.id))).reduce((n,a)=>n+cents(a.amount),0);
+    return (legacy+allocated)/100;
   };
-  return <section className="economy"><div className="page-heading"><div><h1>Ekonomi</h1><p>FC Kindmark · underlag, bank och bokföring</p></div><label>Kalenderår<Select value={year} onChange={e => {
+  return <section className="economy">{settlement && <Modal isOpen onClose={()=>!busy && setSettlement(null)} title={settlement.invoiceId ? (incomingInvoice(data.documents.find(d=>d.id===settlement.invoiceId) || {}) ? 'Inbetalningar' : 'Utbetalningar') : 'Stäm av konto'}>
+  <SettlementPanel key={settlement.invoiceId || settlement.bankId} data={data} payments={payments} invoice={data.documents.find(d=>d.id===settlement.invoiceId)} initialBank={data.bank.find(b=>b.id===settlement.bankId)} busy={busy} error={error} onManual={b=>{const draft=data.journal.find(j=>j.bank_id===b.id && j.status==='draft');if(draft)edit(draft);else startBank(b);setSettlement(null);}} onSave={(proposal,action)=>{
+    if(action==='post' && !confirm('Bekräfta fördelningen och bokför banktransaktionen?'))return;
+    run(async()=>{
+      const draft=data.journal.find(j=>j.bank_id===proposal.bank_id && j.status==='draft');
+      const {remaining,...payload}=proposal;
+      const result=await supabase.rpc('club_econ_entry',{action,payload:{...payload,...(draft?{id:draft.id}:{})}});
+      if(result.error)throw result.error;
+      await onPaymentsChanged?.();setSettlement(null);setNotice(action==='post'?'Avstämningen är bokförd. Fakturor och medlemsbetalningar är uppdaterade.':'Fördelningen är sparad som utkast.');
+    });
+  }} />
+</Modal>}<div className="page-heading"><div><h1>Ekonomi</h1><p>FC Kindmark · underlag, bank och bokföring</p></div><label>Kalenderår<Select value={year} onChange={e => {
           setYear(Number(e.target.value));
           setReviewed(false);
         }}>{Array.from(new Set([year, ...data.years.map(y => y.year), ...data.bank.map(b => Number(b.date.slice(0, 4))), 2026, 2027, 2028])).sort().map(y => <option key={y}>{y}</option>)}</Select></label></div>
- <div className="economy-tabs" role="group" aria-label="Ekonomisidor">{[['overview', 'Översikt'], ['documents', 'Fakturor & kvitton'], ['bank', 'Bank & avstämning'], ['partners', 'Sponsorer & stöd'], ['journal', 'Bokföring'], ['reports', 'Rapporter & bokslut']].map(([id, label]) => <Button key={id} variant={view === id ? 'primary' : 'secondary'} aria-pressed={view === id} onClick={() => {
+ <div className="economy-tabs" role="group" aria-label="Ekonomisidor">{[['overview', 'Översikt'], ['documents', 'Fakturor & kvitton'], ['bank', 'Stäm av konto'], ['partners', 'Sponsorer & stöd'], ['journal', 'Bokföring'], ['reports', 'Rapporter & bokslut']].map(([id, label]) => <Button key={id} variant={view === id ? 'primary' : 'secondary'} aria-pressed={view === id} onClick={() => {
         setView(id);
         setEntry(null);
       }}>{label}</Button>)}</div>
@@ -455,12 +473,12 @@ export default function EconomyTab({
                 ...document,
                 partner_id: e.target.value
               })}><option value="">Ingen koppling</option>{data.partners.map(p => <option key={p.id} value={p.id}>{p.name} · {p.year}</option>)}</Select></label><div className="economy-actions"><Button type="submit" disabled={busy || reading}>Spara underlag</Button><Button variant="secondary" disabled={reading} onClick={() => setDocument(null)}>Avbryt</Button></div></fieldset></form></Card>}{yearDocuments.map(d => {
-          const booked = data.journal.some(j => j.document_id === d.id && j.status === 'posted');
-          return <Card key={d.id}><div className="page-heading"><div><h3>{d.party || d.name}</h3><p>{kinds[d.kind]} · {d.document_date} · {d.reference}</p></div><div><strong>{money(d.amount)}</strong>{d.source_currency !== 'SEK' && d.source_amount != null && <p>Original: {d.source_amount} {d.source_currency}</p>}{d.is_proforma && <p>Proformafaktura</p>}</div></div>{d.partner_id && <p>Kopplat till {data.partners.find(p=>p.id===d.partner_id)?.name || 'sponsor / bidragsgivare'}</p>}{d.conversion_note && <p>{d.conversion_note}</p>}<p>{booked ? 'Kopplat till bokföring' : 'Ej bokfört'}{d.due_date ? ` · Förfallodatum ${d.due_date}` : ''}</p><div className="economy-actions"><Button variant="secondary" disabled={busy} onClick={() => openDocument(d)}>Hämta fil</Button>{!locked && !booked && <><Button variant="secondary" onClick={() => {
+          const booked = data.journal.some(j => j.document_id === d.id && j.status === 'posted') || (data.document_links || []).some(a=>a.document_id===d.id && data.journal.some(j=>j.id===a.journal_id && j.status==='posted'));
+          return <Card key={d.id}><div className="page-heading"><div><h3>{d.party || d.name}</h3><p>{kinds[d.kind]} · {d.document_date} · {d.reference}</p></div><div><strong>{money(d.amount)}</strong>{d.source_currency !== 'SEK' && d.source_amount != null && <p>Original: {d.source_amount} {d.source_currency}</p>}{d.is_proforma && <p>Proformafaktura</p>}</div></div>{d.partner_id && <p>Kopplat till {data.partners.find(p=>p.id===d.partner_id)?.name || 'sponsor / bidragsgivare'}</p>}{d.conversion_note && <p>{d.conversion_note}</p>}{d.kind!=='statement' && !d.is_proforma && <p>{incomingInvoice(d)?'Inbetalt':'Utbetalt'}: {money(invoiceSettlement(d,data).paid)} · Kvar: <strong>{money(invoiceSettlement(d,data).remaining)}</strong></p>}<p>{booked ? 'Kopplat till bokföring' : 'Ej bokfört'}{d.due_date ? ` · Förfallodatum ${d.due_date}` : ''}</p><div className="economy-actions">{!d.is_proforma && d.kind!=='statement' && Number(d.amount)>0 && <Button onClick={()=>{setError('');setSettlement({invoiceId:d.id});}}>{incomingInvoice(d)?'Inbetalningar':'Utbetalningar'}</Button>}<details><summary>Hantera faktura</summary><Button variant="secondary" disabled={busy} onClick={() => openDocument(d)}>Hämta fil</Button>{!locked && !booked && <><Button variant="secondary" onClick={() => {
                   setDocument(d);
                   setReadText('');
                   setFile(null);
-                }}>Ändra</Button>{d.kind !== 'statement' && !d.is_proforma && Number(d.amount)>0 && <Button onClick={() => fromDocument(d)}>Konteringsförslag</Button>}<Button variant="danger" onClick={() => {
+                }}>Ändra</Button>{d.kind !== 'statement' && !d.is_proforma && Number(d.amount)>0 && <Button onClick={() => fromDocument(d)}>Bokför fakturan först / moms</Button>}<Button variant="danger" onClick={() => {
                   if (confirm('Ta bort underlaget?')) run(async () => {
                     const {
                       error: e
@@ -471,7 +489,7 @@ export default function EconomyTab({
                     } = await supabase.storage.from('club-economy').remove([d.path]);
                     if (se) throw se;
                   });
-                }}>Ta bort</Button></>}</div></Card>;
+                }}>Ta bort</Button></>}</details></div></Card>;
         })}</>}
  {view === 'bank' && <><h2>Bankutdrag · konto 1930</h2><Card><label>Importera bankens CSV<Input type="file" accept=".csv" disabled={busy || locked} onChange={async e => {
               setError('');
@@ -500,8 +518,7 @@ export default function EconomyTab({
                   setPreview(null);
                 }}><option value="">Välj kolumn</option>{csv.headers.map((h, i) => <option key={i} value={i}>{h}</option>)}</Select></label>)}</div><Button disabled={busy} onClick={prepareImport}>Förhandsgranska</Button></details></>}{preview && <><p>{preview.length} rader · {preview.filter(r => data.bank.some(b => b.fingerprint === r.fingerprint)).length} redan importerade. Överlappande utdrag matchas på datum, belopp, text och referens; kontrollera identiska transaktioner.</p><div className="economy-table"><table><thead><tr><th>Datum</th><th>Text</th><th>Belopp</th></tr></thead><tbody>{preview.slice(0, 20).map((r, i) => <tr key={i}><td>{r.date}</td><td>{r.description}</td><td>{money(r.amount)}</td></tr>)}</tbody></table></div><Button disabled={busy || locked} onClick={importBank}>Bekräfta import</Button></>}</Card><h3>{unmatched.length} transaktioner att bokföra</h3><Button disabled={busy || locked || !unmatched.length} onClick={autoDrafts}>Skapa alla konteringsförslag</Button><p>Förslagen sparas som ändringsbara utkast. Bekräfta varje verifikation efter kontroll.</p>{yearBank.map(b => {
           const done = matchedBank(b, data.journal, data.lines);
-          const draft = data.journal.find(j => j.bank_id === b.id && j.status === 'draft');
-          return <Card key={b.id}><div className="page-heading"><div><strong>{b.description || b.reference || 'Banktransaktion'}</strong><p>{b.date} · {b.reference} · {done ? 'Avstämd' : 'Ej avstämd'}</p></div><strong>{money(b.amount)}</strong></div>{!done && !locked && <Button disabled={busy} onClick={() => draft ? edit(draft) : startBank(b)}>{draft ? 'Öppna utkast' : 'Öppna konteringsförslag'}</Button>}{!done && !locked && documentCandidates(b,data.documents,data.journal,data.lines).length>0 && <details><summary>Möjliga fakturor att koppla</summary>{documentCandidates(b,data.documents,data.journal,data.lines).map(({document:d,reason})=><div key={d.id}><p>{d.party} · {d.reference} · {reason}</p><Button variant="secondary" disabled={busy} onClick={()=>{if(draft)edit(draft);applyDocumentForBank(b,d);}}>Använd fakturaförslag</Button></div>)}</details>}</Card>;
+          return <Card key={b.id}><div className="page-heading"><div><strong>{b.description || b.reference || 'Banktransaktion'}</strong><p>{b.date} · {b.reference} · {done ? 'Avstämd' : 'Ej avstämd'}</p></div><strong>{money(b.amount)}</strong></div>{!done && !locked && <Button disabled={busy} onClick={()=>{setError('');setSettlement({bankId:b.id});}}>Stäm av</Button>}</Card>;
         })}</>}
  {view === 'partners' && <><div className="page-heading"><h2>Sponsorer och bidrag</h2><Button onClick={() => setPartner({
             name: '',

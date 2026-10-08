@@ -13,5 +13,8 @@ const currencyHTML=renderToStaticMarkup(React.createElement(Economy,{initialData
 assert.ok(currencyHTML.includes('1175.82 EUR'));assert.ok(currencyHTML.includes('Proformafaktura'));assert.ok(currencyHTML.includes('Documented bank payment'));assert.ok(!currencyHTML.includes('>Konteringsförslag</button>'));
 const candidateData={...data,journal:[],lines:[],documents:[{id:'invoice',kind:'sponsor',party:'Example Sponsor',document_date:'2026-06-30',reference:'0001',amount:1000,source_currency:'SEK'}],bank:[{id:'payment',date:'2026-07-30',amount:1000,description:'Bankgiro inbetalning',reference:'1234567'}]};
 const candidateHTML=renderToStaticMarkup(React.createElement(Economy,{initialData:candidateData,initialView:'bank'}));
-assert.ok(candidateHTML.includes('Möjliga fakturor att koppla'));assert.ok(candidateHTML.includes('bekräfta betalaren'));assert.ok(candidateHTML.includes('Använd fakturaförslag'));
+assert.ok(candidateHTML.includes('Stäm av'));assert.ok(!candidateHTML.includes('Använd fakturaförslag'));
+const Panel=load('app/components/admin/SettlementPanel.jsx').default;
+const panelHTML=renderToStaticMarkup(React.createElement(Panel,{data:candidateData,payments:[],initialBank:candidateData.bank[0],invoice:candidateData.documents[0]}));
+assert.ok(panelHTML.includes('Kvar att fördela'));assert.ok(panelHTML.includes('Medlemsbetalningar'));assert.ok(panelHTML.includes('Belopp SEK')===false);assert.ok(panelHTML.includes('Bekräfta avstämning')); 
 console.log('PASS: persisted foreign-currency evidence, proforma actions and explicit invoice candidates in rendered screens.');
