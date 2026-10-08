@@ -1,10 +1,13 @@
 // Labelled values are editable suggestions; foreign amounts never become SEK.
 export function invoiceFields(text) {
+  text = String(text).normalize('NFKC').replace(/[\u200B-\u200D\uFEFF]/g, '').replace(/[–—−]/g, '-');
   const fields = {};
   const date = label => {
-    const m = text.match(new RegExp(`(?:^|\\n)\\s*(?:${label})\\b[^\\n\\d]{0,30}(\\d{4}-\\d{2}-\\d{2}|\\d{2}/\\d{2}/\\d{4})`, 'i'));
+    const m = text.match(new RegExp(`(?:^|[^\\p{L}])(?:${label})\\b[\\s:]{0,40}(\\d{4}\\s*[-/.]\\s*\\d{1,2}\\s*[-/.]\\s*\\d{1,2}|\\d{1,2}\\s*[-/.]\\s*\\d{1,2}\\s*[-/.]\\s*\\d{4})`, 'iu'));
     if (!m) return;
-    const value = m[1].includes('/') ? m[1].split('/').reverse().join('-') : m[1];
+    const parts = m[1].replace(/\s/g, '').split(/[-/.]/);
+    if (parts[0].length !== 4) parts.reverse();
+    const value = parts.map((v,i)=>i ? v.padStart(2,'0') : v).join('-');
     if (!Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0,10) === value) return value;
   };
   fields.document_date = date('fakturadatum|invoice date|datum|data documento');
@@ -49,7 +52,12 @@ export function pdfTextRows(items) {
     if (!row) { row = {y:item.transform[5],items:[]}; rows.push(row); }
     row.items.push(item);
   }
-  return rows.sort((a,b)=>b.y-a.y).map(row=>row.items.sort((a,b)=>a.transform[4]-b.transform[4]).map(i=>i.str).join(' ')).join('\n');
+  return rows.sort((a,b)=>b.y-a.y).map(row=>row.items.sort((a,b)=>a.transform[4]-b.transform[4]).reduce((text,item,index,items)=>{
+    const previous=items[index-1];
+    const gap=previous ? item.transform[4]-previous.transform[4]-previous.width : 0;
+    const space=previous && (previous.width == null || gap > Math.max(0.5, (item.height || previous.height || 10)*0.12));
+    return text+(space ? ' ' : '')+item.str;
+  },'')).join('\n');
 }
 let enginePromise;
 function engine() {
@@ -106,4 +114,12 @@ export async function readInvoice(file, progress = () => {}) {
     if (worker) await worker.terminate();
     if (pdf) await pdf.destroy();
   }
+}
+
+// Only a single exact name/year/type match may be linked automatically.
+export function invoicePartner(fields, partners) {
+  if (!['sponsor','grant'].includes(fields.kind) || !fields.party || !fields.document_date) return '';
+  const normalize=value=>String(value).normalize('NFKC').trim().replace(/\s+/g,' ').toLocaleLowerCase('sv');
+  const matches=partners.filter(p=>p.kind===fields.kind && Number(p.year)===Number(fields.document_date.slice(0,4)) && normalize(p.name)===normalize(fields.party));
+  return matches.length===1 ? matches[0].id : '';
 }

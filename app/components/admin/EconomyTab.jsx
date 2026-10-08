@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabaseClient';
 import { Card, Button, Input, Select } from '../UI';
 import { money, cents, parseCSV, decodeBankCSV, guessBankColumns, documentCandidates, documentBankProposal, bankRows, fingerprints, suggestAccount, entryForBank, report, matchedBank, journalRows, downloadCSV, downloadArchive } from '../../lib/economy';
 import usePortalView from "../../lib/usePortalView";
-import { readInvoice } from '../../lib/economy-documents';
+import { readInvoice, invoicePartner } from '../../lib/economy-documents';
 import { makeBackup, verifyBackup, downloadBackup } from '../../lib/economy-backup';
 const today = () => new Intl.DateTimeFormat('sv-SE', {
   timeZone: 'Europe/Stockholm'
@@ -132,12 +132,12 @@ export default function EconomyTab({
   async function selectInvoice(f) {
     setFile(f); setReadText(''); setError('');
     if (!f || !/\.(pdf|png|jpe?g)$/i.test(f.name)) return;
-    setDocument(previous => previous ? {...previous, party:'', document_date:'', due_date:'', amount:'', reference:'', source_currency:'SEK', source_amount:'', is_proforma:false, conversion_note:''} : previous);
+    setDocument(previous => previous ? {...previous, partner_id:'', party:'', document_date:'', due_date:'', amount:'', reference:'', source_currency:'SEK', source_amount:'', is_proforma:false, conversion_note:''} : previous);
     setReading(true); setReadProgress('Förbereder läsning…');
     try {
       const result = await readInvoice(f, setReadProgress);
       const {original_amount, currency, proforma, ...fields} = result.fields;
-      setDocument(previous => previous ? {...previous, ...fields, source_currency:currency || 'SEK', source_amount:original_amount ?? fields.amount ?? '', is_proforma:Boolean(proforma), ...(currency ? {amount:''} : {})} : previous);
+      setDocument(previous => previous ? {...previous, ...fields, partner_id:invoicePartner({...previous,...fields},data.partners), source_currency:currency || 'SEK', source_amount:original_amount ?? fields.amount ?? '', is_proforma:Boolean(proforma), ...(currency ? {amount:''} : {})} : previous);
       setReadText(result.text);
       setNotice(`${Object.keys(result.fields).length} fält föreslagna. Kontrollera uppgifterna mot originalet och ändra vid behov.`);
     } catch (e) { setError(e.message); }
@@ -456,7 +456,7 @@ export default function EconomyTab({
                 partner_id: e.target.value
               })}><option value="">Ingen koppling</option>{data.partners.map(p => <option key={p.id} value={p.id}>{p.name} · {p.year}</option>)}</Select></label><div className="economy-actions"><Button type="submit" disabled={busy || reading}>Spara underlag</Button><Button variant="secondary" disabled={reading} onClick={() => setDocument(null)}>Avbryt</Button></div></fieldset></form></Card>}{yearDocuments.map(d => {
           const booked = data.journal.some(j => j.document_id === d.id && j.status === 'posted');
-          return <Card key={d.id}><div className="page-heading"><div><h3>{d.party || d.name}</h3><p>{kinds[d.kind]} · {d.document_date} · {d.reference}</p></div><div><strong>{money(d.amount)}</strong>{d.source_currency !== 'SEK' && d.source_amount != null && <p>Original: {d.source_amount} {d.source_currency}</p>}{d.is_proforma && <p>Proformafaktura</p>}</div></div>{d.conversion_note && <p>{d.conversion_note}</p>}<p>{booked ? 'Kopplat till bokföring' : 'Ej bokfört'}{d.due_date ? ` · Förfallodatum ${d.due_date}` : ''}</p><div className="economy-actions"><Button variant="secondary" disabled={busy} onClick={() => openDocument(d)}>Hämta fil</Button>{!locked && !booked && <><Button variant="secondary" onClick={() => {
+          return <Card key={d.id}><div className="page-heading"><div><h3>{d.party || d.name}</h3><p>{kinds[d.kind]} · {d.document_date} · {d.reference}</p></div><div><strong>{money(d.amount)}</strong>{d.source_currency !== 'SEK' && d.source_amount != null && <p>Original: {d.source_amount} {d.source_currency}</p>}{d.is_proforma && <p>Proformafaktura</p>}</div></div>{d.partner_id && <p>Kopplat till {data.partners.find(p=>p.id===d.partner_id)?.name || 'sponsor / bidragsgivare'}</p>}{d.conversion_note && <p>{d.conversion_note}</p>}<p>{booked ? 'Kopplat till bokföring' : 'Ej bokfört'}{d.due_date ? ` · Förfallodatum ${d.due_date}` : ''}</p><div className="economy-actions"><Button variant="secondary" disabled={busy} onClick={() => openDocument(d)}>Hämta fil</Button>{!locked && !booked && <><Button variant="secondary" onClick={() => {
                   setDocument(d);
                   setReadText('');
                   setFile(null);
@@ -532,7 +532,7 @@ export default function EconomyTab({
               })} /></label><label>Anteckning<Input value={partner.note} onChange={e => setPartner({
                 ...partner,
                 note: e.target.value
-              })} /></label><div className="economy-actions"><Button type="submit" disabled={busy}>Spara</Button><Button variant="secondary" onClick={() => setPartner(null)}>Avbryt</Button></div></form></Card>}<p>{yearPartners.filter(p => p.kind === 'sponsor').length} sponsorer · {yearPartners.filter(p => p.kind === 'grant').length} bidragsgivare. Mottaget räknas från bokförda bankrader som kopplats till parten.</p>{yearPartners.map(p => <Card key={p.id}><h3>{p.name}</h3><p>{p.kind === 'sponsor' ? 'Sponsor' : 'Bidrag / stöd'} · Avtalat {money(p.agreed_amount)} · Mottaget {money(partnerReceived(p))}</p><p>{p.note}</p><div className="economy-actions"><Button variant="secondary" onClick={() => setPartner(p)}>Ändra</Button><Button variant="danger" disabled={busy} onClick={() => {
+              })} /></label><div className="economy-actions"><Button type="submit" disabled={busy}>Spara</Button><Button variant="secondary" onClick={() => setPartner(null)}>Avbryt</Button></div></form></Card>}<p>{yearPartners.filter(p => p.kind === 'sponsor').length} sponsorer · {yearPartners.filter(p => p.kind === 'grant').length} bidragsgivare. Mottaget räknas från bokförda bankrader som kopplats till parten.</p>{yearPartners.map(p => <Card key={p.id}><h3>{p.name}</h3><p>{p.kind === 'sponsor' ? 'Sponsor' : 'Bidrag / stöd'} · Avtalat {money(p.agreed_amount)} · Mottaget {money(partnerReceived(p))}</p><p>Fakturerat: {money(yearDocuments.filter(d=>d.partner_id===p.id && d.kind==='sponsor' && !d.is_proforma).reduce((total,d)=>total+Number(d.amount),0))} · {yearDocuments.filter(d=>d.partner_id===p.id).length} underlag</p><p>{p.note}</p><div className="economy-actions"><Button variant="secondary" onClick={() => setPartner(p)}>Ändra</Button><Button variant="danger" disabled={busy} onClick={() => {
               if (confirm('Ta bort? Kopplade underlag och verifikationer måste bevaras.')) run(async () => {
                 const {
                   error: e
