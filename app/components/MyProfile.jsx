@@ -3,6 +3,8 @@ import {useEffect,useRef,useState} from "react";
 import {supabase} from "../lib/supabaseClient";
 import {Button} from "./UI";
 const bucket="club-profile-photos";
+import MyPlayerProfiles from "./MyPlayerProfiles";
+import PushSettings from "./PushSettings";
 import {preparePhoto} from "../lib/photos";
 export default function MyProfile({user,profile,photo,onClose,onSaved}){
   const dialog=useRef(null),gallery=useRef(null),camera=useRef(null);
@@ -32,5 +34,7 @@ export default function MyProfile({user,profile,photo,onClose,onSaved}){
       {error&&<p role="alert" className="error-banner">{error}</p>}
       <Button type="submit" disabled={busy||!name.trim()}>{busy?"Sparar…":"Spara profil"}</Button>
     </form>
+    <MyPlayerProfiles userId={user.id}/>
+    <PushSettings userId={user.id}/>
   </dialog>;
 }

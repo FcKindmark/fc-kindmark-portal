@@ -3,14 +3,15 @@ import PersonAvatar from "../PersonAvatar";
 import { useState, useEffect, useMemo } from "react";
 import { Card, Input, Button, Empty } from "../UI";
 import { supabase } from "../../lib/supabaseClient";
-import { upcomingFirst, trainingPeriod } from "../../lib/schedule";
+import { upcomingFirst, trainingPeriod, coachTrainingPeriod, daysBefore } from "../../lib/schedule";
 import { useStockholmToday } from "../../lib/useStockholmToday";
 
-export default function TrainingsTab({ data, onUpdate, canDelete=false }) {
+export default function TrainingsTab({ data, onUpdate, canDelete=false, compactWeek=false }) {
   const today = useStockholmToday();
+  const [archiveFrom,setArchiveFrom]=useState("");
   const trainings = useMemo(() => upcomingFirst(data?.trainings || [], today), [data?.trainings, today]);
   const [showPast, setShowPast] = useState(false);
-  const visibleTrainings = trainingPeriod(trainings, showPast, today);
+  const visibleTrainings = (compactWeek?coachTrainingPeriod(trainings,showPast,today,archiveFrom||daysBefore(today,7)):trainingPeriod(trainings,showPast,today));
   const teams = data?.teams || [];
   const players = data?.players || [];
   const [showAdd, setShowAdd] = useState(false);
@@ -141,9 +142,10 @@ export default function TrainingsTab({ data, onUpdate, canDelete=false }) {
       </div>
 
       <div className="button-group" role="group" aria-label="Träningsperiod" style={{ marginBottom: "20px" }}>
-        <Button variant={showPast ? "secondary" : "primary"} aria-pressed={!showPast} disabled={loading} onClick={() => { setShowPast(false); setExpandedId(null); setCallTraining(null); }}>Kommande träningar</Button>
+        <Button variant={showPast ? "secondary" : "primary"} aria-pressed={!showPast} disabled={loading} onClick={() => { setShowPast(false); setExpandedId(null); setCallTraining(null); }}>{compactWeek?"Nästa 7 dagar":"Kommande träningar"}</Button>
         <Button variant={showPast ? "primary" : "secondary"} aria-pressed={showPast} disabled={loading} onClick={() => { setShowPast(true); setExpandedId(null); setCallTraining(null); }}>Tidigare träningar</Button>
       </div>
+      {compactWeek&&showPast&&<label className="field">Visa tidigare träningar från<input type="date" value={archiveFrom||daysBefore(today,7)} max={today} onChange={e=>setArchiveFrom(e.target.value)}/></label>}
       {showPast && <p className="muted" style={{ marginBottom: "16px" }}>Här kan du se och rätta tidigare träningar. Registrera deltagarnas närvaro under Närvaro → Tidigare träningar.</p>}
       {callNotice&&<p role="status" className="economy-notice">{callNotice}</p>}{callError&&<p role="alert" className="error-banner">{callError}</p>}
       {callTraining&&<Card className="training-call-editor"><form onSubmit={sendCall}><h3>Kallelse · {callTraining.date} kl {callTraining.time?.slice(0,5)}</h3><p>{teams.find(t=>t.id===callTraining.team_id)?.name} · {callTraining.location}</p><p className="muted">Kallelsen och meddelandet visas i portalen för spelaren och kopplade föräldrar. Inga mejl skickas här. Befintliga svar behålls.</p><div className="button-group"><Button variant="secondary" disabled={loading} onClick={()=>setSelected(players.filter(p=>p.team_id===callTraining.team_id).map(p=>p.id))}>Alla i laget</Button><Button variant="secondary" disabled={loading} onClick={()=>setSelected([])}>Rensa val</Button></div><fieldset disabled={loading}><legend>Välj spelare ({selected.length})</legend>{players.filter(p=>p.team_id===callTraining.team_id).map(p=><label className="attendance-row" key={p.id}><span className="person-name"><PersonAvatar playerId={p.id} name={p.name}/>{p.name}</span><input type="checkbox" checked={selected.includes(p.id)} onChange={e=>setSelected(prev=>e.target.checked?[...prev,p.id]:prev.filter(id=>id!==p.id))}/></label>)}</fieldset><label className="field">Meddelande<textarea maxLength={1000} disabled={loading} value={callNote} onChange={e=>setCallNote(e.target.value)} placeholder="Till exempel: Ta med vattenflaska."/></label><div className="button-group"><Button type="submit" disabled={loading||!selected.length}>{loading?"Skickar…":"Skicka kallelse"}</Button><Button variant="secondary" disabled={loading} onClick={()=>setCallTraining(null)}>Avbryt</Button></div></form></Card>}

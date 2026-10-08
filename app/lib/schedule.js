@@ -27,6 +27,12 @@ export function trainingPeriod(events, past = false, today = stockholmToday()) {
     /^\d{4}-\d{2}-\d{2}$/.test(event.date || "") && (past ? event.date < today : event.date >= today)
   );
 }
+export function daysBefore(today, count) {
+  const date = new Date(`${today}T12:00:00Z`);date.setUTCDate(date.getUTCDate()-count);return date.toISOString().slice(0,10);
+}
+export function coachTrainingPeriod(events, past, today=stockholmToday(), archiveFrom=daysBefore(today,7)) {
+  return past ? trainingPeriod(events,true,today).filter(e=>e.date>=archiveFrom) : nextSevenDays(events,today);
+}
 export function nextSevenDays(events, today = stockholmToday()) {
   const end = new Date(`${today}T12:00:00Z`);
   end.setUTCDate(end.getUTCDate() + 7);

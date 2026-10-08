@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 const source = fs.readFileSync(new URL('../app/lib/schedule.js', import.meta.url),'utf8');
-const {monthDays,shiftMonth,scheduleEvents,nextSevenDays,upcomingFirst,trainingPeriod,attendanceUnlocked} = await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const {monthDays,shiftMonth,scheduleEvents,nextSevenDays,upcomingFirst,trainingPeriod,attendanceUnlocked,coachTrainingPeriod,daysBefore} = await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 assert.equal(monthDays('2024-02').filter(Boolean).length,29);
 assert.equal(monthDays('2026-02').filter(Boolean).length,28);
 assert.equal(monthDays('2026-10').indexOf('2026-10-01'),3);
@@ -29,3 +29,9 @@ for (const [today, last, outside] of [['2026-10-08','2026-10-14','2026-10-15'],[
   assert.deepEqual(nextSevenDays([{date:outside},{date:last},{date:today},{date:'2020-01-01'},{date:null}],today).map(e=>e.date),[today,last]);
 }
 console.log('PASS: leap years, Monday calendar alignment, year boundaries, event order and invalid dates.');
+
+assert.equal(daysBefore('2027-01-03',7),'2026-12-27');
+assert.deepEqual(coachTrainingPeriod(unsorted,false,'2026-10-08').map(e=>e.id),['todayEarly','todayLate','next']);
+assert.deepEqual(coachTrainingPeriod(unsorted,true,'2026-10-08').map(e=>e.id),['recent']);
+assert.deepEqual(coachTrainingPeriod(unsorted,true,'2026-10-08','2026-08-01').map(e=>e.id),['recent','old']);
+console.log('PASS: coach rolling week, archive week and explicit older-history correction.');

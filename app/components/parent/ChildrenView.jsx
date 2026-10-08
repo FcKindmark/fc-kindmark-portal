@@ -1,9 +1,12 @@
 "use client";
+import {useState} from "react";
+import PlayerProfile from "../PlayerProfile";
 import PersonAvatar from "../PersonAvatar";
 
-import { Card, Empty, Badge } from "../UI";
+import { Card, Empty, Badge, Button } from "../UI";
 
 export default function ChildrenView({ data, userEmail, linkedPlayerIds = [], self = false }) {
+  const [selected,setSelected]=useState(null);
   const players = data?.players || [];
   
   const myChildren = players.filter((p) => 
@@ -36,10 +39,12 @@ export default function ChildrenView({ data, userEmail, linkedPlayerIds = [], se
                 </div>
                 <Badge variant="blue">{child.position || "Ej vald"}</Badge>
               </div>
+              <Button variant="secondary" onClick={()=>setSelected(child)}>Spelarprofil</Button>
             </Card>
           ))}
         </div>
       )}
+      {selected&&<PlayerProfile key={selected.id} player={selected} onClose={()=>setSelected(null)}/>}
     </>
   );
 }

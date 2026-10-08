@@ -1,4 +1,5 @@
 "use client";
+import PlayerProfile from "../PlayerProfile";
 import PlayerPhoto from "./PlayerPhoto";
 import PersonAvatar from "../PersonAvatar";
 import { useState } from "react";
@@ -11,6 +12,7 @@ import PlayerActions from "./PlayerActions";
 export default function PlayersTab({ data, onUpdate, readOnly = false, initialShowAdd = false, onCloseAdd }) {
   const players = data?.players || [];
   const teams = data?.teams || [];
+  const [profilePlayer,setProfilePlayer]=useState(null);
   const [action, setAction] = useState(null);
   const [yearFilter, setYearFilter] = useState("");
   const [genderFilter, setGenderFilter] = useState("");
@@ -212,6 +214,7 @@ export default function PlayersTab({ data, onUpdate, readOnly = false, initialSh
                     <p style={{ color: "var(--text-light)", fontSize: "13px", marginBottom: "4px" }}>{[player.birth_year, player.gender === "boy" ? "Pojke" : player.gender === "girl" ? "Flicka" : null, teams.find(t => t.id === player.team_id)?.name || "Ej lagfördelad"].filter(Boolean).join(" · ")}</p>
                     {player.position && <p style={{ color: "var(--text-light)", fontSize: "13px" }}>{player.position}</p>}
                   </div>
+                  <Button variant="secondary" onClick={()=>setProfilePlayer(player)}>Spelarprofil</Button>
                   {!readOnly && <div style={{ display: "flex", gap: "8px" }}>
                     <Button variant="secondary" onClick={() => startEdit(player)} style={{ padding: "8px 12px", fontSize: "12px" }}>Redigera</Button>
                     <Button variant="danger" onClick={() => deletePlayer(player.id)} disabled={loading} style={{ padding: "8px 12px", fontSize: "12px" }}>Ta bort spelare</Button>
@@ -225,6 +228,7 @@ export default function PlayersTab({ data, onUpdate, readOnly = false, initialSh
           </div>
         </Card>
       )}
+      {profilePlayer&&<PlayerProfile key={profilePlayer.id} player={profilePlayer} readOnly={readOnly} onClose={()=>setProfilePlayer(null)}/>}
     </>
   );
 }

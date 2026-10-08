@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {createECDH} from 'node:crypto';
+import {validSubscription} from '../supabase/functions/club-push/validation.ts';
+const ec=createECDH('prime256v1');ec.generateKeys();
+const valid={endpoint:'https://web.push.apple.com/test',keys:{p256dh:ec.getPublicKey().toString('base64url'),auth:Buffer.alloc(16).toString('base64url')}};
+for(const host of ['web.push.apple.com','fcm.googleapis.com','updates.push.services.mozilla.com'])assert.equal(validSubscription({...valid,endpoint:`https://${host}/test`}),true);
+for(const endpoint of ['http://web.push.apple.com/test','https://127.0.0.1/','https://evil.example/','https://web.push.apple.com.evil.example/test','https://user:pass@web.push.apple.com/test','https://web.push.apple.com:444/test','https://web.push.apple.com/test#fragment'])assert.equal(validSubscription({...valid,endpoint}),false);
+assert.equal(validSubscription({...valid,keys:{...valid.keys,p256dh:'bad'}}),false);
+assert.equal(validSubscription({...valid,keys:{...valid.keys,auth:'bad'}}),false);
+assert.equal(validSubscription(null),false);
+console.log('PASS: encrypted subscription key shapes and exact HTTPS provider allowlist reject SSRF, credentials, ports and malformed subscriptions.');

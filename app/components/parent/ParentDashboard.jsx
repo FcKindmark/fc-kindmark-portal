@@ -110,7 +110,7 @@ export default function ParentDashboard({ user, profile, onLogout, onBackToStaff
   ];
   const memberData = {...data, teams:data.teams.filter(t=>teamIds.has(t.id)), trainings:data.trainings.filter(t=>teamIds.has(t.team_id)), matches:data.matches.filter(m=>teamIds.has(m.team_id))};
   return <ClubShell notifications={notificationState.notifications} onOpenNotification={openNotification} tabs={tabs} active={activeTab} onChange={navigate} user={user} role={profile?.role === "player" ? "Spelare" : "Förälder"} onLogout={onLogout}>
-    <div className="page-heading"><p>{profile?.role==="player"?"Spelarportal · Min profil":"Föräldraportal · Mina barn"}</p><div className="button-group"><Button variant="secondary" disabled={loading} onClick={loadData}>Uppdatera</Button>{onBackToStaff&&<Button onClick={onBackToStaff}>{staffRole==="admin"?"Till administratörsportalen":"Till tränarportalen"}</Button>}</div></div>
+    <div className="page-heading"><p>{profile?.role==="player"?"Spelarportal · Min profil":"Föräldraportal · Mina barn"}</p><div className="button-group"><Button variant="secondary" disabled={loading} onClick={loadData}>Uppdatera</Button>{onBackToStaff&&<Button onClick={onBackToStaff}>{staffRole==="admin"?"Till administratörsportalen":staffRole==="coach"?"Till tränarportalen":"Till min portal"}</Button>}</div></div>
     {error && <p className="error-banner" role="alert">{error}<button onClick={loadData}>Försök igen</button></p>}
     {loading ? <p role="status">Läser in…</p> : <>
     {activeTab === "overview" && <MemberOverview self={profile?.role==="player"} data={memberData} players={mine} onNavigate={navigate}/>}

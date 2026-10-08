@@ -146,3 +146,19 @@ body{background:var(--beige)}h1,h2,h3{font-weight:700}.club-sidebar{width:248px;
 @media(max-width:760px){.mobile-nav>button{position:relative}.mobile-nav .nav-count{position:absolute;top:0;right:0;margin:0}.workspace-header .role-pill{display:none}.profile-header-actions{gap:8px}.invitation-person .person-name{font-size:13px}}
 
 @media(max-width:380px){.mobile-nav>button{min-width:36px;padding:4px 2px;font-size:8px}}
+
+.push-settings{border-top:1px solid var(--border,#e3e6ed);margin-top:20px;padding-top:16px;font-size:14px}.push-settings-compact{border:1px solid #e8d491;background:#fff9e8;border-radius:12px;padding:12px;margin:0 0 16px}.push-settings p{margin:8px 0;font-size:13px;line-height:1.5}.push-settings .club-button{font-size:13px;padding:9px 12px}
+
+/* Clearer club identity and full-width quick navigation. */
+.club-sidebar nav button{font-size:16px}.nav-symbol{font-size:24px;width:26px}
+.workspace-header{font-size:16px}.profile-link{font-size:15px}.club-sidebar footer button{font-size:15px}.account-block strong{font-size:15px}.account-block div span{font-size:13px}
+.player-profile-fields{border:0;margin:18px 0 0;padding:0}.player-profile-fields .field{font-size:15px}
+@media(max-width:760px){
+ .club-sidebar{padding:14px 16px}.club-brand{gap:10px}.club-brand img{width:42px;height:48px}.club-brand>div{display:flex;align-items:baseline;gap:9px;min-width:0}.club-brand strong{font-size:17px;letter-spacing:0;white-space:nowrap}.club-brand span{font-size:14px;margin:0;white-space:nowrap}
+ .workspace-header{font-size:15px;min-height:52px;padding:0 16px}.workspace-page-title{white-space:nowrap}.profile-header-actions{gap:10px}.profile-link{font-size:15px}
+ .mobile-nav{gap:0;padding:9px 3px calc(9px + env(safe-area-inset-bottom))}.mobile-nav>button{flex:1;min-width:0;min-height:56px;font-size:12px;padding:5px 1px;gap:7px;font-weight:600}.mobile-nav>button>span:first-child{font-size:27px}.mobile-nav .nav-count{font-size:11px;min-width:18px}
+ .mobile-more>button{font-size:17px;padding:15px}.club-content{padding-bottom:125px}
+}
+@media(max-width:380px){.club-brand strong{font-size:15px}.club-brand span{font-size:12px}.club-brand>div{gap:6px}.club-brand img{width:36px;height:43px}.mobile-nav>button{font-size:11px}.mobile-nav>button>span:first-child{font-size:25px}}
+
+@media(min-width:761px){.club-brand strong{font-size:17px}.club-brand span{font-size:14px}}

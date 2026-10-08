@@ -22,12 +22,13 @@ const App=moduleOf('app/page.js',name=>{
  if(name==='react')return react;
  if(name==='./lib/sessionIdentity')return {sessionIdentity};
  if(name==='./lib/portalMode')return portalModes;
+ if(name==='./lib/push')return {disableDevicePush:async()=>{}};
  if(name==='./lib/supabaseClient')return {supabase};
  if(name.startsWith('./components/')){if(!components.has(name))components.set(name,()=>null);return {__esModule:true,default:components.get(name)};}
  return require(name);
 }).default;
 const storage=new Map();
-global.window={location:{search:''},sessionStorage:{getItem:key=>storage.get(key)||null,setItem:(key,value)=>storage.set(key,value)}};
+global.window={history:{state:null,replaceState(){}},location:{href:'https://portal.fckindmark.se/',search:''},sessionStorage:{getItem:key=>storage.get(key)||null,setItem:(key,value)=>storage.set(key,value)}};
 function render(){index=0;effects=[];const result=App();for(const effect of effects)effect();return result;}
 (async()=>{
  render();
@@ -50,7 +51,7 @@ function render(){index=0;effects=[];const result=App();for(const effect of effe
  assert.equal(portalModes.validPortalMode('admin'),null);
  // Cache policy: only the public offline notice is cached; financial/API responses never enter the worker cache.
  const events={},cached=[];
- const context={self:{addEventListener:(name,fn)=>{events[name]=fn;},location:{origin:'https://portal.example'},clients:{claim:async()=>{}}},caches:{open:async()=>({add:async path=>cached.push(path)}),keys:async()=>[],match:async()=>({offline:true})},fetch:async()=>({online:true}),URL,Response};
+ const context={self:{skipWaiting:async()=>{},addEventListener:(name,fn)=>{events[name]=fn;},location:{origin:'https://portal.example'},clients:{claim:async()=>{}}},caches:{open:async()=>({add:async path=>cached.push(path)}),keys:async()=>[],match:async()=>({offline:true})},fetch:async()=>({online:true}),URL,Response};
  vm.runInNewContext(fs.readFileSync('public/sw.js','utf8'),context);
  let pending;events.install({waitUntil:p=>pending=p});await pending;assert.deepEqual(cached,['/offline.html']);
  let intercepted=false;events.fetch({request:{method:'GET',mode:'cors',url:'https://project.supabase.co/rest/v1/club_econ_journal'},respondWith:()=>{intercepted=true;}});assert.equal(intercepted,false);

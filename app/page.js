@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "./lib/supabaseClient";
 import {sessionIdentity} from "./lib/sessionIdentity";
 import {portalModeKey,validPortalMode} from "./lib/portalMode";
+import {disableDevicePush} from "./lib/push";
 import PortalChoice from "./components/PortalChoice";
 import PasswordRecovery from "./components/PasswordRecovery";
 import LoginScreen from "./components/LoginScreen";
@@ -24,9 +25,11 @@ export default function App() {
   const [profile, setProfile] = useState(null);
   const [recovering, setRecovering] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [notificationRoute,setNotificationRoute]=useState(false);
   const identity = useRef("");
 
   useEffect(() => {
+    const incoming=new URLSearchParams(window.location.search);setNotificationRoute(incoming.get("push")==="1"&&["calls","messages"].includes(incoming.get("family")));
     if (["recovery", "invite"].some(key => new URLSearchParams(window.location.search).get(key) === "1")) setRecovering(true);
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (_event === "PASSWORD_RECOVERY") setRecovering(true);
@@ -48,7 +51,7 @@ export default function App() {
       setPortalMode(null);
       return;
     }
-    try {setPortalMode(validPortalMode(window.sessionStorage.getItem(portalModeKey(user.id))));}
+    try {const query=new URLSearchParams(window.location.search);setPortalMode(query.has("family")?"parent":validPortalMode(window.sessionStorage.getItem(portalModeKey(user.id))));}
     catch {setPortalMode(null);}
   }, [user?.id,profile?.role,user?.app_metadata?.club_role]);
 
@@ -56,6 +59,7 @@ export default function App() {
     const mode = validPortalMode(value);
     if (!mode || !user?.id || profile?.role !== "coach") return;
     try {window.sessionStorage.setItem(portalModeKey(user.id),mode);} catch {}
+    const url=new URL(window.location.href);if(mode==="coach")for(const key of ["family","event","activity","message"])url.searchParams.delete(key);window.history.replaceState(window.history.state,"",url);
     setPortalMode(mode);
   }
 
@@ -81,6 +85,7 @@ export default function App() {
   }
 
   async function logout() {
+    try { await disableDevicePush(); } catch { /* An expired browser subscription is removed by the delivery worker. */ }
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
@@ -109,6 +114,7 @@ export default function App() {
   const isAdmin = ["admin", "coach"].includes(role);
 
   if (!isAdmin && supporter === null) return <p role="status">Läser medlemskap…</p>;
+  if(notificationRoute && (role==="admin" || supporter&&!hasChildren))return <ParentDashboard key={user.id} user={user} profile={{...profile,role:"parent"}} onLogout={logout} staffRole={role} onBackToStaff={()=>{const url=new URL(window.location.href);for(const key of ["push","family","event","activity","message"])url.searchParams.delete(key);window.history.replaceState(window.history.state,"",url);setNotificationRoute(false);}}/>;
   if (!isAdmin && supporter && !hasChildren) return <SupporterDashboard key={user.id} user={user} onLogout={logout}/>;
   if(role==="coach"&&!portalMode)return <PortalChoice onSelect={choosePortal} onLogout={logout}/>;
   return isAdmin && portalMode!=="parent" ? (
