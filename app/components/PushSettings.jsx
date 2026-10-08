@@ -1,7 +1,7 @@
 "use client";
 import {useCallback,useEffect,useState} from "react";
 import {Button} from "./UI";
-import {pushAvailability,applicationKey,pushRequest,disableDevicePush} from "../lib/push";
+import {pushAvailability,pushRequest,disableDevicePush,rememberDevicePush,shouldRestoreDevicePush,subscribeDevicePush} from "../lib/push";
 export default function PushSettings({userId,compact=false}) {
   const [state,setState]=useState("loading"),[key,setKey]=useState(""),[busy,setBusy]=useState(false),[message,setMessage]=useState(""),[error,setError]=useState("");
   const refresh=useCallback(async()=>{
@@ -9,11 +9,17 @@ export default function PushSettings({userId,compact=false}) {
     try{
       const result=await pushRequest({action:"config"});setKey(result.publicKey);
       const registration=await navigator.serviceWorker.getRegistration("/");
-      const subscription=await registration?.pushManager.getSubscription();
+      let subscription=await registration?.pushManager.getSubscription();
+      if(subscription&&result.endpoints.includes(subscription.endpoint))rememberDevicePush(userId,true);
+      else if(shouldRestoreDevicePush(userId,Notification.permission)){
+        subscription=await subscribeDevicePush(result.publicKey);
+        setState("enabled");setError("");return;
+      }
+      setError("");
       setState(Notification.permission==="denied"?"denied":subscription&&result.endpoints.includes(subscription.endpoint)?"enabled":"off");
     }catch(e){setError(e.message);setState("off");}
-  },[]);
-  useEffect(()=>{refresh();},[refresh,userId]);
+  },[userId]);
+  useEffect(()=>{refresh();window.addEventListener("focus",refresh);window.addEventListener("club-push-changed",refresh);return()=>{window.removeEventListener("focus",refresh);window.removeEventListener("club-push-changed",refresh);};},[refresh]);
   async function enable(){
     setBusy(true);setError("");setMessage("");
     try{
@@ -21,14 +27,10 @@ export default function PushSettings({userId,compact=false}) {
       const permission=await Notification.requestPermission();
       if(permission!=="granted"){setState(permission==="denied"?"denied":"off");return;}
       const publicKey=key||(await pushRequest({action:"config"})).publicKey;
-      await navigator.serviceWorker.register("/sw.js",{scope:"/",updateViaCache:"none"});
-      const registration=await navigator.serviceWorker.ready;
-      let subscription=await registration.pushManager.getSubscription();
-      if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:applicationKey(publicKey)});
-      await pushRequest({action:"subscribe",subscription:subscription.toJSON()});setState("enabled");setMessage("Notifikationer är aktiverade på den här enheten.");
+      await subscribeDevicePush(publicKey);rememberDevicePush(userId,true);setState("enabled");setMessage("Notifikationer är aktiverade på den här enheten.");window.dispatchEvent(new Event("club-push-changed"));
     }catch(e){setError(e.message);}finally{setBusy(false);}
   }
-  async function disable(){setBusy(true);setError("");try{await disableDevicePush();setState("off");setMessage("Notifikationer är avstängda på den här enheten.");}catch(e){setError(e.message);}finally{setBusy(false);}}
+  async function disable(){rememberDevicePush(userId,false);setBusy(true);setError("");try{await disableDevicePush();setState("off");setMessage("Notifikationer är avstängda på den här enheten.");window.dispatchEvent(new Event("club-push-changed"));}catch(e){setError(e.message);}finally{setBusy(false);}}
   async function test(){setBusy(true);setError("");try{const registration=await navigator.serviceWorker.getRegistration("/");const subscription=await registration?.pushManager.getSubscription();await pushRequest({action:"test",endpoint:subscription?.endpoint});setMessage("Testnotifikationen har skickats till den här enheten.");}catch(e){setError(e.message);}finally{setBusy(false);}}
   if(compact&&["enabled","loading","unsupported","install"].includes(state))return null;
   return <section className={compact?"push-settings push-settings-compact":"push-settings"} aria-label="Notifikationer">

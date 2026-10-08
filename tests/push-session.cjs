@@ -1,0 +1,26 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const vm=require('node:vm');
+const storage=new Map();let current=null,registers=0,subscribes=0,unsubscribes=0,failUnlink=false;const actions=[];
+const manager={async getSubscription(){return current;},async subscribe(){subscribes++;current={endpoint:`https://web.push.apple.com/device-${subscribes}`,toJSON(){return {endpoint:this.endpoint,keys:{}};},async unsubscribe(){unsubscribes++;current=null;return true;}};return current;}};
+const registration={pushManager:manager,getNotifications:async()=>[]};
+const context={Uint8Array,atob,window:{localStorage:{getItem:key=>storage.get(key)||null,setItem:(key,value)=>storage.set(key,value)}},navigator:{serviceWorker:{register:async()=>{registers++;return registration;},ready:Promise.resolve(registration),getRegistration:async()=>registration}},supabase:{functions:{async invoke(name,{body}){actions.push(body.action);return failUnlink&&body.action==='unsubscribe'?{error:{}}:{data:{enabled:true}};}}}};
+const source=fs.readFileSync('app/lib/push.js','utf8').replace(/^import .*;\n/,'').replace(/export /g,'');
+vm.runInNewContext(source+'\nthis.api={rememberDevicePush,shouldRestoreDevicePush,subscribeDevicePush,disableDevicePush};',context);
+const {api}=context;
+(async()=>{
+ assert.equal(api.shouldRestoreDevicePush('alice','granted'),false);
+ api.rememberDevicePush('alice',true);
+ assert.equal(api.shouldRestoreDevicePush('alice','granted'),true);
+ assert.equal(api.shouldRestoreDevicePush('bob','granted'),false,'another account must opt in independently');
+ assert.equal(api.shouldRestoreDevicePush('alice','denied'),false,'never bypass browser permission');
+ await Promise.all([api.subscribeDevicePush('AQ'),api.subscribeDevicePush('AQ')]);
+ assert.equal(registers,1);assert.equal(subscribes,1);assert.deepEqual(actions,['subscribe']);
+ await api.disableDevicePush();assert.equal(current,null);assert.equal(unsubscribes,1);
+ assert.equal(api.shouldRestoreDevicePush('alice','granted'),true,'logout preserves the same account opt-in');
+ await api.subscribeDevicePush('AQ');assert.equal(subscribes,2,'relogin restores the subscription without another permission prompt');
+ api.rememberDevicePush('alice',false);failUnlink=true;
+ await api.disableDevicePush();assert.equal(current,null,'failed server unlink still revokes local delivery');
+ assert.equal(api.shouldRestoreDevicePush('alice','granted'),false,'explicit Stäng av stays off after relogin');
+ console.log('PASS: push opt-in survives logout/relogin, explicit disable stays off, account preferences are isolated and duplicate mounts share one subscription.');
+})().catch(error=>{console.error(error);process.exitCode=1;});
