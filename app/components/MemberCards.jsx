@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { Button, Empty } from "./UI";
 import {inviteAccount} from "../lib/invitations";
@@ -30,6 +30,7 @@ export function MemberCard({ card }) {
 }
 
 export default function MemberCards({ admin = false, initialShowAdd = false, initialMembershipType = "supporter", onCloseAdd, onUpdate }) {
+  const [selectedId,setSelectedId]=useState(null);
   const [showAdd,setShowAdd]=useState(initialShowAdd);
   function closeAdd(){setPendingCard(null);setShowAdd(false);onCloseAdd?.();}
   const [cards, setCards] = useState([]);
@@ -93,13 +94,33 @@ export default function MemberCards({ admin = false, initialShowAdd = false, ini
     else await load();
     setSaving(false);
   }
+  const selected=cards.find(card=>card.id===selectedId);
   const visible = cards.filter(c => `${c.name} ${c.membership_no || ""} ${c.member_number}`.toLocaleLowerCase("sv").includes(search.toLocaleLowerCase("sv")));
   return <section>
     <div className="page-heading"><h2>{admin ? "Medlemmar och medlemskort" : "Medlemskort"}</h2></div>
-    <p>Visa ditt aktiva medlemskort hos klubbens anslutna partners. Rabatt och användning följer respektive partners villkor. Ditt kort har ett kort medlemsnummer och en separat rabattkod.</p>
+    {!admin && <p>Visa ditt aktiva medlemskort hos klubbens anslutna partners. Rabatt och användning följer respektive partners villkor. Ditt kort har ett kort medlemsnummer och en separat rabattkod.</p>}
     {admin && <><label htmlFor="member-card-search">Sök namn eller medlemsnummer</label><input id="member-card-search" value={search} onChange={e => setSearch(e.target.value)}/>{showAdd && <form onSubmit={addCard} className="member-card-add"><label htmlFor="new-member-name">Medlemmens namn</label><input id="new-member-name" disabled={Boolean(pendingCard)||saving} autoFocus required value={name} onChange={e => setName(e.target.value)}/><label htmlFor="new-member-email">E-post · välkomstmejl</label><input id="new-member-email" type="email" disabled={Boolean(accountId)} value={email} onChange={e=>setEmail(e.target.value)}/><label htmlFor="new-member-type">Medlemstyp</label><select id="new-member-type" disabled={Boolean(pendingCard)||saving} value={membershipType} onChange={e=>setMembershipType(e.target.value)}><option value="new">Ny medlem</option><option value="full">Medlem</option><option value="supporter">Stödmedlem · 150 SEK</option></select><label htmlFor="new-member-account">Koppla till registrerat konto</label><select id="new-member-account" disabled={Boolean(email)||Boolean(pendingCard)} value={accountId} onChange={e=>setAccountId(e.target.value)}><option value="">Koppla senare</option>{accounts.map(a=><option key={a.id} value={a.id}>{a.full_name || a.email} · {a.email}</option>)}</select><Button type="submit" variant="primary" disabled={saving}>Spara medlem</Button><Button variant="secondary" disabled={saving} onClick={closeAdd}>Avbryt</Button></form>}<p>{visible.length} medlemskort</p><div className="match-actions"><Button disabled={loading} onClick={()=>downloadMemberCodes(cards,true)}>Exportera aktiva koder till LEGEA (CSV)</Button><Button variant="secondary" disabled={loading} onClick={()=>downloadMemberCodes(cards,false)}>Exportera alla kort (CSV)</Button></div><p className="muted">Exporten innehåller medlemsnummer, namn, medlemstyp och status. Den omfattar alla kort, oavsett sökfilter. Ange e-post när du lägger till en medlem för att skicka välkomstmejl och koppla kontot automatiskt.</p></>}
     {notice && <p role="status">{notice}</p>}
     {error && <p className="error-banner" role="alert">{error}<button onClick={load}>Försök igen</button></p>}
-    {loading ? <p role="status">Läser medlemskort…</p> : visible.length ? <div className="member-cards-grid">{visible.map(card => <div key={card.id}><MemberCard card={card}/>{admin && <div className="match-edit-form"><InviteAccountForm kind="member" cardId={card.id} name={card.name} onSaved={load}/><label htmlFor={`card-type-${card.id}`}>Medlemstyp</label><select id={`card-type-${card.id}`} disabled={saving} value={card.membership_type||"member"} onChange={e=>changeCard(card,{membership_type:e.target.value})}><option value="member">Medlem</option><option value="supporter">Stödmedlem</option></select><label htmlFor={`card-user-${card.id}`}>Personligt konto</label><select id={`card-user-${card.id}`} disabled={saving} value={card.user_id||""} onChange={e=>changeCard(card,{user_id:e.target.value||null})}><option value="">Ej kopplat</option>{accounts.map(a=><option key={a.id} value={a.id}>{a.full_name || a.email} · {a.email}</option>)}</select><Button variant="secondary" disabled={saving} onClick={() => toggle(card)}>{card.status === "active" ? "Inaktivera kort" : "Aktivera kort"}</Button><Button variant="danger" disabled={saving} onClick={()=>deleteCard(card)}>Ta bort kort</Button></div>}</div>)}</div> : <Empty message="Inga medlemskort att visa"/>}
+    {loading ? <p role="status">Läser medlemskort…</p> : visible.length ? admin ? <div className="member-admin-list">{visible.map(card=><article className="member-admin-row" key={card.id}>
+      <div className="member-admin-identity"><strong>{card.name}</strong><span className="muted">{card.membership_type==="supporter"?"Stödmedlem":"Medlem"} · {card.status==="active"?"Aktiv":"Inaktiv"}</span></div>
+      <div className="member-admin-code"><span>Medlemsnummer</span><strong>{card.membership_no||"—"}</strong></div>
+      <div className="member-admin-code"><span>Rabattkod</span><strong>{card.member_number}</strong></div>
+      <Button variant="secondary" aria-label={`Hantera ${card.name}`} onClick={()=>setSelectedId(card.id)}>Hantera</Button>
+    </article>)}</div> : <div className="member-cards-grid">{visible.map(card=><MemberCard key={card.id} card={card}/>)}</div> : <Empty message="Inga medlemskort att visa"/>}
+    {admin && selected && <MemberDetails key={selected.id} card={selected} accounts={accounts} saving={saving} error={error} onClose={()=>setSelectedId(null)} onChange={changeCard} onToggle={toggle} onDelete={async card=>{await deleteCard(card);}} onReload={load}/>}
   </section>;
+}
+
+function MemberDetails({card,accounts,saving,error,onClose,onChange,onToggle,onDelete,onReload}) {
+  const dialog=useRef(null);
+  useEffect(()=>{dialog.current?.showModal();},[]);
+  return <dialog ref={dialog} className="member-details-dialog" onCancel={onClose} aria-labelledby="member-details-title">
+    <div className="page-heading"><div><h2 id="member-details-title">{card.name}</h2><p className="muted">{card.member_number} · medlemsnummer {card.membership_no||"—"}</p></div><Button variant="secondary" disabled={saving} onClick={onClose}>Stäng</Button></div>
+    {error&&<p role="alert" className="error-banner">{error}</p>}
+    <div className="member-details-fields"><label className="field">Medlemstyp<select disabled={saving} value={card.membership_type||"member"} onChange={e=>onChange(card,{membership_type:e.target.value})}><option value="member">Medlem</option><option value="supporter">Stödmedlem</option></select></label>
+    <label className="field">Personligt konto<select disabled={saving} value={card.user_id||""} onChange={e=>onChange(card,{user_id:e.target.value||null})}><option value="">Ej kopplat</option>{accounts.map(account=><option key={account.id} value={account.id}>{account.full_name||account.email} · {account.email}</option>)}</select></label></div>
+    <details className="member-invite-details" open={!card.user_id}><summary>{card.user_id?"Bjud in eller byt konto":"Bjud in med e-post"}</summary><InviteAccountForm kind="member" cardId={card.id} name={card.name} onSaved={onReload}/></details>
+    <div className="button-group"><Button variant="secondary" disabled={saving} onClick={()=>onToggle(card)}>{card.status==="active"?"Inaktivera kort":"Aktivera kort"}</Button><Button variant="danger" disabled={saving} onClick={()=>onDelete(card)}>Ta bort kort</Button></div>
+  </dialog>;
 }

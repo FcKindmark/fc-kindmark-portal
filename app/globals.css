@@ -75,3 +75,18 @@ body{background:var(--beige)}h1,h2,h3{font-weight:700}.club-sidebar{width:248px;
 .install-app-button{position:fixed;right:20px;bottom:20px;z-index:80;box-shadow:0 3px 15px #0002;background:#fff8e3!important;border-color:#dfbc4d!important}
 @media(max-width:800px){.install-app-button{bottom:calc(94px + env(safe-area-inset-bottom));right:12px;font-size:12px;padding:8px 12px}}
 @media print{.install-app-button{display:none}}
+
+/* Compact member management; account forms remain inside their own container. */
+.member-admin-list{display:grid;gap:10px;margin-top:20px}
+.member-admin-row{display:grid;grid-template-columns:minmax(160px,1fr) 130px 140px auto;align-items:center;gap:20px;padding:16px 20px;background:#fff;border:1px solid var(--border-color);border-radius:12px;min-width:0}
+.member-admin-row>div{min-width:0;overflow-wrap:anywhere}
+.member-admin-identity strong{display:block;font-size:15px}.member-admin-identity .muted{display:block;margin-top:3px;font-size:12px}
+.member-admin-code span{display:block;font-size:11px;color:var(--text-light)}.member-admin-code strong{display:block;font-size:14px;margin-top:3px}
+.member-details-dialog{width:min(520px,calc(100% - 32px));max-height:85vh;overflow:auto;padding:24px;border:1px solid var(--border-color);border-radius:16px;color:var(--text-dark);background:#fff}
+.member-details-dialog::backdrop{background:#41495666}.member-details-dialog h2{font-size:20px;overflow-wrap:anywhere}.member-details-dialog .page-heading{align-items:flex-start}
+.member-details-fields{display:grid;gap:12px}.member-details-fields .field{margin:0}.member-details-fields select{min-width:0;max-width:100%}
+.member-invite-details{padding:16px 0;margin:8px 0 16px;border-bottom:1px solid var(--border-color)}.member-invite-details summary{cursor:pointer;font-size:14px;font-weight:600}.member-invite-details[open] summary{margin-bottom:16px}
+.account-invite-form{display:grid;gap:10px;min-width:0;max-width:100%}.account-invite-form .field{margin:0}.account-invite-form p{font-size:12px;line-height:1.5;overflow-wrap:anywhere;white-space:normal}.account-invite-form input{min-width:0;max-width:100%}.account-invite-form button{justify-self:start}
+.member-card-add{display:grid;grid-template-columns:minmax(0,1fr);max-width:520px;padding:20px;border:1px solid var(--border-color);border-radius:12px;background:#fff;gap:10px}
+.member-card-add input,.member-card-add select{width:100%;min-width:0;padding:10px 12px;border:1px solid var(--border-color);border-radius:8px;background:#fff}.member-card-add label{font-size:13px}.member-card-add button{justify-self:start}
+@media(max-width:700px){.member-admin-row{grid-template-columns:minmax(0,1fr) auto;gap:12px;padding:14px}.member-admin-identity{grid-column:1}.member-admin-row>.club-button{grid-column:2;grid-row:1}.member-admin-code{grid-row:2}.member-details-dialog{padding:20px}.member-details-dialog .page-heading{gap:12px}}
