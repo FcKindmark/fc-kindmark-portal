@@ -120,3 +120,21 @@ body{background:var(--beige)}h1,h2,h3{font-weight:700}.club-sidebar{width:248px;
 .compact-match-actions .club-button:first-child{flex:1}
 
 .player-photo-controls{margin:8px 0}.player-photo-controls .club-button{font-size:11px;padding:7px 10px}
+
+.reply-status{display:inline-block;border-radius:5px;padding:4px 7px;font-size:11px;font-weight:700;white-space:nowrap}
+.reply-yes{background:#e4f4e8;color:#176534}.reply-no{background:#fde8e9;color:#9c2331}.reply-waiting{background:#fff4d5;color:#765712}.reply-uncalled{background:#eff0f2;color:#60656e}
+.reply-count-yes{color:#176534;font-weight:700}.reply-count-no{color:#9c2331;font-weight:700}
+.club-button.reply-button-yes{border-color:#268346;color:#176534}.club-button.reply-button-no{border-color:#bc3544;color:#9c2331}
+.club-button.reply-button-yes.selected{background:#176534;color:#fff}.club-button.reply-button-no.selected{background:#ad2939;color:#fff}
+.match-call-row{gap:8px}.match-call-label{min-width:0;flex:1}.match-call-label .person-name{font-size:13px}
+
+.admin-team-heading{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;padding:0;margin-bottom:8px;text-align:left;color:var(--text-dark)}
+.admin-team-heading strong{flex:1;min-width:0;font-size:18px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.admin-team-heading>span{font-size:12px;white-space:nowrap;color:var(--text-light)}
+.team-card-actions{flex-wrap:nowrap;gap:6px;margin:12px 0}
+.team-card-actions .club-button{font-size:12px;padding:8px 10px;white-space:nowrap;flex:1}
+.team-coaches{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:12px 0 16px}
+.team-coaches .person-name{font-size:15px;font-weight:600;gap:8px}
+.team-player-name{font-size:15px;font-weight:600;flex:1;min-width:0}
+.team-player-name>span:last-child{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.admin-team-card .person-avatar{width:40px;height:40px;flex-basis:40px}

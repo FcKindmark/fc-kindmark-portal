@@ -119,33 +119,21 @@ export default function TeamsTab({ data, onUpdate }) {
             const unassignedPlayers = players.filter((p) => !p.team_id);
 
             return (
-              <Card key={team.id}>
-                <div className="button-group"><Button variant="secondary" disabled={loading} onClick={()=>{setEditingTeam(team.id);setName(team.name);setAgeGroup(team.age_group||"");setShowAdd(true);window.scrollTo({top:0,behavior:"smooth"});}}>Ändra lag</Button><Button disabled={loading} onClick={()=>{setCoachTeam(team.id);setCoachId("");}}>Välj tränare</Button><Button variant="danger" disabled={loading} onClick={()=>deleteTeam(team)}>Ta bort lag</Button></div>
-                <p>Tränare: {(data.coachTeams||[]).filter(c=>c.team_id===team.id).map(c=><span className="person-name" key={c.user_id}><PersonAvatar profileId={c.user_id} name={data.profiles.find(p=>p.id===c.user_id)?.full_name||"Tränare"}/>{data.profiles.find(p=>p.id===c.user_id)?.full_name||data.profiles.find(p=>p.id===c.user_id)?.email||"Tränare"}</span>)}{!(data.coachTeams||[]).some(c=>c.team_id===team.id)&&"Ingen tilldelad"}</p>
+              <Card key={team.id} className="admin-team-card">
+                <button className="admin-team-heading" type="button" aria-expanded={expandedTeam===team.id} onClick={()=>setExpandedTeam(expandedTeam===team.id?null:team.id)}>
+                  <strong title={team.name}>{team.name}</strong><span>{teamPlayers.length} spelare</span><span aria-hidden="true">{expandedTeam===team.id?"▾":"▸"}</span>
+                </button>
+                {team.age_group&&<p className="muted">{team.age_group}</p>}
+
+                <div className="button-group team-card-actions"><Button variant="secondary" disabled={loading} onClick={()=>{setEditingTeam(team.id);setName(team.name);setAgeGroup(team.age_group||"");setShowAdd(true);window.scrollTo({top:0,behavior:"smooth"});}}>Ändra lag</Button><Button disabled={loading} onClick={()=>{setCoachTeam(team.id);setCoachId("");}}>Välj tränare</Button><Button variant="danger" disabled={loading} onClick={()=>deleteTeam(team)}>Ta bort</Button></div>
+                <div className="team-coaches"><span className="muted">Tränare</span> {(data.coachTeams||[]).filter(c=>c.team_id===team.id).map(c=><span className="person-name" key={c.user_id}><PersonAvatar profileId={c.user_id} name={data.profiles.find(p=>p.id===c.user_id)?.full_name||"Tränare"}/>{data.profiles.find(p=>p.id===c.user_id)?.full_name||data.profiles.find(p=>p.id===c.user_id)?.email||"Tränare"}</span>)}{!(data.coachTeams||[]).some(c=>c.team_id===team.id)&&<span className="muted">Ingen tilldelad</span>}</div>
                 {coachTeam===team.id&&<form onSubmit={e=>{e.preventDefault();setCoach(coachId,team.id,true);}}>
                   <h4>Tränare för {team.name}</h4><p>Välj en befintlig medlem eller stödmedlem. Kontot och kopplingarna till barn finns kvar.</p>
                   <label className="field">Medlemmens konto<select required disabled={loading} value={coachId} onChange={e=>setCoachId(e.target.value)}><option value="">Välj medlem</option>{(data.profiles||[]).filter(p=>p.role!=="admin"&&!(data.coachTeams||[]).some(c=>c.team_id===team.id&&c.user_id===p.id)).map(p=><option key={p.id} value={p.id}>{p.full_name||p.email} · {p.email}</option>)}</select></label>
                   <div className="button-group"><Button type="submit" disabled={loading||!coachId}>Spara tränare</Button><Button type="button" variant="secondary" disabled={loading} onClick={()=>setCoachTeam(null)}>Stäng</Button></div>
                   {(data.coachTeams||[]).filter(c=>c.team_id===team.id).map(c=><div className="attendance-row" key={c.user_id}><span className="person-name"><PersonAvatar profileId={c.user_id} name={data.profiles.find(p=>p.id===c.user_id)?.full_name||"Tränare"}/>{data.profiles.find(p=>p.id===c.user_id)?.full_name||data.profiles.find(p=>p.id===c.user_id)?.email}</span><Button type="button" variant="danger" disabled={loading} onClick={()=>{if(confirm("Ta bort tränaren från detta lag?"))setCoach(c.user_id,team.id,false);}}>Ta bort från laget</Button></div>)}
                 </form>}
-                <div
-                  onClick={() => setExpandedTeam(expandedTeam === team.id ? null : team.id)}
-                  style={{
-                    cursor: "pointer",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: expandedTeam === team.id ? "16px" : "0",
-                  }}
-                >
-                  <div>
-                    <h3 style={{ color: "var(--text-dark)", marginBottom: "5px" }}>{team.name}</h3>
-                    <p style={{ color: "var(--text-light)", fontSize: "14px" }}>
-                      Åldersgrupp: {team.age_group} - {teamPlayers.length} spelare
-                    </p>
-                  </div>
-                  <span style={{ fontSize: "20px" }}>{expandedTeam === team.id ? "▼" : "▶"}</span>
-                </div>
+
 
                 {expandedTeam === team.id && (
                   <div style={{ borderTop: "1px solid #ddd", paddingTop: "16px" }}>
@@ -168,7 +156,7 @@ export default function TeamsTab({ data, onUpdate }) {
                               borderRadius: "6px",
                             }}
                           >
-                            <span className="person-name" style={{ color: "var(--text-dark)" }}><PersonAvatar playerId={player.id} name={player.name}/>#{player.number} {player.name}</span>
+                            <span className="person-name team-player-name" title={player.name}><PersonAvatar playerId={player.id} name={player.name}/><span>{player.number!=null?`#${player.number} `:""}{player.name}</span></span>
                             <Button
                               variant="danger"
                               onClick={() => removePlayerFromTeam(player.id)}
@@ -202,7 +190,7 @@ export default function TeamsTab({ data, onUpdate }) {
                               border: "1px solid #e0e0e0",
                             }}
                           >
-                            <span className="person-name" style={{ color: "var(--text-dark)" }}><PersonAvatar playerId={player.id} name={player.name}/>#{player.number} {player.name}</span>
+                            <span className="person-name team-player-name" title={player.name}><PersonAvatar playerId={player.id} name={player.name}/><span>{player.number!=null?`#${player.number} `:""}{player.name}</span></span>
                             <Button
                               variant="primary"
                               onClick={() => addPlayerToTeam(player.id, team.id)}

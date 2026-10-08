@@ -7,7 +7,7 @@ export function resultLabel(match) {
   return match.club_score != null && match.opponent_score != null ? `FC Kindmark ${match.club_score}–${match.opponent_score} ${match.opponent}` : "Resultat ej registrerat";
 }
 export function replyLabel(value) {
-  return value === true ? "Kommer" : value === false ? "Kan inte komma" : "Svar väntas";
+  return value === true ? "Kommer" : value === false ? "Kommer inte" : "Svar väntas";
 }
 
 export function matchVenue(match) {
