@@ -1,4 +1,5 @@
 "use client";
+import PersonAvatar from "../PersonAvatar";
 import { useState, useEffect } from "react";
 import { Card, Button, Empty, Badge } from "../UI";
 import {dateLabel,memberEventInfo,nextSevenDays,stockholmToday} from "../../lib/schedule";
@@ -168,7 +169,7 @@ export default function TrainingsView({ data, userEmail, linkedPlayerIds = [], o
                       const isAttending = attendance[`${training.id}_${child.id}`];
                       return (
                         <div key={child.id} style={{ padding: "12px", background: "#f9f9f9", borderRadius: "6px", marginBottom: "12px" }}>
-                          <p style={{ color: "var(--text-dark)", fontWeight: "600", marginBottom: "8px" }}>{child.name}</p>
+                          <p className="person-name" style={{ color: "var(--text-dark)", fontWeight: "600", marginBottom: "8px" }}><PersonAvatar playerId={child.id} name={child.name}/>{child.name}</p>
                           <div style={{ display: "flex", gap: "10px" }}>
                             <Button
                               variant={isAttending === true ? "primary" : "secondary"}
