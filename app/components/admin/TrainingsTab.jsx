@@ -17,6 +17,7 @@ export default function TrainingsTab({ data, onUpdate, canDelete=false }) {
   const [expandedId, setExpandedId] = useState(null);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
+  const [endTime, setEndTime] = useState("");
   const [location, setLocation] = useState("");
   const [teamId, setTeamId] = useState("");
   const [adminComment, setAdminComment] = useState("");
@@ -56,6 +57,7 @@ export default function TrainingsTab({ data, onUpdate, canDelete=false }) {
     setEditingId(training.id);
     setDate(training.date);
     setTime(training.time);
+    setEndTime(training.end_time || "");
     setLocation(training.location);
     setTeamId(training.team_id);
     setAdminComment(training.admin_comment || "");
@@ -66,6 +68,7 @@ export default function TrainingsTab({ data, onUpdate, canDelete=false }) {
     setEditingId(null);
     setDate("");
     setTime("");
+    setEndTime("");
     setLocation("");
     setTeamId("");
     setAdminComment("");
@@ -73,7 +76,7 @@ export default function TrainingsTab({ data, onUpdate, canDelete=false }) {
   }
 
   async function saveTraining() {
-    if (!date.trim() || !time.trim() || !location.trim() || !teamId) {
+    if (!date.trim() || !time.trim() || !endTime.trim() || !location.trim() || !teamId) {
       alert("Fyll i alla fält och välj ett lag");
       return;
     }
@@ -85,14 +88,14 @@ export default function TrainingsTab({ data, onUpdate, canDelete=false }) {
       if (editingId) {
         const { error } = await supabase
           .from("trainings")
-          .update({ date, time, location, team_id: teamId, admin_comment: adminComment.trim() || null })
+          .update({ date, time, end_time: endTime, location, team_id: teamId, admin_comment: adminComment.trim() || null })
           .eq("id", editingId);
 
         if (error) throw error;
       } else {
         const { data: trainingData, error: trainingError } = await supabase
           .from("trainings")
-          .insert({ date, time, location, team_id: teamId, admin_comment: adminComment.trim() || null })
+          .insert({ date, time, end_time: endTime, location, team_id: teamId, admin_comment: adminComment.trim() || null })
           .select();
 
         if (trainingError) throw trainingError;
@@ -162,8 +165,12 @@ export default function TrainingsTab({ data, onUpdate, canDelete=false }) {
                 <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
               </div>
               <div>
-                <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "var(--text-dark)" }}>Tid</label>
+                <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "var(--text-dark)" }}>Starttid</label>
                 <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+              </div>
+              <div>
+                <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "var(--text-dark)" }}>Sluttid</label>
+                <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
               </div>
               <div>
                 <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "var(--text-dark)" }}>Plats</label>

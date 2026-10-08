@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 const source = fs.readFileSync(new URL('../app/lib/schedule.js', import.meta.url),'utf8');
-const {monthDays,shiftMonth,scheduleEvents,nextSevenDays,upcomingFirst,trainingPeriod} = await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const {monthDays,shiftMonth,scheduleEvents,nextSevenDays,upcomingFirst,trainingPeriod,attendanceUnlocked} = await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 assert.equal(monthDays('2024-02').filter(Boolean).length,29);
 assert.equal(monthDays('2026-02').filter(Boolean).length,28);
 assert.equal(monthDays('2026-10').indexOf('2026-10-01'),3);
@@ -18,6 +18,13 @@ assert.deepEqual(trainingPeriod(unsorted,false,'2026-10-08').map(e=>e.id),['toda
 assert.deepEqual(trainingPeriod(unsorted,true,'2026-10-08').map(e=>e.id),['recent','old']);
 assert.deepEqual(trainingPeriod(unsorted,true,'2026-10-09').map(e=>e.id),['todayLate','todayEarly','recent','old']);
 assert.deepEqual(trainingPeriod([{date:null},{date:''}],false,'2026-10-08'),[]);
+const activity = {date:'2026-10-08',time:'18:30:00',end_time:'20:00:00'};
+assert.equal(attendanceUnlocked(activity,new Date('2026-10-08T17:59:59Z')),false);
+assert.equal(attendanceUnlocked(activity,new Date('2026-10-08T18:00:00Z')),true);
+assert.equal(attendanceUnlocked({...activity,end_time:null},new Date('2027-01-01')),false);
+assert.equal(attendanceUnlocked({date:'2026-10-08',time:'23:30:00',end_time:'00:30:00'},new Date('2026-10-08T22:29:59Z')),false);
+assert.equal(attendanceUnlocked({date:'2026-10-08',time:'23:30:00',end_time:'00:30:00'},new Date('2026-10-08T22:30:00Z')),true);
+assert.equal(attendanceUnlocked({date:'2026-12-01',time:'18:00:00',end_time:'19:00:00'},new Date('2026-12-01T18:00:00Z')),true);
 for (const [today, last, outside] of [['2026-10-08','2026-10-14','2026-10-15'],['2026-12-29','2027-01-04','2027-01-05'],['2024-02-27','2024-03-04','2024-03-05'],['2026-10-23','2026-10-29','2026-10-30']]) {
   assert.deepEqual(nextSevenDays([{date:outside},{date:last},{date:today},{date:'2020-01-01'},{date:null}],today).map(e=>e.date),[today,last]);
 }

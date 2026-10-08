@@ -3,19 +3,28 @@ import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { Card, Button } from "../UI";
 import { downloadAttendance } from "../../lib/attendance";
-import { trainingPeriod } from "../../lib/schedule";
+import { trainingPeriod, attendanceUnlocked } from "../../lib/schedule";
 import { useStockholmToday } from "../../lib/useStockholmToday";
 export default function AttendanceTab({ data, canDelete=false, canExport=false }) {
   const [trainingId,setTrainingId] = useState("");
   const [showPast,setShowPast] = useState(false);
   const today = useStockholmToday();
+  const [now,setNow] = useState(() => new Date());
+  useEffect(() => {
+    const refresh = () => setNow(new Date());
+    const timer = window.setInterval(refresh,1000);
+    window.addEventListener("focus",refresh);
+    return () => {window.clearInterval(timer);window.removeEventListener("focus",refresh);};
+  },[]);
   const visibleTrainings = trainingPeriod(data.trainings,showPast,today);
   const [records,setRecords] = useState([]); const [error,setError] = useState(""); const [busy,setBusy] = useState(false);
   const [from,setFrom] = useState(""); const [to,setTo] = useState("");
   useEffect(() => { let active=true; supabase.from("club_attendance").select("*").then(({data,error}) => { if(active){setError(error ? "Närvaroregistret kunde inte läsas: " + error.message : "");setRecords(data || []);} }); return () => {active=false;}; },[]);
   const training=visibleTrainings.find(t => String(t.id) === trainingId);
+  const unlocked = attendanceUnlocked(training,now);
   const players=data.players.filter(p => p.team_id === training?.team_id);
   async function mark(playerId,present) {
+    if (!attendanceUnlocked(training)) {setError("Närvaro kan registreras först efter träningens sluttid.");return;}
     setBusy(true);setError("");
     const {data:rows,error}=await supabase.from("club_attendance").upsert({training_id:trainingId,player_id:String(playerId),present,recorded_at:new Date().toISOString()},{onConflict:"training_id,player_id"}).select();
     if(error)setError(error.message);else if(!rows?.length)setError("Ingen närvaro sparades. Kontrollera behörigheten.");else setRecords(prev=>[...prev.filter(r=>!(r.training_id===trainingId && r.player_id===String(playerId))),...rows]);
@@ -38,7 +47,8 @@ export default function AttendanceTab({ data, canDelete=false, canExport=false }
   {showPast && <p className="muted" style={{ marginBottom: "16px" }}>Välj en tidigare träning för att komplettera eller rätta närvaron.</p>}
   <Card><label className="field">Träning<select value={training?trainingId:""} disabled={busy} onChange={e=>setTrainingId(e.target.value)}><option value="">Välj träning</option>{visibleTrainings.map(t=><option key={t.id} value={t.id}>{t.date} {t.time?.slice(0,5)} · {t.location}</option>)}</select></label>
   {!visibleTrainings.length && <p className="muted">{showPast?"Inga tidigare träningar":"Inga kommande träningar"}</p>}
-  {players.map(p=>{const row=records.find(r=>r.training_id===trainingId && r.player_id===String(p.id));return <div className="attendance-row" key={p.id}><div><strong>{p.name}</strong><p className="muted">{row ? row.present ? "Närvarande" : "Frånvarande" : "Ej registrerad"}</p></div><div className="button-group"><Button disabled={busy} variant={row?.present===true?"primary":"secondary"} onClick={()=>mark(p.id,true)}>Närvarande</Button><Button disabled={busy} variant={row?.present===false?"danger":"secondary"} onClick={()=>mark(p.id,false)}>Frånvarande</Button>{canDelete && row && <Button disabled={busy} variant="danger" onClick={()=>remove(p.id)}>Ta bort registrering</Button>}</div></div>;})}
+  {training && !unlocked && <p className="muted" role="status">{training.end_time ? `Närvaro öppnas efter träningen, kl ${training.end_time.slice(0,5)}.` : "Sluttid saknas. Ange sluttiden under Träningar → Redigera."}</p>}
+  {players.map(p=>{const row=records.find(r=>r.training_id===trainingId && r.player_id===String(p.id));return <div className="attendance-row" key={p.id}><div><strong>{p.name}</strong><p className="muted">{row ? row.present ? "Närvarande" : "Frånvarande" : "Ej registrerad"}</p></div><div className="button-group"><Button disabled={busy || !unlocked} variant={row?.present===true?"primary":"secondary"} onClick={()=>mark(p.id,true)}>Närvarande</Button><Button disabled={busy || !unlocked} variant={row?.present===false?"danger":"secondary"} onClick={()=>mark(p.id,false)}>Frånvarande</Button>{canDelete && row && <Button disabled={busy} variant="danger" onClick={()=>remove(p.id)}>Ta bort registrering</Button>}</div></div>;})}
   {training && !players.length && <p>Inga spelare är kopplade till laget.</p>}</Card>
   {canExport && <Card><h2>Exportera närvarounderlag</h2><p>CSV med registrerad närvaro. Kontrollera underlaget innan rapportering.</p><div className="button-group"><label className="field">Från<input type="date" value={from} onChange={e=>setFrom(e.target.value)}/></label><label className="field">Till<input type="date" value={to} onChange={e=>setTo(e.target.value)}/></label><Button disabled={!!error || !!(from && to && from>to)} onClick={()=>downloadAttendance(data.trainings,records,data.players,from,to || undefined)}>Ladda ner CSV</Button></div></Card>}</>;
 }
