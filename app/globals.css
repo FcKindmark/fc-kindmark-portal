@@ -99,3 +99,5 @@ body{background:var(--beige)}h1,h2,h3{font-weight:700}.club-sidebar{width:248px;
 .economy-settlement small {display:block;color:#687080;margin-top:4px;}
 .settlement-row {display:grid;grid-template-columns:minmax(0,1fr) 130px;gap:16px;padding:14px;border:1px solid #e3e6ed;border-radius:12px;}
 @media(max-width:600px){.settlement-row{grid-template-columns:1fr;}.economy-settlement .economy-actions{flex-wrap:wrap;}}
+
+.invoice-items{grid-column:1/-1;display:grid;gap:12px}.invoice-item{display:grid;grid-template-columns:minmax(180px,2fr) 90px 140px auto;gap:10px;align-items:end;padding:14px;border:1px solid #e2e5eb;border-radius:12px}@media(max-width:700px){.invoice-item{grid-template-columns:1fr 1fr}.invoice-item>label:first-child{grid-column:1/-1}}

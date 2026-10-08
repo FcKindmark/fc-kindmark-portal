@@ -11,6 +11,16 @@ export default function TeamsTab({ data, onUpdate }) {
   const [ageGroup, setAgeGroup] = useState("");
   const [loading, setLoading] = useState(false);
   const [expandedTeam, setExpandedTeam] = useState(null);
+  const [coachTeam,setCoachTeam]=useState(null),[coachId,setCoachId]=useState(""),[coachError,setCoachError]=useState(""),[coachNotice,setCoachNotice]=useState("");
+  async function setCoach(target,team,assigned){
+    setLoading(true);setCoachError("");setCoachNotice("");
+    try{
+      const {error}=await supabase.rpc("club_set_team_coach",{target,team,assigned});
+      if(error)throw error;
+      await onUpdate();setCoachTeam(null);setCoachId("");
+      setCoachNotice(assigned?"Tränaren är kopplad till laget. Logga ut och in för att öppna tränarvyn.":"Tränaren är borttagen från laget. Övriga lag och kontot finns kvar.");
+    }catch(e){setCoachError(e.message);}finally{setLoading(false);}
+  }
 
   async function addTeam() {
     if (!name.trim() || !ageGroup.trim()) {
@@ -77,6 +87,7 @@ export default function TeamsTab({ data, onUpdate }) {
         <Button variant="primary" onClick={() => setShowAdd(true)}>+ Lägg till lag</Button>
       </div>
 
+      {coachError&&<p role="alert" className="error-banner">{coachError}</p>}{coachNotice&&<p role="status">{coachNotice}</p>}
       {showAdd && (
         <Card style={{ marginBottom: "30px", background: "var(--beige-light)", border: "2px solid var(--gold)" }}>
           <h3 style={{ marginBottom: "20px", color: "var(--text-dark)" }}>Nytt lag</h3>
@@ -107,7 +118,14 @@ export default function TeamsTab({ data, onUpdate }) {
 
             return (
               <Card key={team.id}>
-                <Button variant="danger" disabled={loading} onClick={()=>deleteTeam(team)}>Ta bort lag</Button>
+                <div className="button-group"><Button disabled={loading} onClick={()=>{setCoachTeam(team.id);setCoachId("");}}>Välj tränare</Button><Button variant="danger" disabled={loading} onClick={()=>deleteTeam(team)}>Ta bort lag</Button></div>
+                <p>Tränare: {(data.coachTeams||[]).filter(c=>c.team_id===team.id).map(c=>data.profiles.find(p=>p.id===c.user_id)?.full_name||data.profiles.find(p=>p.id===c.user_id)?.email||"Tränare").join(", ")||"Ingen tilldelad"}</p>
+                {coachTeam===team.id&&<form onSubmit={e=>{e.preventDefault();setCoach(coachId,team.id,true);}}>
+                  <h4>Tränare för {team.name}</h4><p>Välj en befintlig medlem eller stödmedlem. Kontot och kopplingarna till barn finns kvar.</p>
+                  <label className="field">Medlemmens konto<select required disabled={loading} value={coachId} onChange={e=>setCoachId(e.target.value)}><option value="">Välj medlem</option>{(data.profiles||[]).filter(p=>p.role!=="admin"&&!(data.coachTeams||[]).some(c=>c.team_id===team.id&&c.user_id===p.id)).map(p=><option key={p.id} value={p.id}>{p.full_name||p.email} · {p.email}</option>)}</select></label>
+                  <div className="button-group"><Button type="submit" disabled={loading||!coachId}>Spara tränare</Button><Button type="button" variant="secondary" disabled={loading} onClick={()=>setCoachTeam(null)}>Stäng</Button></div>
+                  {(data.coachTeams||[]).filter(c=>c.team_id===team.id).map(c=><div className="attendance-row" key={c.user_id}><span>{data.profiles.find(p=>p.id===c.user_id)?.full_name||data.profiles.find(p=>p.id===c.user_id)?.email}</span><Button type="button" variant="danger" disabled={loading} onClick={()=>{if(confirm("Ta bort tränaren från detta lag?"))setCoach(c.user_id,team.id,false);}}>Ta bort från laget</Button></div>)}
+                </form>}
                 <div
                   onClick={() => setExpandedTeam(expandedTeam === team.id ? null : team.id)}
                   style={{

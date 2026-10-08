@@ -77,6 +77,7 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
         messages: messagesRes.data || [],
         profiles: profilesRes.data || [],
         memberCards: cardsRes.data || [],
+        coachTeams: coachTeamsRes.data || [],
       });
 
       setAdminInfo(adminRes.data);

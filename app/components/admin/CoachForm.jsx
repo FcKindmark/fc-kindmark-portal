@@ -6,7 +6,7 @@ export default function CoachForm({profiles,teams,coach,assigned=[],busy,onSave,
   const [teamIds,setTeamIds]=useState(assigned);
   return <Card><form onSubmit={e=>{e.preventDefault();onSave(userId,teamIds);}}>
     <h2>{coach?"Ändra tränarens lag":"Lägg till tränare"}</h2>
-    <p>Tränaren registrerar ett konto först. Välj kontot och de lag som tränaren ska ha tillgång till.</p>
+    <p>Välj ett befintligt konto och lag. Alla registrerade medlemmar och stödmedlemmar kan få tränarbehörighet. Kontot och kopplingarna till barn finns kvar.</p>
     <label className="field">Tränarens konto<select required disabled={busy||Boolean(coach)} value={userId} onChange={e=>setUserId(e.target.value)}><option value="">Välj registrerat konto</option>{profiles.filter(p=>p.role!=="admin").map(p=><option key={p.id} value={p.id}>{p.full_name||p.email} · {p.email}</option>)}</select></label>
     <fieldset disabled={busy}><legend>Lag med tränarbehörighet</legend>{teams.map(t=><label className="attendance-row" key={t.id}><span>{t.name}</span><input type="checkbox" checked={teamIds.includes(t.id)} onChange={e=>setTeamIds(prev=>e.target.checked?[...prev,t.id]:prev.filter(id=>id!==t.id))}/></label>)}</fieldset>
     <p>Tränaren får även stödmedlemskap med medlemskort och en årsavgift på 150 SEK. Kan skapa och ändra träningar, matcher, kallelser, närvaro och utvecklingsbedömningar för valda lag.</p>
