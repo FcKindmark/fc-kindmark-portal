@@ -105,3 +105,18 @@ body{background:var(--beige)}h1,h2,h3{font-weight:700}.club-sidebar{width:248px;
 .profile-photo{width:112px;height:112px;border-radius:50%;overflow:hidden;background:#f5edda;display:grid;place-items:center;margin:0 auto 20px;font-size:36px;color:#735719}.profile-photo img,.account-avatar img{width:100%;height:100%;object-fit:cover}.account-avatar{overflow:hidden}.profile-dialog .field{margin:18px 0}.profile-header-actions{display:flex;align-items:center;gap:12px}.profile-link{border:1px solid var(--border-color);border-radius:20px;background:white;padding:8px 12px;color:var(--text-dark);white-space:nowrap}.profile-dialog .button-group{justify-content:center;flex-wrap:wrap}@media(max-width:600px){.profile-header-actions .role-pill{display:none}.profile-header-actions{gap:5px}.profile-link{padding:7px 10px;font-size:12px}}
 
 .training-call-editor{margin-bottom:24px}.training-call-editor fieldset{margin:20px 0;border:1px solid var(--border-color);border-radius:10px;padding:12px}.training-call-editor .field{margin:16px 0}.training-call-editor textarea{min-height:90px}.training-call-editor .button-group{flex-wrap:wrap}
+
+.person-avatar{display:inline-flex;width:36px;height:36px;flex:0 0 36px;border-radius:50%;overflow:hidden;align-items:center;justify-content:center;background:#f3ecd7;color:#72591d;font-size:12px;font-weight:700;vertical-align:middle}
+.person-avatar img{width:100%;height:100%;object-fit:cover}
+.person-name{display:inline-flex;align-items:center;gap:9px;min-width:0;vertical-align:middle}
+.compact-match-card .page-heading{margin-bottom:8px}
+.compact-match-card p{font-size:12px;line-height:1.5;margin-bottom:8px}
+.compact-match-card .match-score{font-size:13px}
+.match-title{display:flex;align-items:center;gap:8px;min-width:0;font-size:15px;line-height:1.4;margin-bottom:7px}
+.match-title>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.match-title>small{flex:none;font-size:10px;font-weight:600;padding:3px 6px;background:#f8f1df;color:#72591d;border-radius:5px}
+.compact-match-actions{display:flex;flex-wrap:nowrap;gap:6px;margin:12px 0 0}
+.compact-match-actions .club-button{font-size:11px;padding:8px;white-space:nowrap;min-height:36px}
+.compact-match-actions .club-button:first-child{flex:1}
+
+.player-photo-controls{margin:8px 0}.player-photo-controls .club-button{font-size:11px;padding:7px 10px}

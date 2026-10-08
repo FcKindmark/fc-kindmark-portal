@@ -1,4 +1,5 @@
 "use client";
+import PersonAvatar from "../PersonAvatar";
 
 import { Card, Empty, Badge } from "../UI";
 
@@ -23,8 +24,8 @@ export default function ChildrenView({ data, userEmail, linkedPlayerIds = [], se
             <Card key={child.id}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
                 <div>
-                  <h3 style={{ color: "var(--text-dark)", marginBottom: "8px", fontSize: "20px", fontWeight: "600" }}>
-                    {child.name}
+                  <h3 className="person-name" style={{ color: "var(--text-dark)", marginBottom: "8px", fontSize: "20px", fontWeight: "600" }}>
+                    <PersonAvatar playerId={child.id} name={child.name}/>{child.name}
                   </h3>
                   <p style={{ color: "var(--text-gray)", fontSize: "14px", marginBottom: "4px" }}>
                     Position: {child.position || "Ej vald"}

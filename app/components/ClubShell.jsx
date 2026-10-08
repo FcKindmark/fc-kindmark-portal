@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import {supabase} from "../lib/supabaseClient";
+import {PortraitProvider} from "./PersonAvatar";
 import MyProfile from "./MyProfile";
 const symbols = { membership: "◈", news: "☷", overview: "◫", calendar: "▦", attendance: "✓", equipment: "◇", development: "↗", players: "♙", children: "♙", teams: "⚑", trainings: "▦", matches: "⚽", payments: "▤", economy: "◎", messages: "✉", users: "♧" };
 export default function ClubShell({ tabs, active, onChange, user, role, onLogout, children }) {
@@ -15,7 +16,7 @@ export default function ClubShell({ tabs, active, onChange, user, role, onLogout
   async function openProfile(){setExpanded(false);if(!account)await loadProfile();setShowProfile(true);}
   const primary = (role === "Stödmedlem" ? ["overview","matches","news","membership"] : ["overview", "calendar", "matches", "children", "players", "messages"]).map(id => tabs.find(t => t.id === id)).filter(Boolean);
   function navigate(id) { onChange(id); setExpanded(false); }
-  return <div className="club-shell"><aside className="club-sidebar">
+  return <PortraitProvider key={user.id} userId={user.id}><div className="club-shell"><aside className="club-sidebar">
     <div className="club-brand"><img src="/logo.png" alt="FC Kindmark"/><div><strong>FC KINDMARK</strong><span>Medlemsportal</span></div></div>
     <div className="sidebar-caption">DIN KLUBB</div>
     <nav aria-label="Klubbportal">{tabs.map(tab => <button key={tab.id} aria-current={active === tab.id ? "page" : undefined} className={active === tab.id ? "active" : ""} onClick={() => navigate(tab.id)}><span className="nav-symbol" aria-hidden="true">{symbols[tab.id] || "•"}</span>{tab.label}</button>)}</nav>
@@ -23,6 +24,6 @@ export default function ClubShell({ tabs, active, onChange, user, role, onLogout
   </aside><div className="club-workspace"><header className="workspace-header"><span>FC Kindmark <span className="header-divider">/</span> {tabs.find(t => t.id === active)?.label}</span><div className="profile-header-actions"><button className="profile-link" onClick={openProfile}>Min profil</button><span className="role-pill">{role}</span></div></header><main className="club-content">{children}</main></div>
   <nav className="mobile-nav" aria-label="Snabbnavigering">{primary.map(tab => <button key={tab.id} aria-current={active === tab.id ? "page" : undefined} onClick={() => navigate(tab.id)}><span aria-hidden="true">{symbols[tab.id]}</span>{tab.label}</button>)}<button aria-expanded={expanded} aria-controls="mobile-more" onClick={() => setExpanded(!expanded)}><span aria-hidden="true">☰</span>Mer</button></nav>
   {expanded && <div className="mobile-more" id="mobile-more"><div className="page-heading"><h2>Alla sidor</h2><button className="club-button secondary" onClick={() => setExpanded(false)}>Stäng</button></div>{tabs.map(tab => <button key={tab.id} onClick={() => navigate(tab.id)}>{tab.label}</button>)}<button onClick={openProfile}>Min profil</button><button onClick={onLogout}>Logga ut</button></div>}
-  {showProfile&&(account?<MyProfile user={user} profile={account} photo={photo} onClose={()=>setShowProfile(false)} onSaved={loadProfile}/>:<div className="club-modal"><div className="club-card" role="alert"><p>{profileError||"Läser profil…"}</p><button onClick={loadProfile}>Försök igen</button><button onClick={()=>setShowProfile(false)}>Stäng</button></div></div>)}
-  </div>;
+  {showProfile&&(account?<MyProfile user={user} profile={account} photo={photo} onClose={()=>setShowProfile(false)} onSaved={()=>{loadProfile();window.dispatchEvent(new Event("club-profile-saved"));}}/>:<div className="club-modal"><div className="club-card" role="alert"><p>{profileError||"Läser profil…"}</p><button onClick={loadProfile}>Försök igen</button><button onClick={()=>setShowProfile(false)}>Stäng</button></div></div>)}
+  </div></PortraitProvider>;
 }

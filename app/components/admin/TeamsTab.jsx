@@ -1,4 +1,5 @@
 ﻿"use client";
+import PersonAvatar from "../PersonAvatar";
 import { useState } from "react";
 import { Card, Input, Button, Empty } from "../UI";
 import { supabase } from "../../lib/supabaseClient";
@@ -120,12 +121,12 @@ export default function TeamsTab({ data, onUpdate }) {
             return (
               <Card key={team.id}>
                 <div className="button-group"><Button variant="secondary" disabled={loading} onClick={()=>{setEditingTeam(team.id);setName(team.name);setAgeGroup(team.age_group||"");setShowAdd(true);window.scrollTo({top:0,behavior:"smooth"});}}>Ändra lag</Button><Button disabled={loading} onClick={()=>{setCoachTeam(team.id);setCoachId("");}}>Välj tränare</Button><Button variant="danger" disabled={loading} onClick={()=>deleteTeam(team)}>Ta bort lag</Button></div>
-                <p>Tränare: {(data.coachTeams||[]).filter(c=>c.team_id===team.id).map(c=>data.profiles.find(p=>p.id===c.user_id)?.full_name||data.profiles.find(p=>p.id===c.user_id)?.email||"Tränare").join(", ")||"Ingen tilldelad"}</p>
+                <p>Tränare: {(data.coachTeams||[]).filter(c=>c.team_id===team.id).map(c=><span className="person-name" key={c.user_id}><PersonAvatar profileId={c.user_id} name={data.profiles.find(p=>p.id===c.user_id)?.full_name||"Tränare"}/>{data.profiles.find(p=>p.id===c.user_id)?.full_name||data.profiles.find(p=>p.id===c.user_id)?.email||"Tränare"}</span>)}{!(data.coachTeams||[]).some(c=>c.team_id===team.id)&&"Ingen tilldelad"}</p>
                 {coachTeam===team.id&&<form onSubmit={e=>{e.preventDefault();setCoach(coachId,team.id,true);}}>
                   <h4>Tränare för {team.name}</h4><p>Välj en befintlig medlem eller stödmedlem. Kontot och kopplingarna till barn finns kvar.</p>
                   <label className="field">Medlemmens konto<select required disabled={loading} value={coachId} onChange={e=>setCoachId(e.target.value)}><option value="">Välj medlem</option>{(data.profiles||[]).filter(p=>p.role!=="admin"&&!(data.coachTeams||[]).some(c=>c.team_id===team.id&&c.user_id===p.id)).map(p=><option key={p.id} value={p.id}>{p.full_name||p.email} · {p.email}</option>)}</select></label>
                   <div className="button-group"><Button type="submit" disabled={loading||!coachId}>Spara tränare</Button><Button type="button" variant="secondary" disabled={loading} onClick={()=>setCoachTeam(null)}>Stäng</Button></div>
-                  {(data.coachTeams||[]).filter(c=>c.team_id===team.id).map(c=><div className="attendance-row" key={c.user_id}><span>{data.profiles.find(p=>p.id===c.user_id)?.full_name||data.profiles.find(p=>p.id===c.user_id)?.email}</span><Button type="button" variant="danger" disabled={loading} onClick={()=>{if(confirm("Ta bort tränaren från detta lag?"))setCoach(c.user_id,team.id,false);}}>Ta bort från laget</Button></div>)}
+                  {(data.coachTeams||[]).filter(c=>c.team_id===team.id).map(c=><div className="attendance-row" key={c.user_id}><span className="person-name"><PersonAvatar profileId={c.user_id} name={data.profiles.find(p=>p.id===c.user_id)?.full_name||"Tränare"}/>{data.profiles.find(p=>p.id===c.user_id)?.full_name||data.profiles.find(p=>p.id===c.user_id)?.email}</span><Button type="button" variant="danger" disabled={loading} onClick={()=>{if(confirm("Ta bort tränaren från detta lag?"))setCoach(c.user_id,team.id,false);}}>Ta bort från laget</Button></div>)}
                 </form>}
                 <div
                   onClick={() => setExpandedTeam(expandedTeam === team.id ? null : team.id)}
@@ -167,7 +168,7 @@ export default function TeamsTab({ data, onUpdate }) {
                               borderRadius: "6px",
                             }}
                           >
-                            <span style={{ color: "var(--text-dark)" }}>#{player.number} {player.name}</span>
+                            <span className="person-name" style={{ color: "var(--text-dark)" }}><PersonAvatar playerId={player.id} name={player.name}/>#{player.number} {player.name}</span>
                             <Button
                               variant="danger"
                               onClick={() => removePlayerFromTeam(player.id)}
@@ -201,7 +202,7 @@ export default function TeamsTab({ data, onUpdate }) {
                               border: "1px solid #e0e0e0",
                             }}
                           >
-                            <span style={{ color: "var(--text-dark)" }}>#{player.number} {player.name}</span>
+                            <span className="person-name" style={{ color: "var(--text-dark)" }}><PersonAvatar playerId={player.id} name={player.name}/>#{player.number} {player.name}</span>
                             <Button
                               variant="primary"
                               onClick={() => addPlayerToTeam(player.id, team.id)}

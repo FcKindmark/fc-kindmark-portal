@@ -1,4 +1,6 @@
 "use client";
+import PlayerPhoto from "./PlayerPhoto";
+import PersonAvatar from "../PersonAvatar";
 import { useState } from "react";
 import { Card, Input, Button, Empty, Badge } from "../UI";
 import { supabase } from "../../lib/supabaseClient";
@@ -206,7 +208,7 @@ export default function PlayersTab({ data, onUpdate, readOnly = false, initialSh
               <div key={player.id} style={{ padding: "15px", background: "var(--beige-light)", borderRadius: "8px", borderLeft: "4px solid var(--royal-blue)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "8px" }}>
                   <div>
-                    <h3 style={{ color: "var(--text-dark)", marginBottom: "5px" }}>{player.number != null ? `#${player.number} ` : ""}{player.name}</h3>
+                    <h3 className="person-name" style={{ color: "var(--text-dark)", marginBottom: "5px" }}><PersonAvatar playerId={player.id} name={player.name}/>{player.number != null ? `#${player.number} ` : ""}{player.name}</h3>
                     <p style={{ color: "var(--text-light)", fontSize: "13px", marginBottom: "4px" }}>{[player.birth_year, player.gender === "boy" ? "Pojke" : player.gender === "girl" ? "Flicka" : null, teams.find(t => t.id === player.team_id)?.name || "Ej lagfördelad"].filter(Boolean).join(" · ")}</p>
                     {player.position && <p style={{ color: "var(--text-light)", fontSize: "13px" }}>{player.position}</p>}
                   </div>
@@ -215,7 +217,7 @@ export default function PlayersTab({ data, onUpdate, readOnly = false, initialSh
                     <Button variant="danger" onClick={() => deletePlayer(player.id)} disabled={loading} style={{ padding: "8px 12px", fontSize: "12px" }}>Ta bort spelare</Button>
                   </div>}
                 </div>
-                {!readOnly && <><div className="match-actions"><Button disabled={loading} variant="secondary" onClick={()=>setAction({id:player.id,mode:"parent"})}>Lägg till förälder</Button><Button disabled={loading} variant="secondary" onClick={()=>setAction({id:player.id,mode:"player"})}>Lägg till spelarkonto</Button><Button disabled={loading} variant="primary" onClick={()=>setAction({id:player.id,mode:"team"})}>Lägg till i lag</Button>{player.team_id && <Button disabled={loading} variant="danger" onClick={()=>removeFromTeam(player)}>Ta bort från lag</Button>}</div>{action?.id===player.id && (action.mode==="player"?<PlayerAccount key={player.id} player={player} accounts={data.profiles||[]} onClose={()=>setAction(null)} onUpdate={onUpdate}/>:<PlayerActions key={`${player.id}-${action.mode}`} player={player} teams={teams} accounts={data.profiles||[]} mode={action.mode} onClose={()=>setAction(null)} onUpdate={onUpdate}/>)}</>}
+                {!readOnly && <><PlayerPhoto player={player} onUpdate={onUpdate}/><div className="match-actions"><Button disabled={loading} variant="secondary" onClick={()=>setAction({id:player.id,mode:"parent"})}>Lägg till förälder</Button><Button disabled={loading} variant="secondary" onClick={()=>setAction({id:player.id,mode:"player"})}>Lägg till spelarkonto</Button><Button disabled={loading} variant="primary" onClick={()=>setAction({id:player.id,mode:"team"})}>Lägg till i lag</Button>{player.team_id && <Button disabled={loading} variant="danger" onClick={()=>removeFromTeam(player)}>Ta bort från lag</Button>}</div>{action?.id===player.id && (action.mode==="player"?<PlayerAccount key={player.id} player={player} accounts={data.profiles||[]} onClose={()=>setAction(null)} onUpdate={onUpdate}/>:<PlayerActions key={`${player.id}-${action.mode}`} player={player} teams={teams} accounts={data.profiles||[]} mode={action.mode} onClose={()=>setAction(null)} onUpdate={onUpdate}/>)}</>}
                 {player.mother_email && <p style={{ color: "var(--text-light)", fontSize: "12px" }}>Mamma: {player.mother_email}</p>}
                 {player.father_email && <p style={{ color: "var(--text-light)", fontSize: "12px" }}>Pappa: {player.father_email}</p>}
               </div>

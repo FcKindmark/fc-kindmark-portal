@@ -1,4 +1,5 @@
 "use client";
+import PersonAvatar from "./PersonAvatar";
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { Button, Empty } from "./UI";
@@ -20,7 +21,7 @@ export function MemberCard({ card }) {
   }
   return <article className="member-card">
     <div className="member-card-brand"><img src="/logo.png" alt="FC Kindmark" width="54" height="64"/><div><strong>FC KINDMARK</strong><span>PERSONLIGT MEDLEMSKORT</span></div></div>
-    <p className="member-card-name">{card.name}</p>
+    <p className="member-card-name person-name"><PersonAvatar playerId={card.player_id} profileId={card.user_id} name={card.name}/>{card.name}</p>
     <div className="member-card-number"><span>MEDLEMSNUMMER</span><strong>{card.membership_no || "—"}</strong></div>
     <div className="member-card-number"><span>RABATTKOD</span><strong>{card.member_number}</strong></div>
     <div className="member-card-footer"><span>{card.status === "active" ? "Aktivt medlemskort" : "Inaktivt medlemskort"}</span><span>Våga göra mer.</span></div>
@@ -103,7 +104,7 @@ export default function MemberCards({ admin = false, initialShowAdd = false, ini
     {notice && <p role="status">{notice}</p>}
     {error && <p className="error-banner" role="alert">{error}<button onClick={load}>Försök igen</button></p>}
     {loading ? <p role="status">Läser medlemskort…</p> : visible.length ? admin ? <div className="member-admin-list">{visible.map(card=><article className="member-admin-row" key={card.id}>
-      <div className="member-admin-identity"><strong>{card.name}</strong><span className="muted">{card.membership_type==="supporter"?"Stödmedlem":"Medlem"} · {card.status==="active"?"Aktiv":"Inaktiv"}</span></div>
+      <div className="member-admin-identity"><strong className="person-name"><PersonAvatar playerId={card.player_id} profileId={card.user_id} name={card.name}/>{card.name}</strong><span className="muted">{card.membership_type==="supporter"?"Stödmedlem":"Medlem"} · {card.status==="active"?"Aktiv":"Inaktiv"}</span></div>
       <div className="member-admin-code"><span>Medlemsnummer</span><strong>{card.membership_no||"—"}</strong></div>
       <div className="member-admin-code"><span>Rabattkod</span><strong>{card.member_number}</strong></div>
       <Button variant="secondary" aria-label={`Hantera ${card.name}`} onClick={()=>setSelectedId(card.id)}>Hantera</Button>

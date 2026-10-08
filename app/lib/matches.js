@@ -9,3 +9,13 @@ export function resultLabel(match) {
 export function replyLabel(value) {
   return value === true ? "Kommer" : value === false ? "Kan inte komma" : "Svar väntas";
 }
+
+export function matchVenue(match) {
+  return match.venue_type || String(match.admin_comment||"").match(/^\s*(Hemma|Borta)\b/i)?.[1]?.toLowerCase() || "";
+}
+export function matchInformation(comment) {
+  return String(comment||"").replace(/^\s*(Hemma|Borta)\s*[·.]?\s*/i, "")
+    .replace(/Källa\s*:\s*https?:\/\/\S+\s*(?:\(\d{4}-\d{2}-\d{2}\))?\.?/gi, "")
+    .replace(/Tid och hall återstår att fastställa\.?/gi, "")
+    .replace(/Pojkar Futsal Div[^.]*\.?/gi, "").trim();
+}

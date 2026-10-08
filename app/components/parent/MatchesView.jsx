@@ -3,7 +3,8 @@ import { useState, useEffect } from "react";
 import { Card, Button, Empty } from "../UI";
 import { supabase } from "../../lib/supabaseClient";
 import {dateLabel,memberEventInfo} from "../../lib/schedule";
-import { resultLabel, replyLabel } from "../../lib/matches";
+import PersonAvatar from "../PersonAvatar";
+import { resultLabel, replyLabel, matchVenue, matchInformation } from "../../lib/matches";
 
 export default function MatchesView({data,userEmail,linkedPlayerIds=[],onRefresh,self=false}) {
   const mine=(data?.players || []).filter(p=>linkedPlayerIds.includes(String(p.id)) || [p.mother_email?.toLowerCase(),p.father_email?.toLowerCase()].filter(Boolean).includes(userEmail?.toLowerCase()));
@@ -34,9 +35,9 @@ export default function MatchesView({data,userEmail,linkedPlayerIds=[],onRefresh
   }
   return <section><h2>Matcher och kallelser</h2>{error && <p className="error-banner" role="alert">{error}<button onClick={load}>Försök igen</button></p>}{loading && <p role="status">Läser kallelser…</p>}{!matches.length && <Empty message={self?"Inga matcher för dig ännu":"Inga matcher för dina barn ännu"}/>}<div className="match-list">{matches.map(m=>{
     const children=mine.filter(p=>p.team_id===m.team_id);
-    return <Card key={m.id}><h3>FC Kindmark – {m.opponent}</h3><p>{dateLabel(m.date,{weekday:"long",day:"numeric",month:"long",year:"numeric"})} · {m.time?.slice(0,5) || "Tid ej angiven"} · {m.location || "Plats ej angiven"}</p><p className="match-score">{resultLabel(m)}</p>{memberEventInfo(m.admin_comment)&&<p className="preserve-lines">{memberEventInfo(m.admin_comment)}</p>}{!loading && children.map(p=>{
+    return <Card key={m.id} className="compact-match-card"><h3 className="match-title"><span>FC Kindmark – {m.opponent}</span>{matchVenue(m)&&<small>{matchVenue(m)==="hemma"?"Hemma":"Borta"}</small>}</h3><p>{dateLabel(m.date,{weekday:"long",day:"numeric",month:"long",year:"numeric"})} · {m.time?.slice(0,5) || "Tid ej angiven"} · {m.location || "Plats ej angiven"}</p>{m.club_score!=null&&m.opponent_score!=null&&<p className="match-score">{resultLabel(m)}</p>}{matchInformation(memberEventInfo(m.admin_comment))&&<p className="preserve-lines">{matchInformation(memberEventInfo(m.admin_comment))}</p>}{!loading && children.map(p=>{
       const called=calls.some(c=>c.match_id===m.id && c.player_id===p.id), reply=replies.find(r=>r.match_id===m.id && r.player_id===p.id);
-      return <div key={p.id} className="match-child-call"><strong>{p.name}</strong><p>{called ? `Kallad · ${replyLabel(reply?.attending)}` : "Ingen kallelse för denna match"}</p>{called && <div className="match-actions"><Button disabled={busy} aria-pressed={reply?.attending===true} variant={reply?.attending===true ? "primary" : "secondary"} onClick={()=>respond(m.id,p.id,true)}>Kommer</Button><Button disabled={busy} aria-pressed={reply?.attending===false} variant={reply?.attending===false ? "primary" : "secondary"} onClick={()=>respond(m.id,p.id,false)}>Kan inte komma</Button>{reply && <Button disabled={busy} variant="danger" onClick={()=>clearReply(m.id,p.id)}>Ta bort svar</Button>}</div>}</div>;
+      return <div key={p.id} className="match-child-call"><strong className="person-name"><PersonAvatar playerId={p.id} name={p.name}/>{p.name}</strong><p>{called ? `Kallad · ${replyLabel(reply?.attending)}` : "Ingen kallelse för denna match"}</p>{called && <div className="match-actions"><Button disabled={busy} aria-pressed={reply?.attending===true} variant={reply?.attending===true ? "primary" : "secondary"} onClick={()=>respond(m.id,p.id,true)}>Kommer</Button><Button disabled={busy} aria-pressed={reply?.attending===false} variant={reply?.attending===false ? "primary" : "secondary"} onClick={()=>respond(m.id,p.id,false)}>Kan inte komma</Button>{reply && <Button disabled={busy} variant="danger" onClick={()=>clearReply(m.id,p.id)}>Ta bort svar</Button>}</div>}</div>;
     })}</Card>;
   })}</div></section>;
 }
