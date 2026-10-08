@@ -22,7 +22,7 @@ export async function disableDevicePush() {
   const subscription=await registration?.pushManager?.getSubscription();
   if(!subscription)return;
   // Remove the account link before unsubscribing so switching accounts cannot leak notifications.
-  await pushRequest({action:"unsubscribe",endpoint:subscription.endpoint});
+  try { await pushRequest({action:"unsubscribe",endpoint:subscription.endpoint}); } catch { /* Local unsubscribe still revokes delivery; expired endpoints are pruned by the worker. */ }
   await subscription.unsubscribe();
   const notifications=await registration.getNotifications();notifications.forEach(notification=>notification.close());
 }
