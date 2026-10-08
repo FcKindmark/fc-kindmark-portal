@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { Card, Button, Input, Select } from '../UI';
 import { money, cents, parseCSV, bankRows, fingerprints, suggestAccount, entryForBank, report, matchedBank, journalRows, downloadCSV, downloadArchive } from '../../lib/economy';
+import { readInvoice } from '../../lib/economy-documents';
+import { makeBackup, verifyBackup, downloadBackup } from '../../lib/economy-backup';
 const today = () => new Intl.DateTimeFormat('sv-SE', {
   timeZone: 'Europe/Stockholm'
 }).format(new Date());
@@ -69,7 +71,10 @@ export default function EconomyTab({
     [preview, setPreview] = useState(null),
     [importFile, setImportFile] = useState(null),
     [bankBalance, setBankBalance] = useState(''),
-    [reviewed, setReviewed] = useState(false);
+    [reviewed, setReviewed] = useState(false),
+    [reading, setReading] = useState(false),
+    [readProgress, setReadProgress] = useState(''),
+    [readText, setReadText] = useState('');
   async function load() {
     setLoading(true);
     try {
@@ -119,8 +124,54 @@ export default function EconomyTab({
     if (error) throw error;
     return path;
   }
+  async function selectInvoice(f) {
+    setFile(f); setReadText(''); setError('');
+    if (!f || !/\.(pdf|png|jpe?g)$/i.test(f.name)) return;
+    setReading(true); setReadProgress('Förbereder läsning…');
+    try {
+      const result = await readInvoice(f, setReadProgress);
+      setDocument(previous => previous ? {...previous, ...result.fields} : previous);
+      setReadText(result.text);
+      setNotice(`${Object.keys(result.fields).length} fält föreslagna. Kontrollera uppgifterna mot originalet och ändra vid behov.`);
+    } catch (e) { setError(e.message); }
+    finally { setReading(false); setReadProgress(''); }
+  }
+  async function backup() {
+    await run(async () => {
+      const fresh = await supabase.rpc('club_econ_snapshot');
+      if (fresh.error) throw fresh.error;
+      const audit = [];
+      for (let offset=0;;offset+=1000) {
+        const r = await supabase.from('club_econ_audit').select('*').order('id').range(offset,offset+999);
+        if(r.error) throw r.error;
+        audit.push(...r.data); if(r.data.length<1000) break;
+      }
+      const bytes = await makeBackup({...fresh.data,audit}, async path => {
+        const r=await supabase.storage.from('club-economy').download(path);
+        if(r.error) throw r.error; return r.data;
+      },setNotice);
+      downloadBackup(bytes);setNotice('ZIP-kopian är skapad och kontrollsummorna verifierade. Spara den på en annan enhet.');
+    });
+  }
+  async function autoDrafts() {
+    await run(async () => {
+      const fresh=await supabase.rpc('club_econ_snapshot');
+      if(fresh.error) throw fresh.error;
+      const state=fresh.data;
+      const rows=state.bank.filter(b=>b.date.slice(0,4)===String(year) && !matchedBank(b,state.journal,state.lines) && !state.journal.some(j=>j.bank_id===b.id && j.status==='draft'));
+      let count=0;
+      for(const b of rows) {
+        const suggestion=suggestAccount(b,state.partners,payments);
+        const r=await supabase.rpc('club_econ_bank_draft',{p_bank:b.id,p_proposal:entryForBank(b,suggestion)});
+        if(r.error) throw Error(`${count} utkast skapade. ${r.error.message}`);
+        if(r.data) count++;
+      }
+      setView('journal');setNotice(`${count} ändringsbara utkast skapade. Kontrollera konton, moms och betalningskopplingar före bokföring.`);
+    });
+  }
   async function saveDocument(e) {
     e.preventDefault();
+    if (reading) return;
     await run(async () => {
       let path = document.path;
       let uploaded = false;
@@ -209,12 +260,7 @@ export default function EconomyTab({
           credit: Number(l.credit || 0)
         }))
       };
-      const {
-        error: e
-      } = await supabase.rpc('club_econ_entry', {
-        action,
-        payload
-      });
+      const {error: e} = entry.correction_of ? await supabase.rpc('club_econ_correct', {p_original: entry.correction_of, p_reason: entry.reason, p_replacement: payload}) : await supabase.rpc('club_econ_entry', {action, payload});
       if (e) throw e;
       await onPaymentsChanged?.();
       setEntry(null);
@@ -257,7 +303,10 @@ export default function EconomyTab({
   function edit(j) {
     setEntry({
       ...j,
-      payment_ids: [],
+      id: j.status === 'posted' ? undefined : j.id,
+      correction_of: j.status === 'posted' ? j.id : undefined,
+      reason: '',
+      payment_ids: data.payment_links.filter(l=>l.journal_id===j.id).map(l=>l.payment_id),
       lines: data.lines.filter(l => l.journal_id === j.id).map(l => ({
         account: l.account,
         debit: l.debit,
@@ -310,7 +359,15 @@ export default function EconomyTab({
       setCSV(null);
       setPreview(null);
       setImportFile(null);
-      setNotice(`${rows.length} bankrader behandlade. Öppna ett förslag och kontrollera konteringen.`);
+      const imported = await supabase.from('club_econ_bank').select('*').eq('statement_document',doc.data.id);
+      if(imported.error) throw imported.error;
+      let drafts=0;
+      for(const b of imported.data) {
+        const r=await supabase.rpc('club_econ_bank_draft',{p_bank:b.id,p_proposal:entryForBank(b,suggestAccount(b,data.partners,payments))});
+        if(r.error) throw Error(`Bankraderna är sparade; ${drafts} utkast skapade. ${r.error.message}. Använd Skapa alla konteringsförslag för att fortsätta.`);
+        if(r.data) drafts++;
+      }
+      setNotice(`${rows.length} bankrader behandlade och ${drafts} ändringsbara konteringsförslag skapade automatiskt. Öppna Bokföring för kontroll och bekräftelse.`);
     });
   }
   async function lockYear() {
@@ -343,7 +400,8 @@ export default function EconomyTab({
  {error && <p className="error-banner" role="alert">{error}</p>}{notice && <p className="economy-notice" role="status">{notice}</p>}{locked && <p className="economy-notice">{year} är låst.</p>}
  {loading ? <p role="status">Läser ekonomin…</p> : <>
  {view === 'overview' && <><div className="economy-stats">{[['Intäkter', summary.income], ['Kostnader', summary.expense], ['Resultat', summary.result], ['Bokfört banksaldo', summary.bank]].map(([label, n]) => <Card key={label}><span>{label}</span><strong>{money(n / 100)}</strong></Card>)}</div><Card><h2>Bankutdrag · {year}</h2><p>Inbetalt: <strong>{money(yearBank.filter(b=>b.amount>0).reduce((total,b)=>total+Number(b.amount),0))}</strong> · Utbetalt: <strong>{money(-yearBank.filter(b=>b.amount<0).reduce((total,b)=>total+Number(b.amount),0))}</strong></p><p>Faktiska bankrörelser från importerade utdrag; kostnader ovan räknas från bokföringen.</p><h2>Att göra</h2><p>{unmatched.length} bankrader att stämma av · {yearJournal.filter(j => j.status === 'draft').length} utkast · {yearDocuments.length} underlag</p><div className="economy-actions"><Button onClick={() => setView('documents')}>Lägg till faktura eller kvitto</Button><Button variant="secondary" onClick={() => setView('bank')}>Importera bankutdrag</Button></div><p>Beloppen räknas endast från bokförda verifikationer. Medlemsavgifter i Betalningar är betalningskrav och räknas inte som en extra intäkt här.</p></Card></>}
- {view === 'documents' && <><div className="page-heading"><h2>Fakturor och kvitton</h2><Button onClick={() => {
+ {view === 'documents' && <><div className="page-heading"><h2>Fakturor och kvitton</h2><Button disabled={reading} onClick={() => {
+            setReadText('');
             setDocument({
               kind: 'purchase',
               party: '',
@@ -354,7 +412,7 @@ export default function EconomyTab({
               partner_id: ''
             });
             setFile(null);
-          }}>+ Lägg till underlag</Button></div><p>PDF, foto, CSV eller Excel. Fakturauppgifter registreras här; automatisk tolkning av skannade fakturor är ännu inte ansluten.</p>{document && <Card><form onSubmit={saveDocument} className="economy-form"><h3>{document.id ? 'Ändra underlag' : 'Nytt underlag'}</h3>{!document.id && <label>Fil<Input required type="file" accept=".pdf,.jpg,.jpeg,.png,.csv,.xlsx,.xls" onChange={e => setFile(e.target.files[0])} /></label>}<label>Typ<Select value={document.kind} onChange={e => setDocument({
+          }}>+ Lägg till underlag</Button></div><p>PDF, foto, CSV eller Excel. Fakturauppgifter registreras här; PDF och foton läses automatiskt på din enhet. Föreslagna fält kan ändras före sparande.</p>{document && <Card><form onSubmit={saveDocument} className="economy-form"><h3>{document.id ? 'Ändra underlag' : 'Nytt underlag'}</h3><fieldset disabled={reading} style={{border:0,padding:0,display:"contents"}}>{!document.id && <label>Fil<Input required type="file" accept=".pdf,.jpg,.jpeg,.png,.csv,.xlsx,.xls" disabled={reading || busy} onChange={e => selectInvoice(e.target.files[0])} /></label>}<p role="status">{readProgress}</p>{readText && <details><summary>Visa läst text för kontroll</summary><pre style={{whiteSpace:"pre-wrap"}}>{readText}</pre></details>}<label>Typ<Select disabled={reading} value={document.kind} onChange={e => setDocument({
                 ...document,
                 kind: e.target.value
               })}>{Object.entries(kinds).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</Select></label><label>Leverantör / kund<Input required value={document.party} onChange={e => setDocument({
@@ -375,7 +433,7 @@ export default function EconomyTab({
               })} /></label><label>Sponsor / bidragsgivare<Select value={document.partner_id || ''} onChange={e => setDocument({
                 ...document,
                 partner_id: e.target.value
-              })}><option value="">Ingen koppling</option>{data.partners.map(p => <option key={p.id} value={p.id}>{p.name} · {p.year}</option>)}</Select></label><div className="economy-actions"><Button type="submit" disabled={busy}>Spara underlag</Button><Button variant="secondary" onClick={() => setDocument(null)}>Avbryt</Button></div></form></Card>}{yearDocuments.map(d => {
+              })}><option value="">Ingen koppling</option>{data.partners.map(p => <option key={p.id} value={p.id}>{p.name} · {p.year}</option>)}</Select></label><div className="economy-actions"><Button type="submit" disabled={busy || reading}>Spara underlag</Button><Button variant="secondary" disabled={reading} onClick={() => setDocument(null)}>Avbryt</Button></div></fieldset></form></Card>}{yearDocuments.map(d => {
           const booked = data.journal.some(j => j.document_id === d.id && j.status === 'posted');
           return <Card key={d.id}><div className="page-heading"><div><h3>{d.party || d.name}</h3><p>{kinds[d.kind]} · {d.document_date} · {d.reference}</p></div><strong>{money(d.amount)}</strong></div><p>{booked ? 'Kopplat till bokföring' : 'Ej bokfört'}{d.due_date ? ` · Förfallodatum ${d.due_date}` : ''}</p><div className="economy-actions"><Button variant="secondary" disabled={busy} onClick={() => openDocument(d)}>Hämta fil</Button>{!locked && !booked && <><Button variant="secondary" onClick={() => {
                   setDocument(d);
@@ -422,7 +480,7 @@ export default function EconomyTab({
                     [key]: e.target.value
                   });
                   setPreview(null);
-                }}><option value="">Välj kolumn</option>{csv.headers.map((h, i) => <option key={i} value={i}>{h}</option>)}</Select></label>)}</div><Button disabled={busy} onClick={prepareImport}>Förhandsgranska</Button></>}{preview && <><p>{preview.length} rader · {preview.filter(r => data.bank.some(b => b.fingerprint === r.fingerprint)).length} redan importerade. Överlappande utdrag matchas på datum, belopp, text och referens; kontrollera identiska transaktioner.</p><div className="economy-table"><table><thead><tr><th>Datum</th><th>Text</th><th>Belopp</th></tr></thead><tbody>{preview.slice(0, 20).map((r, i) => <tr key={i}><td>{r.date}</td><td>{r.description}</td><td>{money(r.amount)}</td></tr>)}</tbody></table></div><Button disabled={busy || locked} onClick={importBank}>Bekräfta import</Button></>}</Card><h3>{unmatched.length} transaktioner att bokföra</h3>{yearBank.map(b => {
+                }}><option value="">Välj kolumn</option>{csv.headers.map((h, i) => <option key={i} value={i}>{h}</option>)}</Select></label>)}</div><Button disabled={busy} onClick={prepareImport}>Förhandsgranska</Button></>}{preview && <><p>{preview.length} rader · {preview.filter(r => data.bank.some(b => b.fingerprint === r.fingerprint)).length} redan importerade. Överlappande utdrag matchas på datum, belopp, text och referens; kontrollera identiska transaktioner.</p><div className="economy-table"><table><thead><tr><th>Datum</th><th>Text</th><th>Belopp</th></tr></thead><tbody>{preview.slice(0, 20).map((r, i) => <tr key={i}><td>{r.date}</td><td>{r.description}</td><td>{money(r.amount)}</td></tr>)}</tbody></table></div><Button disabled={busy || locked} onClick={importBank}>Bekräfta import</Button></>}</Card><h3>{unmatched.length} transaktioner att bokföra</h3><Button disabled={busy || locked || !unmatched.length} onClick={autoDrafts}>Skapa alla konteringsförslag</Button><p>Förslagen sparas som ändringsbara utkast. Bekräfta varje verifikation efter kontroll.</p>{yearBank.map(b => {
           const done = matchedBank(b, data.journal, data.lines);
           const draft = data.journal.find(j => j.bank_id === b.id && j.status === 'draft');
           return <Card key={b.id}><div className="page-heading"><div><strong>{b.description || b.reference || 'Banktransaktion'}</strong><p>{b.date} · {b.reference} · {done ? 'Avstämd' : 'Ej avstämd'}</p></div><strong>{money(b.amount)}</strong></div>{!done && !locked && <Button disabled={busy} onClick={() => draft ? edit(draft) : startBank(b)}>{draft ? 'Öppna utkast' : 'Öppna konteringsförslag'}</Button>}</Card>;
@@ -464,8 +522,8 @@ export default function EconomyTab({
                 if (e) throw e;
               });
             }}>Ta bort</Button></div></Card>)}</>}
- {view === 'journal' && <><div className="page-heading"><h2>Verifikationer</h2><Button disabled={locked} onClick={() => setEntry(emptyEntry())}>+ Ny verifikation</Button></div><p>Bokförda poster bevaras. Rättelse skapar motsatta debet/kredit-rader och behåller originalet.</p>{yearJournal.map(j => <Card key={j.id}><strong>{j.status === 'posted' ? `${j.year}-${j.number}` : 'Utkast'} · {j.description}</strong><p>{j.date}{j.reversal_of ? ' · Motverifikation' : ''}</p><details><summary>Visa kontering</summary>{data.lines.filter(l => l.journal_id === j.id).map(l => <p key={l.id}>{l.account} · Debet {money(l.debit)} · Kredit {money(l.credit)}</p>)}</details>{!locked && <div className="economy-actions">{j.status === 'draft' ? <><Button onClick={() => edit(j)}>Öppna / ändra</Button><Button variant="danger" disabled={busy} onClick={() => removeDraft(j)}>Ta bort utkast</Button></> : !j.reversal_of && !data.journal.some(r => r.reversal_of === j.id) && <Button variant="secondary" disabled={busy} onClick={() => reverse(j)}>Rätta med motverifikation</Button>}</div>}</Card>)}</>}
- {entry && <Card className="economy-editor"><h2>Kontrollera kontering</h2><div className="economy-form"><label>Datum<Input type="date" value={entry.date} disabled={Boolean(entry.bank_id)} onChange={e => setEntry({
+ {view === 'journal' && <><div className="page-heading"><h2>Verifikationer</h2><Button disabled={locked} onClick={() => setEntry(emptyEntry())}>+ Ny verifikation</Button></div><p>Bokförda poster bevaras. Rättelse skapar motsatta debet/kredit-rader och behåller originalet.</p>{yearJournal.map(j => <Card key={j.id}><strong>{j.status === 'posted' ? `${j.year}-${j.number}` : 'Utkast'} · {j.description}</strong><p>{j.date}{j.reversal_of ? ' · Motverifikation' : ''}</p><details><summary>Visa kontering</summary>{data.lines.filter(l => l.journal_id === j.id).map(l => <p key={l.id}>{l.account} · Debet {money(l.debit)} · Kredit {money(l.credit)}</p>)}</details>{!locked && <div className="economy-actions">{j.status === 'draft' ? <><Button onClick={() => edit(j)}>Öppna / ändra</Button><Button variant="danger" disabled={busy} onClick={() => removeDraft(j)}>Ta bort utkast</Button></> : !j.reversal_of && !data.journal.some(r => r.reversal_of === j.id) && <><Button disabled={busy} onClick={() => edit(j)}>Ändra / rätta</Button><Button variant="secondary" disabled={busy} onClick={() => reverse(j)}>Rätta med motverifikation</Button></>}</div>}</Card>)}</>}
+ {entry && <Card className="economy-editor"><h2>{entry.correction_of ? "Ändra bokförd verifikation" : "Kontrollera kontering"}</h2>{entry.correction_of && <label>Orsak till ändring<Input required value={entry.reason} onChange={e=>setEntry({...entry,reason:e.target.value})} /><p>Originalet bevaras. Motverifikation och den ändrade posten bokförs tillsammans när du bekräftar.</p></label>}<div className="economy-form"><label>Datum<Input type="date" value={entry.date} disabled={Boolean(entry.bank_id)} onChange={e => setEntry({
               ...entry,
               date: e.target.value
             })} /></label><label>Beskrivning<Input value={entry.description} onChange={e => setEntry({
@@ -505,7 +563,8 @@ export default function EconomyTab({
         })}>+ Dela belopp / lägg till rad</Button>{entry.bank_id && data.bank.find(b => b.id === entry.bank_id)?.amount > 0 && <details><summary>Koppla och bekräfta medlemsbetalningar</summary><p>Välj hela betalningar som ingår i bankbeloppet. En delbetalning lämnas utan denna koppling tills hela avgiften är betald.</p>{payments.filter(p => !data.payment_links.some(l => l.payment_id === p.id && !data.journal.some(j => j.reversal_of === l.journal_id))).map(p => <label className="economy-check" key={p.id}><input type="checkbox" checked={(entry.payment_ids || []).includes(p.id)} onChange={e => setEntry({
               ...entry,
               payment_ids: e.target.checked ? [...(entry.payment_ids || []), p.id] : (entry.payment_ids || []).filter(id => id !== p.id)
-            })} />{p.player_name} · {p.description} · {money(p.amount)} · {p.reference}</label>)}</details>}<p>Skillnad debet–kredit: <strong>{money(balance / 100)}</strong></p><div className="economy-actions"><Button variant="secondary" disabled={busy || balance !== 0} onClick={() => saveEntry('save')}>Spara utkast</Button><Button disabled={busy || balance !== 0} onClick={() => {
+            })} />{p.player_name} · {p.description} · {money(p.amount)} · {p.reference}</label>)}</details>}<p>Skillnad debet–kredit: <strong>{money(balance / 100)}</strong></p><div className="economy-actions"><Button variant="secondary" disabled={busy || balance !== 0 || Boolean(entry.correction_of)} onClick={() => saveEntry('save')}>Spara utkast</Button><Button disabled={busy || balance !== 0} onClick={() => {
+            if (entry.correction_of && entry.reason.trim().length < 3) { setError('Ange orsak till ändringen'); return; }
             if (confirm('Bokför den kontrollerade verifikationen? Originalet kommer att bevaras.')) saveEntry('post');
           }}>Bekräfta och bokför</Button><Button variant="secondary" onClick={() => setEntry(null)}>Avbryt</Button></div></Card>}
  {view === 'reports' && <><div className="page-heading"><h2>Rapporter · {year}</h2><div className="economy-actions"><Button variant="secondary" onClick={() => downloadCSV(`kindmark-huvudbok-${year}.csv`, journalRows(yearJournal, data.lines, data.accounts))}>Exportera huvudbok</Button><Button variant="secondary" onClick={() => run(async () => {
@@ -520,7 +579,10 @@ export default function EconomyTab({
                 ...data,
                 audit
               });
-            })}>Exportera ekonomidata (JSON)</Button><Button onClick={() => window.print()}>Skriv ut / spara PDF</Button></div></div><p>Rapporterna bygger på bokförda poster. Bokslutsunderlag för granskning, komplettering och signering; ingen färdig skattedeklaration. JSON-exporten innehåller ekonomidata och filreferenser; originalfiler hämtas separat under Fakturor & kvitton.</p><Card><h3>Resultaträkning</h3>{summary.accounts.filter(a => ['income', 'expense'].includes(a.kind)).map(a => <div className="economy-report-row" key={a.code}><span>{a.code} · {a.name}</span><strong>{money((a.kind === 'income' ? -a.change : a.change) / 100)}</strong></div>)}<div className="economy-report-row"><strong>Årets resultat</strong><strong>{money(summary.result / 100)}</strong></div></Card><Card><h3>Balansräkning · 31 december</h3>{summary.accounts.filter(a => !['income', 'expense'].includes(a.kind)).map(a => <div className="economy-report-row" key={a.code}><span>{a.code} · {a.name}</span><strong>{money((a.kind === 'asset' ? a.closing : -a.closing) / 100)}</strong></div>)}<div className="economy-report-row"><span>Tidigare resultat, ej omfört</span><strong>{money(summary.priorResult / 100)}</strong></div><div className="economy-report-row"><span>Årets resultat</span><strong>{money(summary.result / 100)}</strong></div><div className="economy-report-row"><strong>Tillgångar</strong><strong>{money(summary.assets / 100)}</strong></div><div className="economy-report-row"><strong>Eget kapital och skulder, inklusive resultat</strong><strong>{money((summary.equity + summary.liabilities + summary.priorResult + summary.result) / 100)}</strong></div><p>Balansdifferens: {money(summary.difference / 100)}</p></Card><Card className="no-print"><h3>Årsbokslut · underlag och avstämning</h3><p>{unmatched.length} bankrader kvar · {yearJournal.filter(j => j.status === 'draft').length} utkast. Ange ingående balans, stäm av skulder/fordringar och komplettera med periodiseringar, inventarier och moms där det behövs.</p><label>Bankens saldo 31 december, SEK<Input type="number" step="0.01" value={bankBalance} onChange={e => setBankBalance(e.target.value)} disabled={locked} /></label><label className="economy-check"><input type="checkbox" checked={reviewed} disabled={locked} onChange={e => setReviewed(e.target.checked)} /> Jag har granskat underlag, ingående balans, fordringar, skulder och årsslutsjusteringar.</label><Button disabled={busy || locked || !reviewed || bankBalance === '' || unmatched.length > 0 || yearJournal.some(j => j.status === 'draft')} onClick={lockYear}>Lås kontrollerat år</Button><Button variant="secondary" onClick={() => downloadCSV(`kindmark-bokslutsunderlag-${year}.csv`, [['Rapport', 'Konto', 'Namn', 'Ingående balans', 'Årets förändring', 'Utgående balans'], ...summary.accounts.map(a => [a.kind, a.code, a.name, a.opening / 100, a.change / 100, a.closing / 100]), ['Resultat', '', 'Årets resultat', '', summary.result / 100, '']])}>Exportera bokslutsunderlag</Button></Card><Card className="no-print"><h3>Ändringshistorik</h3>{data.audit.slice(0, 20).map(a => <p key={a.id}>{new Date(a.at).toLocaleString('sv-SE')} · {a.action} · {a.entity} · användare {a.actor}</p>)}</Card></>}
+            })}>Exportera ekonomidata (JSON)</Button><Button disabled={busy} variant="secondary" onClick={backup}>Hämta komplett säkerhetskopia (ZIP)</Button><Button onClick={() => window.print()}>Skriv ut / spara PDF</Button></div></div><p>Rapporterna bygger på bokförda poster. Bokslutsunderlag för granskning, komplettering och signering; ingen färdig skattedeklaration. JSON-exporten innehåller ekonomidata och filreferenser; originalfiler hämtas separat under Fakturor & kvitton.</p><Card><h3>Resultaträkning</h3>{summary.accounts.filter(a => ['income', 'expense'].includes(a.kind)).map(a => <div className="economy-report-row" key={a.code}><span>{a.code} · {a.name}</span><strong>{money((a.kind === 'income' ? -a.change : a.change) / 100)}</strong></div>)}<div className="economy-report-row"><strong>Årets resultat</strong><strong>{money(summary.result / 100)}</strong></div></Card><Card><h3>Balansräkning · 31 december</h3>{summary.accounts.filter(a => !['income', 'expense'].includes(a.kind)).map(a => <div className="economy-report-row" key={a.code}><span>{a.code} · {a.name}</span><strong>{money((a.kind === 'asset' ? a.closing : -a.closing) / 100)}</strong></div>)}<div className="economy-report-row"><span>Tidigare resultat, ej omfört</span><strong>{money(summary.priorResult / 100)}</strong></div><div className="economy-report-row"><span>Årets resultat</span><strong>{money(summary.result / 100)}</strong></div><div className="economy-report-row"><strong>Tillgångar</strong><strong>{money(summary.assets / 100)}</strong></div><div className="economy-report-row"><strong>Eget kapital och skulder, inklusive resultat</strong><strong>{money((summary.equity + summary.liabilities + summary.priorResult + summary.result) / 100)}</strong></div><p>Balansdifferens: {money(summary.difference / 100)}</p></Card><Card className="no-print"><h3>Årsbokslut · underlag och avstämning</h3><p>{unmatched.length} bankrader kvar · {yearJournal.filter(j => j.status === 'draft').length} utkast. Ange ingående balans, stäm av skulder/fordringar och komplettera med periodiseringar, inventarier och moms där det behövs.</p><label>Bankens saldo 31 december, SEK<Input type="number" step="0.01" value={bankBalance} onChange={e => setBankBalance(e.target.value)} disabled={locked} /></label><label className="economy-check"><input type="checkbox" checked={reviewed} disabled={locked} onChange={e => setReviewed(e.target.checked)} /> Jag har granskat underlag, ingående balans, fordringar, skulder och årsslutsjusteringar.</label><Button disabled={busy || locked || !reviewed || bankBalance === '' || unmatched.length > 0 || yearJournal.some(j => j.status === 'draft')} onClick={lockYear}>Lås kontrollerat år</Button><Button variant="secondary" onClick={() => downloadCSV(`kindmark-bokslutsunderlag-${year}.csv`, [['Rapport', 'Konto', 'Namn', 'Ingående balans', 'Årets förändring', 'Utgående balans'], ...summary.accounts.map(a => [a.kind, a.code, a.name, a.opening / 100, a.change / 100, a.closing / 100]), ['Resultat', '', 'Årets resultat', '', summary.result / 100, '']])}>Exportera bokslutsunderlag</Button></Card><Card className="no-print"><h3>Kontrollera säkerhetskopia</h3><p>Välj den ZIP-kopia du laddat ner. Kontrollsummor och originalfiler kontrolleras utan att ändra några betalningar eller bokföringsposter.</p><Input type="file" accept=".zip" disabled={busy} onChange={e => {
+ const f=e.target.files[0]; if(!f) return;
+ run(async()=>{ if(f.size>101*1024*1024) throw Error('Arkivet är för stort'); const result=await verifyBackup(new Uint8Array(await f.arrayBuffer())); setNotice(`Kopian är hel: ${result.documents} originalunderlag och ${result.journal} verifikationer. Exporterad ${result.exported_at}. Återställning till databasen utförs separat.`); }); e.target.value='';
+}} /></Card><Card className="no-print"><h3>Ändringshistorik</h3>{data.audit.slice(0, 20).map(a => <p key={a.id}>{new Date(a.at).toLocaleString('sv-SE')} · {a.action} · {a.entity} · användare {a.actor}</p>)}</Card></>}
  </>}
  </section>;
 }
