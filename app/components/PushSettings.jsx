@@ -30,10 +30,10 @@ export default function PushSettings({userId,compact=false}) {
   }
   async function disable(){setBusy(true);setError("");try{await disableDevicePush();setState("off");setMessage("Notifikationer är avstängda på den här enheten.");}catch(e){setError(e.message);}finally{setBusy(false);}}
   async function test(){setBusy(true);setError("");try{const registration=await navigator.serviceWorker.getRegistration("/");const subscription=await registration?.pushManager.getSubscription();await pushRequest({action:"test",endpoint:subscription?.endpoint});setMessage("Testnotifikationen har skickats till den här enheten.");}catch(e){setError(e.message);}finally{setBusy(false);}}
-  if(compact&&["enabled","loading","unsupported"].includes(state))return null;
+  if(compact&&["enabled","loading","unsupported","install"].includes(state))return null;
   return <section className={compact?"push-settings push-settings-compact":"push-settings"} aria-label="Notifikationer">
     {!compact&&<h3>Notifikationer</h3>}
-    {state==="install"?<p>På iPhone: öppna i Safari → Dela → Lägg till på hemskärmen. Öppna sedan appen och aktivera notifikationer i Min profil.</p>:state==="unsupported"?<p>Den här webbläsaren stöder inte push. Kallelser och meddelanden finns fortfarande i portalen.</p>:state==="denied"?<p>Notifikationer är blockerade. Tillåt dem i enhetens inställningar och öppna appen igen.</p>:state==="loading"?<p>Läser inställningar…</p>:<>
+    {state==="install"?<p>Installera appen för att aktivera pushnotifikationer.</p>:state==="unsupported"?<p>Den här webbläsaren stöder inte push. Kallelser och meddelanden finns fortfarande i portalen.</p>:state==="denied"?<p>Notifikationer är blockerade. Tillåt dem i enhetens inställningar och öppna appen igen.</p>:state==="loading"?<p>Läser inställningar…</p>:<>
       {!compact&&<p>{state==="enabled"?"Aktiverat på den här enheten. Du får notifikationer om nya kallelser och meddelanden.":"Få kallelser och meddelanden även när appen är stängd."}</p>}
       <div className="button-group">{state==="enabled"?<><Button variant="secondary" disabled={busy} onClick={test}>Testa notifikation</Button><Button variant="secondary" disabled={busy} onClick={disable}>Stäng av</Button></>:<Button disabled={busy} onClick={enable}>{busy?"Aktiverar…":"Aktivera notifikationer"}</Button>}</div>
     </>}
