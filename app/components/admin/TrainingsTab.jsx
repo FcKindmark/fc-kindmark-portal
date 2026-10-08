@@ -184,10 +184,10 @@ export default function TrainingsTab({ data, onUpdate, canDelete=false }) {
 
               return (
                 <div key={t.id} style={{ padding: "15px", background: "var(--beige-light)", borderRadius: "8px", borderLeft: "4px solid var(--gold)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "8px" }}>
-                    <div style={{ flex: 1 }}>
-                      <h3 style={{ color: "var(--text-dark)", marginBottom: "5px", cursor: "pointer" }} onClick={() => setExpandedId(expandedId === t.id ? null : t.id)}>
-                        {expandedId === t.id ? "▼" : "▶"} {t.date} kl {t.time?.slice(0,5)}
+                  <div style={{ display: "grid", gap: "10px", marginBottom: "8px" }}>
+                    <div style={{ minWidth: 0 }}>
+                      <h3 style={{ color: "var(--text-dark)", fontSize: "15px", lineHeight: 1.4, whiteSpace: "nowrap", marginBottom: "5px", cursor: "pointer" }} onClick={() => setExpandedId(expandedId === t.id ? null : t.id)}>
+                        <span aria-hidden="true" style={{ fontSize: "11px" }}>{expandedId === t.id ? "▾" : "▸"}</span> {t.date} kl {t.time?.slice(0,5)}
                       </h3>
                       <p style={{ color: "var(--text-light)", fontSize: "14px", marginBottom: "8px" }}>{teams.find(team=>team.id===t.team_id)?.name} · {t.location}</p>{t.calls_sent_at&&<p className="muted">Kallelse skickad · {teamPlayers.length} spelare</p>}
                       <p style={{ color: "var(--text-dark)", fontSize: "13px", fontWeight: "600" }}>
@@ -196,8 +196,8 @@ export default function TrainingsTab({ data, onUpdate, canDelete=false }) {
                         ? Svar väntas: <span style={{ color: "var(--text-light)" }}>{teamPlayers.length - kommerCount - kommerIntCount}</span>
                       </p>
                     </div>
-                    <div className="match-actions">
-                      <Button disabled={loading} onClick={()=>openCall(t)}>Kallelse</Button>
+                    <div className="match-actions" style={{ margin: 0, gap: "8px" }}>
+                      <Button disabled={loading} onClick={()=>openCall(t)} style={{ padding: "8px 12px", fontSize: "12px" }}>Kallelse</Button>
                       <Button variant="secondary" onClick={() => startEdit(t)} style={{ padding: "8px 12px", fontSize: "12px" }}>Redigera</Button>
                       <Button variant="danger" onClick={() => deleteTraining(t.id)} disabled={loading} style={{ padding: "8px 12px", fontSize: "12px" }}>Ta bort</Button>
                     </div>
