@@ -8,3 +8,10 @@ for(const view of ['overview','documents','bank','partners','journal','reports']
 const Admin=load('app/components/admin/AdminDashboard.jsx').default;
 for(const role of ['admin','coach']){const html=renderToStaticMarkup(React.createElement(Admin,{user:{id:'test',email:'test@example.com'},profile:{role}}));assert.equal(html.includes('>Ekonomi</button>'),role==='admin');}
 console.log('PASS: economy screens, reports, cleared bank row and admin-only navigation.');
+const currencyData={...data,documents:[{id:'foreign',name:'invoice.pdf',kind:'purchase',party:'Example Supplier',document_date:'2026-09-07',reference:'INV-1',amount:13000,source_currency:'EUR',source_amount:1175.82,is_proforma:true,conversion_note:'Documented bank payment'}]};
+const currencyHTML=renderToStaticMarkup(React.createElement(Economy,{initialData:currencyData,initialView:'documents'}));
+assert.ok(currencyHTML.includes('1175.82 EUR'));assert.ok(currencyHTML.includes('Proformafaktura'));assert.ok(currencyHTML.includes('Documented bank payment'));assert.ok(!currencyHTML.includes('>Konteringsförslag</button>'));
+const candidateData={...data,journal:[],lines:[],documents:[{id:'invoice',kind:'sponsor',party:'Example Sponsor',document_date:'2026-06-30',reference:'0001',amount:1000,source_currency:'SEK'}],bank:[{id:'payment',date:'2026-07-30',amount:1000,description:'Bankgiro inbetalning',reference:'1234567'}]};
+const candidateHTML=renderToStaticMarkup(React.createElement(Economy,{initialData:candidateData,initialView:'bank'}));
+assert.ok(candidateHTML.includes('Möjliga fakturor att koppla'));assert.ok(candidateHTML.includes('bekräfta betalaren'));assert.ok(candidateHTML.includes('Använd fakturaförslag'));
+console.log('PASS: persisted foreign-currency evidence, proforma actions and explicit invoice candidates in rendered screens.');

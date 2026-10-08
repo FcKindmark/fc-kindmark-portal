@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { Card, Button, Input, Select } from '../UI';
-import { money, cents, parseCSV, decodeBankCSV, guessBankColumns, bankRows, fingerprints, suggestAccount, entryForBank, report, matchedBank, journalRows, downloadCSV, downloadArchive } from '../../lib/economy';
+import { money, cents, parseCSV, decodeBankCSV, guessBankColumns, documentCandidates, documentBankProposal, bankRows, fingerprints, suggestAccount, entryForBank, report, matchedBank, journalRows, downloadCSV, downloadArchive } from '../../lib/economy';
 import usePortalView from "../../lib/usePortalView";
 import { readInvoice } from '../../lib/economy-documents';
 import { makeBackup, verifyBackup, downloadBackup } from '../../lib/economy-backup';
@@ -79,8 +79,7 @@ export default function EconomyTab({
     [reviewed, setReviewed] = useState(false),
     [reading, setReading] = useState(false),
     [readProgress, setReadProgress] = useState(''),
-    [readText, setReadText] = useState(''),
-    [invoiceInfo, setInvoiceInfo] = useState(null);
+    [readText, setReadText] = useState('');
   async function load() {
     setLoading(true);
     try {
@@ -131,15 +130,14 @@ export default function EconomyTab({
     return path;
   }
   async function selectInvoice(f) {
-    setFile(f); setReadText(''); setInvoiceInfo(null); setError('');
+    setFile(f); setReadText(''); setError('');
     if (!f || !/\.(pdf|png|jpe?g)$/i.test(f.name)) return;
-    setDocument(previous => previous ? {...previous, party:'', document_date:'', due_date:'', amount:'', reference:''} : previous);
+    setDocument(previous => previous ? {...previous, party:'', document_date:'', due_date:'', amount:'', reference:'', source_currency:'SEK', source_amount:'', is_proforma:false, conversion_note:''} : previous);
     setReading(true); setReadProgress('Förbereder läsning…');
     try {
       const result = await readInvoice(f, setReadProgress);
       const {original_amount, currency, proforma, ...fields} = result.fields;
-      setInvoiceInfo({original_amount, currency, proforma});
-      setDocument(previous => previous ? {...previous, ...fields, ...(currency ? {amount:''} : {})} : previous);
+      setDocument(previous => previous ? {...previous, ...fields, source_currency:currency || 'SEK', source_amount:original_amount ?? fields.amount ?? '', is_proforma:Boolean(proforma), ...(currency ? {amount:''} : {})} : previous);
       setReadText(result.text);
       setNotice(`${Object.keys(result.fields).length} fält föreslagna. Kontrollera uppgifterna mot originalet och ändra vid behov.`);
     } catch (e) { setError(e.message); }
@@ -182,6 +180,7 @@ export default function EconomyTab({
     e.preventDefault();
     if (reading) return;
     await run(async () => {
+      if (document.source_currency !== 'SEK' && !document.conversion_note?.trim()) throw Error('Ange underlag för omräkningen till SEK, exempelvis bankbetalning eller dokumenterad valutakurs.');
       let path = document.path;
       let uploaded = false;
       if (!path) {
@@ -193,6 +192,10 @@ export default function EconomyTab({
         path,
         name: document.name || file?.name,
         amount: Number(document.amount || 0),
+        source_currency: (document.source_currency || 'SEK').trim().toUpperCase(),
+        source_amount: document.source_amount === '' || document.source_amount == null ? null : Number(document.source_amount),
+        is_proforma: Boolean(document.is_proforma),
+        conversion_note: document.conversion_note || '',
         partner_id: document.partner_id || null,
         due_date: document.due_date || null
       };
@@ -230,7 +233,16 @@ export default function EconomyTab({
     });
     setNotice(`Förslag: ${s.reason}. Kontrollera konto, moms och underlag innan bokföring.`);
   }
+  function applyDocumentForBank(b, d) {
+    setError('');
+    try {
+      const proposal = documentBankProposal(b, d, data.journal, data.lines, data.partners);
+      setEntry(previous => previous?.bank_id === b.id ? {...previous, ...proposal} : proposal);
+      setNotice('Fakturans koppling och kontering är föreslagna. Kontrollera betalaren, beloppet och eventuell moms före bokföring.');
+    } catch (e) { setError(e.message); }
+  }
   function fromDocument(d) {
+    if (d.is_proforma || !(Number(d.amount)>0)) { setError('Komplettera med slutfaktura och ett giltigt SEK-belopp före konteringsförslag.'); return; }
     const incoming = ['sales', 'sponsor', 'grant'].includes(d.kind),
       account = d.kind === 'sponsor' ? '3910' : d.kind === 'grant' ? '3980' : incoming ? '3990' : '6990';
     setEntry({
@@ -410,7 +422,7 @@ export default function EconomyTab({
  {loading ? <p role="status">Läser ekonomin…</p> : <>
  {view === 'overview' && <><div className="economy-stats">{[['Intäkter', summary.income], ['Kostnader', summary.expense], ['Resultat', summary.result], ['Bokfört banksaldo', summary.bank]].map(([label, n]) => <Card key={label}><span>{label}</span><strong>{money(n / 100)}</strong></Card>)}</div><Card><h2>Bankutdrag · {year}</h2><p>Inbetalt: <strong>{money(yearBank.filter(b=>b.amount>0).reduce((total,b)=>total+Number(b.amount),0))}</strong> · Utbetalt: <strong>{money(-yearBank.filter(b=>b.amount<0).reduce((total,b)=>total+Number(b.amount),0))}</strong></p><p>Faktiska bankrörelser från importerade utdrag; kostnader ovan räknas från bokföringen.</p><h2>Att göra</h2><p>{unmatched.length} bankrader att stämma av · {yearJournal.filter(j => j.status === 'draft').length} utkast · {yearDocuments.length} underlag</p><div className="economy-actions"><Button onClick={() => setView('documents')}>Lägg till faktura eller kvitto</Button><Button variant="secondary" onClick={() => setView('bank')}>Importera bankutdrag</Button></div><p>Beloppen räknas endast från bokförda verifikationer. Medlemsavgifter i Betalningar är betalningskrav och räknas inte som en extra intäkt här.</p></Card></>}
  {view === 'documents' && <><div className="page-heading"><h2>Fakturor och kvitton</h2><Button disabled={reading} onClick={() => {
-            setReadText(''); setInvoiceInfo(null);
+            setReadText('');
             setDocument({
               kind: 'purchase',
               party: '',
@@ -418,10 +430,10 @@ export default function EconomyTab({
               due_date: '',
               amount: '',
               reference: '',
-              partner_id: ''
+              partner_id: '', source_currency:'SEK', source_amount:'', is_proforma:false, conversion_note:''
             });
             setFile(null);
-          }}>+ Lägg till underlag</Button></div><p>PDF, foto, CSV eller Excel. Fakturauppgifter registreras här; PDF och foton läses automatiskt på din enhet. Föreslagna fält kan ändras före sparande.</p>{document && <Card><form onSubmit={saveDocument} className="economy-form"><h3>{document.id ? 'Ändra underlag' : 'Nytt underlag'}</h3><fieldset disabled={reading} style={{border:0,padding:0,display:"contents"}}>{!document.id && <label>Fil<Input required type="file" accept=".pdf,.jpg,.jpeg,.png,.csv,.xlsx,.xls" disabled={reading || busy} onChange={e => selectInvoice(e.target.files[0])} /></label>}<p role="status">{readProgress}</p>{invoiceInfo?.currency && <p className="economy-notice">Originalbelopp: {new Intl.NumberFormat('sv-SE', {style:'currency', currency:invoiceInfo.currency}).format(invoiceInfo.original_amount)}. Ange motsvarande belopp i SEK från bankbetalningen eller en dokumenterad valutakurs.</p>}{invoiceInfo?.proforma && <p className="economy-notice">Detta är en proformafaktura. Begär slutfakturan som underlag för slutlig bokföring och eventuell moms.</p>}{readText && <details><summary>Visa läst text för kontroll</summary><pre style={{whiteSpace:"pre-wrap"}}>{readText}</pre></details>}<label>Typ<Select disabled={reading} value={document.kind} onChange={e => setDocument({
+          }}>+ Lägg till underlag</Button></div><p>PDF, foto, CSV eller Excel. Fakturauppgifter registreras här; PDF och foton läses automatiskt på din enhet. Föreslagna fält kan ändras före sparande.</p>{document && <Card><form onSubmit={saveDocument} className="economy-form"><h3>{document.id ? 'Ändra underlag' : 'Nytt underlag'}</h3><fieldset disabled={reading} style={{border:0,padding:0,display:"contents"}}>{!document.id && <label>Fil<Input required type="file" accept=".pdf,.jpg,.jpeg,.png,.csv,.xlsx,.xls" disabled={reading || busy} onChange={e => selectInvoice(e.target.files[0])} /></label>}<p role="status">{readProgress}</p>{document.source_currency && document.source_currency !== 'SEK' && <p className="economy-notice">Fakturan är i {document.source_currency}. Bokföringsbeloppet anges i SEK med dokumenterad omräkning.</p>}{document.is_proforma && <p className="economy-notice">Proformafaktura: komplettera med slutfaktura innan du bokför fakturan.</p>}{readText && <details><summary>Visa läst text för kontroll</summary><pre style={{whiteSpace:"pre-wrap"}}>{readText}</pre></details>}<label>Typ<Select disabled={reading} value={document.kind} onChange={e => setDocument({
                 ...document,
                 kind: e.target.value
               })}>{Object.entries(kinds).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</Select></label><label>Leverantör / kund<Input required value={document.party} onChange={e => setDocument({
@@ -433,7 +445,7 @@ export default function EconomyTab({
               })} /></label><label>Förfallodatum<Input type="date" value={document.due_date || ''} onChange={e => setDocument({
                 ...document,
                 due_date: e.target.value
-              })} /></label><label>Totalbelopp SEK<Input required type="number" min="0" step="0.01" value={document.amount} onChange={e => setDocument({
+              })} /></label><label>Originalvaluta<Input required pattern="[A-Za-z]{3}" maxLength={3} value={document.source_currency || 'SEK'} onChange={e=>setDocument({...document,source_currency:e.target.value.toUpperCase()})} /></label><label>Originalbelopp<Input type="number" min="0" step="0.01" value={document.source_amount ?? ''} onChange={e=>setDocument({...document,source_amount:e.target.value})} /></label><label className="economy-check"><input type="checkbox" checked={Boolean(document.is_proforma)} onChange={e=>setDocument({...document,is_proforma:e.target.checked})} /> Proformafaktura</label>{document.source_currency !== 'SEK' && <><label>Hämta SEK-belopp från bankbetalning<Select value="" onChange={e=>{const b=data.bank.find(b=>b.id===e.target.value);if(b)setDocument({...document,amount:Math.abs(b.amount),conversion_note:`Bankbetalning ${b.date} · ${b.reference || b.description} · ${Math.abs(b.amount)} SEK`});}}><option value="">Välj betalning efter kontroll</option>{data.bank.filter(b=>['sales','sponsor','grant'].includes(document.kind) ? b.amount>0 : b.amount<0).map(b=><option key={b.id} value={b.id}>{b.date} · {b.description} · {money(b.amount)}</option>)}</Select></label><label>Underlag för valutaomräkning<Input required value={document.conversion_note || ''} onChange={e=>setDocument({...document,conversion_note:e.target.value})} placeholder="Bankbetalning eller dokumenterad valutakurs" /></label></>}<label>Totalbelopp SEK<Input required type="number" min="0" step="0.01" value={document.amount} onChange={e => setDocument({
                 ...document,
                 amount: e.target.value
               })} /></label><label>Fakturanummer / referens<Input value={document.reference} onChange={e => setDocument({
@@ -444,10 +456,11 @@ export default function EconomyTab({
                 partner_id: e.target.value
               })}><option value="">Ingen koppling</option>{data.partners.map(p => <option key={p.id} value={p.id}>{p.name} · {p.year}</option>)}</Select></label><div className="economy-actions"><Button type="submit" disabled={busy || reading}>Spara underlag</Button><Button variant="secondary" disabled={reading} onClick={() => setDocument(null)}>Avbryt</Button></div></fieldset></form></Card>}{yearDocuments.map(d => {
           const booked = data.journal.some(j => j.document_id === d.id && j.status === 'posted');
-          return <Card key={d.id}><div className="page-heading"><div><h3>{d.party || d.name}</h3><p>{kinds[d.kind]} · {d.document_date} · {d.reference}</p></div><strong>{money(d.amount)}</strong></div><p>{booked ? 'Kopplat till bokföring' : 'Ej bokfört'}{d.due_date ? ` · Förfallodatum ${d.due_date}` : ''}</p><div className="economy-actions"><Button variant="secondary" disabled={busy} onClick={() => openDocument(d)}>Hämta fil</Button>{!locked && !booked && <><Button variant="secondary" onClick={() => {
+          return <Card key={d.id}><div className="page-heading"><div><h3>{d.party || d.name}</h3><p>{kinds[d.kind]} · {d.document_date} · {d.reference}</p></div><div><strong>{money(d.amount)}</strong>{d.source_currency !== 'SEK' && d.source_amount != null && <p>Original: {d.source_amount} {d.source_currency}</p>}{d.is_proforma && <p>Proformafaktura</p>}</div></div>{d.conversion_note && <p>{d.conversion_note}</p>}<p>{booked ? 'Kopplat till bokföring' : 'Ej bokfört'}{d.due_date ? ` · Förfallodatum ${d.due_date}` : ''}</p><div className="economy-actions"><Button variant="secondary" disabled={busy} onClick={() => openDocument(d)}>Hämta fil</Button>{!locked && !booked && <><Button variant="secondary" onClick={() => {
                   setDocument(d);
+                  setReadText('');
                   setFile(null);
-                }}>Ändra</Button>{d.kind !== 'statement' && <Button onClick={() => fromDocument(d)}>Konteringsförslag</Button>}<Button variant="danger" onClick={() => {
+                }}>Ändra</Button>{d.kind !== 'statement' && !d.is_proforma && Number(d.amount)>0 && <Button onClick={() => fromDocument(d)}>Konteringsförslag</Button>}<Button variant="danger" onClick={() => {
                   if (confirm('Ta bort underlaget?')) run(async () => {
                     const {
                       error: e
@@ -488,7 +501,7 @@ export default function EconomyTab({
                 }}><option value="">Välj kolumn</option>{csv.headers.map((h, i) => <option key={i} value={i}>{h}</option>)}</Select></label>)}</div><Button disabled={busy} onClick={prepareImport}>Förhandsgranska</Button></details></>}{preview && <><p>{preview.length} rader · {preview.filter(r => data.bank.some(b => b.fingerprint === r.fingerprint)).length} redan importerade. Överlappande utdrag matchas på datum, belopp, text och referens; kontrollera identiska transaktioner.</p><div className="economy-table"><table><thead><tr><th>Datum</th><th>Text</th><th>Belopp</th></tr></thead><tbody>{preview.slice(0, 20).map((r, i) => <tr key={i}><td>{r.date}</td><td>{r.description}</td><td>{money(r.amount)}</td></tr>)}</tbody></table></div><Button disabled={busy || locked} onClick={importBank}>Bekräfta import</Button></>}</Card><h3>{unmatched.length} transaktioner att bokföra</h3><Button disabled={busy || locked || !unmatched.length} onClick={autoDrafts}>Skapa alla konteringsförslag</Button><p>Förslagen sparas som ändringsbara utkast. Bekräfta varje verifikation efter kontroll.</p>{yearBank.map(b => {
           const done = matchedBank(b, data.journal, data.lines);
           const draft = data.journal.find(j => j.bank_id === b.id && j.status === 'draft');
-          return <Card key={b.id}><div className="page-heading"><div><strong>{b.description || b.reference || 'Banktransaktion'}</strong><p>{b.date} · {b.reference} · {done ? 'Avstämd' : 'Ej avstämd'}</p></div><strong>{money(b.amount)}</strong></div>{!done && !locked && <Button disabled={busy} onClick={() => draft ? edit(draft) : startBank(b)}>{draft ? 'Öppna utkast' : 'Öppna konteringsförslag'}</Button>}</Card>;
+          return <Card key={b.id}><div className="page-heading"><div><strong>{b.description || b.reference || 'Banktransaktion'}</strong><p>{b.date} · {b.reference} · {done ? 'Avstämd' : 'Ej avstämd'}</p></div><strong>{money(b.amount)}</strong></div>{!done && !locked && <Button disabled={busy} onClick={() => draft ? edit(draft) : startBank(b)}>{draft ? 'Öppna utkast' : 'Öppna konteringsförslag'}</Button>}{!done && !locked && documentCandidates(b,data.documents,data.journal,data.lines).length>0 && <details><summary>Möjliga fakturor att koppla</summary>{documentCandidates(b,data.documents,data.journal,data.lines).map(({document:d,reason})=><div key={d.id}><p>{d.party} · {d.reference} · {reason}</p><Button variant="secondary" disabled={busy} onClick={()=>{if(draft)edit(draft);applyDocumentForBank(b,d);}}>Använd fakturaförslag</Button></div>)}</details>}</Card>;
         })}</>}
  {view === 'partners' && <><div className="page-heading"><h2>Sponsorer och bidrag</h2><Button onClick={() => setPartner({
             name: '',
@@ -543,7 +556,7 @@ export default function EconomyTab({
             })}><option value="">Välj underlag</option>{data.documents.map(d => <option value={d.id} key={d.id}>{d.party} · {d.reference} · {d.name}</option>)}</Select></label><label>Sponsor / bidrag<Select value={entry.partner_id || ''} onChange={e => setEntry({
               ...entry,
               partner_id: e.target.value
-            })}><option value="">Ingen koppling</option>{data.partners.filter(p => p.year === Number(entry.date.slice(0, 4))).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</Select></label></div><p>Kontrollera om beloppet ska delas på medlem, träning, kläder eller moms. En betald faktura bokförs mot fordran/skuld, inte som en ny intäkt/kostnad.</p>{entry.lines.map((l, i) => <div className="economy-line" key={i}><label>Konto<Select value={l.account} onChange={e => setEntry({
+            })}><option value="">Ingen koppling</option>{data.partners.filter(p => p.year === Number(entry.date.slice(0, 4))).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</Select></label></div>{entry.bank_id && entry.document_id && <Button variant="secondary" onClick={()=>applyDocumentForBank(data.bank.find(b=>b.id===entry.bank_id),data.documents.find(d=>d.id===entry.document_id))}>Använd valt underlags konteringsförslag</Button>}<p>Kontrollera om beloppet ska delas på medlem, träning, kläder eller moms. En betald faktura bokförs mot fordran/skuld, inte som en ny intäkt/kostnad.</p>{entry.lines.map((l, i) => <div className="economy-line" key={i}><label>Konto<Select value={l.account} onChange={e => setEntry({
               ...entry,
               lines: entry.lines.map((x, k) => k === i ? {
                 ...x,

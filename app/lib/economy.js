@@ -249,3 +249,31 @@ export function downloadArchive(data) {
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+// Candidates are suggestions only: amount/date alone never prove who paid.
+export function documentCandidates(bank, documents, journal = [], lines = []) {
+  const incoming = Number(bank.amount) > 0;
+  const text = `${bank.description} ${bank.reference}`.toLowerCase();
+  return documents.filter(d => {
+    if (d.kind === 'statement' || d.is_proforma || !(Number(d.amount)>0)) return false;
+    if (incoming !== ['sales','sponsor','grant'].includes(d.kind)) return false;
+    const days = (Date.parse(bank.date)-Date.parse(d.document_date))/86400000;
+    if (!(days >= 0 && days <= 120)) return false;
+    const posted = journal.filter(j=>j.document_id===d.id && j.status==='posted');
+    const control = incoming ? '1510' : '2440';
+    const outstanding = lines.filter(l=>posted.some(j=>j.id===l.journal_id) && l.account===control).reduce((sum,l)=>sum+cents(incoming ? Number(l.debit)-Number(l.credit) : Number(l.credit)-Number(l.debit)),0);
+    if (posted.length && outstanding <= 0) return false;
+    return cents(Math.abs(bank.amount)) === (posted.length ? outstanding : cents(d.amount));
+  }).map(d=>({document:d, reason:d.reference?.length>=4 && text.includes(d.reference.toLowerCase()) ? 'Belopp och fakturareferens stämmer – kontrollera originalet' : 'Belopp och datum kan stämma – bekräfta betalaren'}));
+}
+export function documentBankProposal(bank, document, journal = [], lines = [], partners = []) {
+  if (document.is_proforma) throw Error('Proformafakturan behöver kompletteras med slutfaktura. Välj kontering manuellt.');
+  const incoming = Number(bank.amount)>0;
+  if (incoming !== ['sales','sponsor','grant'].includes(document.kind)) throw Error('Underlaget och bankbetalningen har olika riktning.');
+  const posted = journal.filter(j=>j.document_id===document.id && j.status==='posted');
+  const control = incoming ? '1510' : '2440';
+  const outstanding = lines.filter(l=>posted.some(j=>j.id===l.journal_id) && l.account===control).reduce((sum,l)=>sum+cents(incoming ? Number(l.debit)-Number(l.credit) : Number(l.credit)-Number(l.debit)),0);
+  if (posted.length && (outstanding <= 0 || cents(Math.abs(bank.amount)) > outstanding)) throw Error('Fakturan är redan reglerad eller bankbeloppet överstiger kvarvarande skuld/fordran. Kontrollera konteringen manuellt.');
+  let account = posted.length ? control : document.kind === 'sponsor' ? '3910' : document.kind === 'grant' ? '3980' : incoming ? '3990' : suggestAccount({...bank,description:document.party},partners).account;
+  return {...entryForBank(bank,{account,partner_id:document.partner_id}), document_id:document.id, description:`${bank.description || 'Betalning'} · ${document.party} · ${document.reference}`, payment_ids:[]};
+}
