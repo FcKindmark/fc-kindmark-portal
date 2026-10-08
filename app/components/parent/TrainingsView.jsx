@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { Card, Button, Empty, Badge } from "../UI";
-import {dateLabel,memberEventInfo} from "../../lib/schedule";
+import {dateLabel,memberEventInfo,nextSevenDays,stockholmToday} from "../../lib/schedule";
 import { supabase } from "../../lib/supabaseClient";
 
 export default function TrainingsView({ data, userEmail, linkedPlayerIds = [], onRefresh, self=false }) {
@@ -10,6 +10,18 @@ export default function TrainingsView({ data, userEmail, linkedPlayerIds = [], o
   const [expandedTraining, setExpandedTraining] = useState(null);
   const [loading, setLoading] = useState(false);
   const [attendance, setAttendance] = useState({});
+  const [today, setToday] = useState(stockholmToday);
+  useEffect(() => {
+    const refreshDay = () => setToday(stockholmToday());
+    const timer = window.setInterval(refreshDay, 60000);
+    window.addEventListener("focus", refreshDay);
+    document.addEventListener("visibilitychange", refreshDay);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refreshDay);
+      document.removeEventListener("visibilitychange", refreshDay);
+    };
+  }, []);
   const [calls,setCalls]=useState([]),[callsReady,setCallsReady]=useState(false),[callError,setCallError]=useState("");
   useEffect(()=>{let active=true;setCallsReady(false);supabase.from("club_training_calls").select("training_id,player_id").then(({data,error})=>{if(!active)return;if(error)setCallError(error.message);else{setCalls(data||[]);setCallError("");}setCallsReady(!error);});return()=>{active=false;};},[data.trainings]);
 
@@ -22,12 +34,12 @@ export default function TrainingsView({ data, userEmail, linkedPlayerIds = [], o
   const myTeamIds = new Set(myChildren.map((c) => c.team_id).filter(Boolean));
 
   // Filter trainings for user's children's teams
-  const myTrainings = trainings.filter((t) => myTeamIds.has(t.team_id));
+  const myTrainings = nextSevenDays(trainings.filter((t) => myTeamIds.has(t.team_id)), today);
 
   // Load attendance data
   useEffect(() => {
     loadAttendance();
-  }, [data.trainings, data.players, userEmail, linkedPlayerIds.join(",")]);
+  }, [data.trainings, data.players, userEmail, linkedPlayerIds.join(","), today]);
 
   async function loadAttendance() {
     try {
@@ -114,10 +126,11 @@ export default function TrainingsView({ data, userEmail, linkedPlayerIds = [], o
     <>
       <div style={{ marginBottom: "30px" }}>
         <h2 style={{ fontSize: "24px", fontWeight: "700", color: "var(--text-dark)" }}>Träningar</h2>
+        <p className="muted">Kommande 7 dagar</p>
       </div>
 
       {myTrainings.length === 0 ? (
-        <Empty message={self?"Inga träningar för dig ännu":"Inga träningar för dina barn ännu"} />
+        <Empty message={self?"Inga träningar för dig de kommande 7 dagarna":"Inga träningar för dina barn de kommande 7 dagarna"} />
       ) : (
         <div style={{ display: "grid", gap: "20px" }}>
           {myTrainings.map((training) => {

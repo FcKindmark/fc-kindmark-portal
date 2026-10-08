@@ -1,6 +1,13 @@
 export function stockholmToday() {
   return new Intl.DateTimeFormat("sv-SE", {timeZone:"Europe/Stockholm"}).format(new Date());
 }
+export function nextSevenDays(events, today = stockholmToday()) {
+  const end = new Date(`${today}T12:00:00Z`);
+  end.setUTCDate(end.getUTCDate() + 7);
+  const exclusiveEnd = end.toISOString().slice(0, 10);
+  return events.filter(event => event.date >= today && event.date < exclusiveEnd)
+    .sort((a, b) => `${a.date} ${a.time || ""}`.localeCompare(`${b.date} ${b.time || ""}`));
+}
 export function scheduleEvents(data) {
   return [...(data.trainings || []).map(t => ({...t, kind:"training", title:"Träning"})), ...(data.matches || []).map(m => ({...m,kind:"match",title:m.opponent ? `Match mot ${m.opponent}` : "Match"}))].filter(e => /^\d{4}-\d{2}-\d{2}$/.test(e.date || "")).sort((a,b) => `${a.date} ${a.time || ""}`.localeCompare(`${b.date} ${b.time || ""}`));
 }
