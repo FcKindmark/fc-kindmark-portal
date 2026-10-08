@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { Card, Button, Input, Select } from '../UI';
-import { money, cents, parseCSV, bankRows, fingerprints, suggestAccount, entryForBank, report, matchedBank, journalRows, downloadCSV, downloadArchive } from '../../lib/economy';
+import { money, cents, parseCSV, decodeBankCSV, guessBankColumns, bankRows, fingerprints, suggestAccount, entryForBank, report, matchedBank, journalRows, downloadCSV, downloadArchive } from '../../lib/economy';
 import usePortalView from "../../lib/usePortalView";
 import { readInvoice } from '../../lib/economy-documents';
 import { makeBackup, verifyBackup, downloadBackup } from '../../lib/economy-backup';
@@ -79,7 +79,8 @@ export default function EconomyTab({
     [reviewed, setReviewed] = useState(false),
     [reading, setReading] = useState(false),
     [readProgress, setReadProgress] = useState(''),
-    [readText, setReadText] = useState('');
+    [readText, setReadText] = useState(''),
+    [invoiceInfo, setInvoiceInfo] = useState(null);
   async function load() {
     setLoading(true);
     try {
@@ -130,12 +131,15 @@ export default function EconomyTab({
     return path;
   }
   async function selectInvoice(f) {
-    setFile(f); setReadText(''); setError('');
+    setFile(f); setReadText(''); setInvoiceInfo(null); setError('');
     if (!f || !/\.(pdf|png|jpe?g)$/i.test(f.name)) return;
+    setDocument(previous => previous ? {...previous, party:'', document_date:'', due_date:'', amount:'', reference:''} : previous);
     setReading(true); setReadProgress('Förbereder läsning…');
     try {
       const result = await readInvoice(f, setReadProgress);
-      setDocument(previous => previous ? {...previous, ...result.fields} : previous);
+      const {original_amount, currency, proforma, ...fields} = result.fields;
+      setInvoiceInfo({original_amount, currency, proforma});
+      setDocument(previous => previous ? {...previous, ...fields, ...(currency ? {amount:''} : {})} : previous);
       setReadText(result.text);
       setNotice(`${Object.keys(result.fields).length} fält föreslagna. Kontrollera uppgifterna mot originalet och ändra vid behov.`);
     } catch (e) { setError(e.message); }
@@ -406,7 +410,7 @@ export default function EconomyTab({
  {loading ? <p role="status">Läser ekonomin…</p> : <>
  {view === 'overview' && <><div className="economy-stats">{[['Intäkter', summary.income], ['Kostnader', summary.expense], ['Resultat', summary.result], ['Bokfört banksaldo', summary.bank]].map(([label, n]) => <Card key={label}><span>{label}</span><strong>{money(n / 100)}</strong></Card>)}</div><Card><h2>Bankutdrag · {year}</h2><p>Inbetalt: <strong>{money(yearBank.filter(b=>b.amount>0).reduce((total,b)=>total+Number(b.amount),0))}</strong> · Utbetalt: <strong>{money(-yearBank.filter(b=>b.amount<0).reduce((total,b)=>total+Number(b.amount),0))}</strong></p><p>Faktiska bankrörelser från importerade utdrag; kostnader ovan räknas från bokföringen.</p><h2>Att göra</h2><p>{unmatched.length} bankrader att stämma av · {yearJournal.filter(j => j.status === 'draft').length} utkast · {yearDocuments.length} underlag</p><div className="economy-actions"><Button onClick={() => setView('documents')}>Lägg till faktura eller kvitto</Button><Button variant="secondary" onClick={() => setView('bank')}>Importera bankutdrag</Button></div><p>Beloppen räknas endast från bokförda verifikationer. Medlemsavgifter i Betalningar är betalningskrav och räknas inte som en extra intäkt här.</p></Card></>}
  {view === 'documents' && <><div className="page-heading"><h2>Fakturor och kvitton</h2><Button disabled={reading} onClick={() => {
-            setReadText('');
+            setReadText(''); setInvoiceInfo(null);
             setDocument({
               kind: 'purchase',
               party: '',
@@ -417,7 +421,7 @@ export default function EconomyTab({
               partner_id: ''
             });
             setFile(null);
-          }}>+ Lägg till underlag</Button></div><p>PDF, foto, CSV eller Excel. Fakturauppgifter registreras här; PDF och foton läses automatiskt på din enhet. Föreslagna fält kan ändras före sparande.</p>{document && <Card><form onSubmit={saveDocument} className="economy-form"><h3>{document.id ? 'Ändra underlag' : 'Nytt underlag'}</h3><fieldset disabled={reading} style={{border:0,padding:0,display:"contents"}}>{!document.id && <label>Fil<Input required type="file" accept=".pdf,.jpg,.jpeg,.png,.csv,.xlsx,.xls" disabled={reading || busy} onChange={e => selectInvoice(e.target.files[0])} /></label>}<p role="status">{readProgress}</p>{readText && <details><summary>Visa läst text för kontroll</summary><pre style={{whiteSpace:"pre-wrap"}}>{readText}</pre></details>}<label>Typ<Select disabled={reading} value={document.kind} onChange={e => setDocument({
+          }}>+ Lägg till underlag</Button></div><p>PDF, foto, CSV eller Excel. Fakturauppgifter registreras här; PDF och foton läses automatiskt på din enhet. Föreslagna fält kan ändras före sparande.</p>{document && <Card><form onSubmit={saveDocument} className="economy-form"><h3>{document.id ? 'Ändra underlag' : 'Nytt underlag'}</h3><fieldset disabled={reading} style={{border:0,padding:0,display:"contents"}}>{!document.id && <label>Fil<Input required type="file" accept=".pdf,.jpg,.jpeg,.png,.csv,.xlsx,.xls" disabled={reading || busy} onChange={e => selectInvoice(e.target.files[0])} /></label>}<p role="status">{readProgress}</p>{invoiceInfo?.currency && <p className="economy-notice">Originalbelopp: {new Intl.NumberFormat('sv-SE', {style:'currency', currency:invoiceInfo.currency}).format(invoiceInfo.original_amount)}. Ange motsvarande belopp i SEK från bankbetalningen eller en dokumenterad valutakurs.</p>}{invoiceInfo?.proforma && <p className="economy-notice">Detta är en proformafaktura. Begär slutfakturan som underlag för slutlig bokföring och eventuell moms.</p>}{readText && <details><summary>Visa läst text för kontroll</summary><pre style={{whiteSpace:"pre-wrap"}}>{readText}</pre></details>}<label>Typ<Select disabled={reading} value={document.kind} onChange={e => setDocument({
                 ...document,
                 kind: e.target.value
               })}>{Object.entries(kinds).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</Select></label><label>Leverantör / kund<Input required value={document.party} onChange={e => setDocument({
@@ -462,30 +466,26 @@ export default function EconomyTab({
                 const f = e.target.files[0];
                 if (!f) return;
                 if (f.size > 5 * 1024 * 1024) throw Error('CSV-filen får vara högst 5 MB');
-                const parsed = parseCSV(await f.text());
-                setCSV(parsed);
-                setImportFile(f);
-                setPreview(null);
-                const guess = re => {
-                  const i = parsed.headers.findIndex(h => re.test(h));
-                  return i < 0 ? '' : String(i);
-                };
-                setMapping({
-                  date: guess(/datum|date/i),
-                  amount: guess(/belopp|amount/i),
-                  description: guess(/text|beskriv|description/i),
-                  reference: guess(/referens|reference|ocr/i)
-                });
+                setCSV(null); setPreview(null); setImportFile(null);
+                const parsed = parseCSV(decodeBankCSV(await f.arrayBuffer()));
+                const detected = guessBankColumns(parsed.headers);
+                setCSV(parsed); setImportFile(f); setMapping(detected);
+                if (detected.date !== '' && detected.amount !== '') {
+                  const rows = bankRows(parsed, detected);
+                  if (rows.length > 2000) throw Error('Importera högst 2 000 bankrader åt gången');
+                  setPreview(await fingerprints(rows));
+                  setNotice('Bankformatet känns igen. Kontrollera raderna och bekräfta importen.');
+                }
               } catch (err) {
                 setError(err.message);
               }
-            }} /></label><p>Datumformat ÅÅÅÅ-MM-DD. Belopp ska vara positivt för inbetalningar och negativt för utbetalningar. PDF-utdrag kan sparas som underlag; CSV används för automatisk radimport.</p>{csv && <><div className="economy-form">{[['date', 'Datum'], ['amount', 'Belopp med tecken'], ['description', 'Beskrivning'], ['reference', 'Referens']].map(([key, label]) => <label key={key}>{label}<Select value={mapping[key]} onChange={e => {
+            }} /></label><p>Datumformat ÅÅÅÅ-MM-DD. Belopp ska vara positivt för inbetalningar och negativt för utbetalningar. PDF-utdrag kan sparas som underlag; CSV används för automatisk radimport.</p>{csv && <><details><summary>Ändra kolumner vid behov</summary><div className="economy-form">{[['date', 'Datum'], ['amount', 'Belopp med tecken'], ['description', 'Beskrivning'], ['reference', 'Referens']].map(([key, label]) => <label key={key}>{label}<Select value={mapping[key]} onChange={e => {
                   setMapping({
                     ...mapping,
                     [key]: e.target.value
                   });
                   setPreview(null);
-                }}><option value="">Välj kolumn</option>{csv.headers.map((h, i) => <option key={i} value={i}>{h}</option>)}</Select></label>)}</div><Button disabled={busy} onClick={prepareImport}>Förhandsgranska</Button></>}{preview && <><p>{preview.length} rader · {preview.filter(r => data.bank.some(b => b.fingerprint === r.fingerprint)).length} redan importerade. Överlappande utdrag matchas på datum, belopp, text och referens; kontrollera identiska transaktioner.</p><div className="economy-table"><table><thead><tr><th>Datum</th><th>Text</th><th>Belopp</th></tr></thead><tbody>{preview.slice(0, 20).map((r, i) => <tr key={i}><td>{r.date}</td><td>{r.description}</td><td>{money(r.amount)}</td></tr>)}</tbody></table></div><Button disabled={busy || locked} onClick={importBank}>Bekräfta import</Button></>}</Card><h3>{unmatched.length} transaktioner att bokföra</h3><Button disabled={busy || locked || !unmatched.length} onClick={autoDrafts}>Skapa alla konteringsförslag</Button><p>Förslagen sparas som ändringsbara utkast. Bekräfta varje verifikation efter kontroll.</p>{yearBank.map(b => {
+                }}><option value="">Välj kolumn</option>{csv.headers.map((h, i) => <option key={i} value={i}>{h}</option>)}</Select></label>)}</div><Button disabled={busy} onClick={prepareImport}>Förhandsgranska</Button></details></>}{preview && <><p>{preview.length} rader · {preview.filter(r => data.bank.some(b => b.fingerprint === r.fingerprint)).length} redan importerade. Överlappande utdrag matchas på datum, belopp, text och referens; kontrollera identiska transaktioner.</p><div className="economy-table"><table><thead><tr><th>Datum</th><th>Text</th><th>Belopp</th></tr></thead><tbody>{preview.slice(0, 20).map((r, i) => <tr key={i}><td>{r.date}</td><td>{r.description}</td><td>{money(r.amount)}</td></tr>)}</tbody></table></div><Button disabled={busy || locked} onClick={importBank}>Bekräfta import</Button></>}</Card><h3>{unmatched.length} transaktioner att bokföra</h3><Button disabled={busy || locked || !unmatched.length} onClick={autoDrafts}>Skapa alla konteringsförslag</Button><p>Förslagen sparas som ändringsbara utkast. Bekräfta varje verifikation efter kontroll.</p>{yearBank.map(b => {
           const done = matchedBank(b, data.journal, data.lines);
           const draft = data.journal.find(j => j.bank_id === b.id && j.status === 'draft');
           return <Card key={b.id}><div className="page-heading"><div><strong>{b.description || b.reference || 'Banktransaktion'}</strong><p>{b.date} · {b.reference} · {done ? 'Avstämd' : 'Ej avstämd'}</p></div><strong>{money(b.amount)}</strong></div>{!done && !locked && <Button disabled={busy} onClick={() => draft ? edit(draft) : startBank(b)}>{draft ? 'Öppna utkast' : 'Öppna konteringsförslag'}</Button>}</Card>;

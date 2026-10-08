@@ -19,3 +19,11 @@ await assert.rejects(()=>verifyBackup(zipStored(files)),/Kontrollsumman/);
 delete files['originals/test/kvitto.pdf'];await assert.rejects(()=>verifyBackup(zipStored(files)),/Kontrollsumman/);
 await assert.rejects(()=>makeBackup(snapshot,async()=>{throw Error('Storage unavailable');}),/Storage unavailable/);
 console.log('PASS: labelled invoice extraction, invalid date rejection, portable full backup, checksum validation and missing originals.');
+
+assert.deepEqual(invoiceFields('Faktureras till\nExample Sponsor AB\nFakturanummer [0001]\nFakturadatum 2026-06-30\nFörfallodatum 2026-07-30\nSponsring\nAtt betala 1 000 kr'), {document_date:'2026-06-30',due_date:'2026-07-30',amount:1000,reference:'0001',party:'Example Sponsor AB',kind:'sponsor'});
+const foreign=invoiceFields('EXAMPLE S.P.A.\nTipo documento Nr. Data documento\nFattura proforma FPR26-00001 07/09/2026\nTotale fattura\nEUR\n1.175,82');
+assert.equal(foreign.document_date,'2026-09-07');assert.equal(foreign.reference,'FPR26-00001');assert.equal(foreign.currency,'EUR');assert.equal(foreign.original_amount,1175.82);assert.equal(foreign.amount,undefined);assert.equal(foreign.proforma,true);
+assert.equal(invoiceFields('Data documento: 31/02/2026').document_date,undefined);
+const {pdfTextRows}=await load('app/lib/economy-documents.js');
+assert.equal(pdfTextRows([{str:'1000 kr',transform:[1,0,0,1,200,50]},{str:'Att betala',transform:[1,0,0,1,10,50]},{str:'Faktura',transform:[1,0,0,1,10,100]}]),'Faktura\nAtt betala 1000 kr');
+console.log('PASS: whole-krona totals, bracketed invoice numbers, outgoing sponsor, EUR proforma, European dates and PDF row order.');

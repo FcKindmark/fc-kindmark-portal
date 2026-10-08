@@ -21,3 +21,14 @@ assert.equal(e.suggestAccount({amount:150,reference:'1001-2026',description:'Mem
 assert.equal(e.suggestAccount({amount:-400,reference:'',description:'LEGEA'}).account,'4010');
 assert.equal(e.journalRows(journal,lines,accounts).length,8);
 console.log('PASS: bank CSV, Swedish amounts, duplicate hashes, split receipts, opening balances, profit, balance, prior results, drafts, reversals and proposals.');
+
+const reportCSV=e.parseCSV('* Transaktionsrapport Period 2026-01-01 – 2026-10-08\nRadnr,Valuta,Bokfdag,Transdag,Referens,Text,Belopp,Saldo\n1,SEK,2026-10-07,2026-10-06,123,Swish,50.00,100.00\n2,SEK,2026-10-07,2026-10-06,123,Swish,50.00,50.00');
+const detected=e.guessBankColumns(reportCSV.headers);
+assert.equal(detected.date,'2');
+const reportRows=e.bankRows(reportCSV,detected);assert.equal(reportRows.length,2);assert.equal(reportRows[0].date,'2026-10-07');
+assert.equal(new Set((await e.fingerprints(reportRows)).map(r=>r.fingerprint)).size,2);
+assert.equal(e.decodeBankCSV(Uint8Array.from([70,246,114,101,116,97,103])),'Företag');
+assert.equal(e.decodeBankCSV(new TextEncoder().encode('Örby')),'Örby');
+assert.equal(e.suggestAccount({amount:-1.5,reference:'',description:'Pris betalning'}).account,'6570');
+assert.throws(()=>e.bankRows({...reportCSV,rows:[['1','EUR','2026-10-07','2026-10-06','','','50','50']]},detected),/inte i SEK/);
+console.log('PASS: report preamble, bank booking dates, UTF-8/Windows-1252, repeated transactions, bank charges and currency guard.');

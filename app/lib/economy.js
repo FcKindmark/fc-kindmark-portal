@@ -12,8 +12,30 @@ export function parseAmount(value) {
   if (!Number.isFinite(n) || Math.abs(n) > 999999999999) throw Error('Beloppet är för stort');
   return n;
 }
+export function decodeBankCSV(bytes) {
+  try { return new TextDecoder('utf-8', {fatal: true}).decode(bytes); }
+  catch { return new TextDecoder('windows-1252').decode(bytes); }
+}
+export function guessBankColumns(headers) {
+  const guess = patterns => {
+    for (const pattern of patterns) {
+      const index = headers.findIndex(h => pattern.test(h.trim()));
+      if (index >= 0) return String(index);
+    }
+    return '';
+  };
+  return {
+    date: guess([/^bokfdag$|bokföringsdatum|bokforingsdatum/i, /datum|date|transdag/i]),
+    amount: guess([/^belopp$|^amount$/i]),
+    description: guess([/^text$|beskriv|description/i]),
+    reference: guess([/referens|reference|ocr/i])
+  };
+}
 export function parseCSV(text) {
-  const clean = text.replace(/^\uFEFF/, '');
+  const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/);
+  // Bank reports can start with title/period metadata before their actual header.
+  const header = lines.findIndex(line => /(?:^|[;,\t])\s*"?(?:belopp|amount)"?\s*(?:[;,\t]|$)/i.test(line));
+  const clean = lines.slice(header >= 0 ? header : 0).join('\n');
   const first = clean.split(/\r?\n/)[0];
   const sep = [';', '\t', ','].sort((a, b) => first.split(b).length - first.split(a).length)[0];
   const rows = [];
@@ -49,7 +71,10 @@ export function parseCSV(text) {
 }
 export function bankRows(csv, mapping) {
   if (mapping.date === '' || mapping.amount === '') throw Error('Välj datum- och beloppskolumn');
+  const currencyColumn = csv.headers?.findIndex(h => /^valuta$|^currency$/i.test(h.trim())) ?? -1;
   return csv.rows.map((r, i) => {
+    if (r.length !== csv.headers?.length && csv.headers) throw Error(`Kontrollera antalet kolumner på rad ${i + 2}`);
+    if (currencyColumn >= 0 && String(r[currencyColumn]).trim().toUpperCase() !== 'SEK') throw Error(`Rad ${i + 2} är inte i SEK. Välj ett bankutdrag i svenska kronor.`);
     const date = String(r[mapping.date] || '').trim().slice(0, 10);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || new Date(`${date}T12:00:00Z`).toISOString().slice(0, 10) !== date) throw Error(`Kontrollera datum på rad ${i + 2}`);
     const amount = parseAmount(r[mapping.amount]);
@@ -115,7 +140,7 @@ export function suggestAccount(bank, partners = [], payments = []) {
     account: '5010',
     reason: 'Texten kan avse hyra'
   };
-  if (/bank|avgift/.test(text)) return {
+  if (/bank|avgift|pris betalning/.test(text)) return {
     account: '6570',
     reason: 'Texten kan avse bankkostnad'
   };
