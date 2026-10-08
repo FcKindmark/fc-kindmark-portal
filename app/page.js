@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "./lib/supabaseClient";
 import {sessionIdentity} from "./lib/sessionIdentity";
+import {portalModeKey,validPortalMode} from "./lib/portalMode";
 import PortalChoice from "./components/PortalChoice";
 import PasswordRecovery from "./components/PasswordRecovery";
 import LoginScreen from "./components/LoginScreen";
@@ -43,8 +44,20 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    setPortalMode(null);
-  }, [user?.id]);
+    if (!user?.id || profile?.role !== "coach" || user?.app_metadata?.club_role === "admin") {
+      setPortalMode(null);
+      return;
+    }
+    try {setPortalMode(validPortalMode(window.sessionStorage.getItem(portalModeKey(user.id))));}
+    catch {setPortalMode(null);}
+  }, [user?.id,profile?.role,user?.app_metadata?.club_role]);
+
+  function choosePortal(value) {
+    const mode = validPortalMode(value);
+    if (!mode || !user?.id || profile?.role !== "coach") return;
+    try {window.sessionStorage.setItem(portalModeKey(user.id),mode);} catch {}
+    setPortalMode(mode);
+  }
 
   useEffect(() => {
     let active=true;
@@ -97,10 +110,10 @@ export default function App() {
 
   if (!isAdmin && supporter === null) return <p role="status">Läser medlemskap…</p>;
   if (!isAdmin && supporter && !hasChildren) return <SupporterDashboard key={user.id} user={user} onLogout={logout}/>;
-  if(role==="coach"&&!portalMode)return <PortalChoice onSelect={setPortalMode} onLogout={logout}/>;
+  if(role==="coach"&&!portalMode)return <PortalChoice onSelect={choosePortal} onLogout={logout}/>;
   return isAdmin && portalMode!=="parent" ? (
-    <AdminDashboard key={user.id} user={user} profile={{...profile, role}} onLogout={logout} onOpenFamily={role==="coach"?()=>setPortalMode("parent"):undefined} />
+    <AdminDashboard key={user.id} user={user} profile={{...profile, role}} onLogout={logout} onOpenFamily={role==="coach"?()=>choosePortal("parent"):undefined} />
   ) : (
-    <ParentDashboard key={user.id} user={user} profile={{...profile, role: role==="player"?"player":"parent"}} onLogout={logout} onBackToStaff={role==="coach"?()=>setPortalMode("coach"):undefined} staffRole={role} />
+    <ParentDashboard key={user.id} user={user} profile={{...profile, role: role==="player"?"player":"parent"}} onLogout={logout} onBackToStaff={role==="coach"?()=>choosePortal("coach"):undefined} staffRole={role} />
   );
 }

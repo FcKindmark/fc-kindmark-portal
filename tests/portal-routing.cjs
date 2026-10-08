@@ -1,6 +1,8 @@
 const fs=require('fs'),assert=require('node:assert/strict'),babel=require('next/dist/compiled/babel/core');
 const code=babel.transformSync(fs.readFileSync('app/page.js','utf8'),{filename:'app/page.js',configFile:false,babelrc:false,presets:[[require('next/dist/compiled/babel/preset-react'),{runtime:'automatic'}]],plugins:[require('next/dist/compiled/babel/plugin-transform-modules-commonjs')]}).code;
 const components=new Map();
+const modeModule={exports:{}};
+new Function('require','module','exports',babel.transformSync(fs.readFileSync('app/lib/portalMode.js','utf8'),{configFile:false,babelrc:false,plugins:[require('next/dist/compiled/babel/plugin-transform-modules-commonjs')]}).code)(require,modeModule,modeModule.exports);
 function route({role='parent',mode=null,supporter=false,children=false,metadata={}}={}){
   const state=[{id:'account',email:'account@example.com',app_metadata:metadata},mode,true,'',0,supporter,children,{role},false,false];let index=0;
   const module={exports:{}};
@@ -9,6 +11,7 @@ function route({role='parent',mode=null,supporter=false,children=false,metadata=
     if(name.startsWith('./components/')){if(!components.has(name))components.set(name,()=>null);return {__esModule:true,default:components.get(name)};}
     if(name==='./lib/sessionIdentity')return {sessionIdentity:u=>`${u?.id||''}:${u?.app_metadata?.club_role||''}`};
     if(name==='./lib/supabaseClient')return {supabase:{}};
+    if(name==='./lib/portalMode')return modeModule.exports;
     return require(name);
   };
   new Function('require','module','exports',code)(requireMock,module,module.exports);
