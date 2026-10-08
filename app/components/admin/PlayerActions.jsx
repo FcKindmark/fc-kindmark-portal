@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useState} from "react";
 import {supabase} from "../../lib/supabaseClient";
+import InviteAccountForm from "./InviteAccountForm";
 import {Button} from "../UI";
 
 export default function PlayerActions({player,teams,accounts,mode,onClose,onUpdate}) {
@@ -24,7 +25,7 @@ export default function PlayerActions({player,teams,accounts,mode,onClose,onUpda
     if(r.error || !r.data?.length)setError(r.error?.message || "Laget kunde inte sparas.");else{await onUpdate();onClose();}setBusy(false);
   }
   return <section className="player-actions-panel"><div className="page-heading"><h4>{mode==="parent" ? "Föräldrar" : "Lägg till i lag"} · {player.name}</h4><Button variant="secondary" disabled={busy} onClick={onClose}>Stäng</Button></div>{error && <p role="alert">{error}</p>}{mode==="parent" ? <>
-    <p>Välj förälderns registrerade konto. Kopplingen ger tillgång till spelarens kalender, kallelser och medlemskort.</p>
+    <InviteAccountForm kind="parent" playerId={player.id} onSaved={async()=>{await loadLinks();await onUpdate?.();}}/><p>Välj förälderns registrerade konto. Kopplingen ger tillgång till spelarens kalender, kallelser och medlemskort.</p>
     <form onSubmit={addParent} className="match-edit-form"><label htmlFor={`parent-account-${player.id}`}>Förälderns konto</label><select id={`parent-account-${player.id}`} required value={account} onChange={e=>setAccount(e.target.value)}><option value="">Välj konto</option>{accounts.filter(a=>a.role!=="player"&&!links.some(l=>l.user_id===a.id)).map(a=><option key={a.id} value={a.id}>{a.full_name || a.email} · {a.email}</option>)}</select><Button type="submit" disabled={busy || !account}>Lägg till förälder</Button></form>
     {!links.filter(l=>accounts.find(a=>a.id===l.user_id)?.role!=="player").length && <p className="muted">Inga föräldrakonton kopplade.</p>}{links.filter(l=>accounts.find(a=>a.id===l.user_id)?.role!=="player").map(l=>{const a=accounts.find(a=>a.id===l.user_id);return <div className="attendance-row" key={l.user_id}><span>{a?.full_name || a?.email || "Registrerat konto"}{a?.full_name && a?.email ? ` · ${a.email}` : ""}</span><Button disabled={busy} variant="danger" onClick={()=>removeParent(l)}>Ta bort koppling</Button></div>;})}
   </> : <form onSubmit={saveTeam} className="match-edit-form"><label htmlFor={`player-team-${player.id}`}>Lag</label><select id={`player-team-${player.id}`} required value={team} onChange={e=>setTeam(e.target.value)}><option value="">Välj lag</option>{teams.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select><Button type="submit" disabled={busy || !team}>Spara lag</Button></form>}</section>;

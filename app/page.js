@@ -26,7 +26,7 @@ export default function App() {
   const identity = useRef("");
 
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("recovery") === "1") setRecovering(true);
+    if (["recovery", "invite"].some(key => new URLSearchParams(window.location.search).get(key) === "1")) setRecovering(true);
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (_event === "PASSWORD_RECOVERY") setRecovering(true);
       if (_event === "SIGNED_OUT") { setRecovering(false); setSupporter(null); setPortalMode(null); }

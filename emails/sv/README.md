@@ -30,3 +30,9 @@ Prova återställning för ett befintligt konto och registrering för ett testko
 ## Leverans till inkorgen
 
 Kontrollera mottagna meddelandets Authentication-Results: SPF, DKIM och DMARC. Korrekt SMTP och ett snyggt mejl garanterar inte inkorgsplacering. one.com anger SPF `v=spf1 include:_custspf.one.com ~all`; granska befintligt SPF först och lägg inte till ett andra SPF-record. Behåll andra legitima avsändare. DKIM-värden är domänspecifika och fås från one.com. Ändra inte MX eller namnservrar för att rätta portalens mallar. Markera testmeddelandet som Inte skräppost och testa om efter DNS-verifiering.
+
+## Automatisk kontoinbjudan från portalen
+
+Edge Function `club-invite` verifierar inloggning och administratörens app_metadata innan den skapar ett konto och skickar Supabase Auth-inbjudan. Nya föräldraadresser när en spelare sparas kopplas till barnet. Medlemskort kan skapas med e-post, och egna spelarkonton kan bjudas in separat. Bekräftade befintliga konton kopplas utan ett nytt mejl; väntande konton kan bjudas in igen via inbjudningsformuläret. Fel visas i portalen, och sparade poster ska inte läggas till igen.
+
+Aktivera `invite.html` och `invite.subject.txt` i **Invite user** i Supabase. Lägg `https://portal.fckindmark.se/?invite=1` i tillåtna redirect-URL:er. Den personliga länken öppnar lösenordsvalet och därefter rätt portal. SMTP fortsätter skicka från portal@fckindmark.se. Inga SMTP-lösenord eller service_role-nycklar ska läggas i frontend eller GitHub.

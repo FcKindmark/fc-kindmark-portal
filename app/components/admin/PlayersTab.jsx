@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Card, Input, Button, Empty, Badge } from "../UI";
 import { supabase } from "../../lib/supabaseClient";
+import {inviteAccount} from "../../lib/invitations";
 import PlayerAccount from "./PlayerAccount";
 import PlayerActions from "./PlayerActions";
 
@@ -29,6 +30,7 @@ export default function PlayersTab({ data, onUpdate, readOnly = false, initialSh
   const [teamId, setTeamId] = useState("");
   const [motherEmail, setMotherEmail] = useState("");
   const [fatherEmail, setFatherEmail] = useState("");
+  const [notice,setNotice]=useState("");
   const [loading, setLoading] = useState(false);
 
   function startEdit(player) {
@@ -69,7 +71,7 @@ export default function PlayersTab({ data, onUpdate, readOnly = false, initialSh
       alert("Ange ett giltigt födelseår");
       return;
     }
-    setLoading(true);
+    setLoading(true);setNotice("");
     try {
       const playerData = {
         name: name.trim(),
@@ -82,17 +84,19 @@ export default function PlayersTab({ data, onUpdate, readOnly = false, initialSh
         father_email: fatherEmail.trim() || null,
       };
 
-      if (editingId) {
-        const { error } = await supabase
-          .from("players")
-          .update(playerData)
-          .eq("id", editingId);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("players").insert({...playerData,membership_category:membershipCategory});
-        if (error) throw error;
+      const previous=players.find(p=>p.id===editingId);
+      const result=editingId
+        ? await supabase.from("players").update(playerData).eq("id",editingId).select("id").single()
+        : await supabase.from("players").insert({...playerData,membership_category:membershipCategory}).select("id").single();
+      if(result.error)throw result.error;
+      const newEmails=[...new Set([motherEmail,fatherEmail].map(e=>e.trim().toLowerCase()).filter(Boolean))]
+        .filter(email=>![previous?.mother_email,previous?.father_email].some(old=>old?.trim().toLowerCase()===email));
+      const failures=[];
+      for(const email of newEmails) {
+        try {await inviteAccount({email,kind:"parent",player_id:result.data.id});}
+        catch(error){failures.push(`${email}: ${error.message}`);}
       }
-
+      setNotice(failures.length?`Spelaren är sparad. Kontrollera välkomstmejlet: ${failures.join(" ")}`:newEmails.length?"Spelaren är sparad och föräldrakontona är inbjudna eller kopplade.":"Spelaren är sparad.");
       resetForm();
       onUpdate();
     } catch (err) {
@@ -135,6 +139,7 @@ export default function PlayersTab({ data, onUpdate, readOnly = false, initialSh
         <select aria-label="Filtrera lag" value={teamFilter} onChange={e => setTeamFilter(e.target.value)}><option value="">Alla lag</option><option value="unassigned">Ej lagfördelade</option>{teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select>
         <span>{filteredPlayers.length} spelare</span>
       </div>
+      {notice && <p role="status">{notice}</p>}
       {showAdd && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0, 0, 0, 0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, backdropFilter: "blur(4px)" }} onClick={(e) => { if (e.target === e.currentTarget) resetForm(); }}>
           <Card style={{ maxWidth: "900px", width: "95%" }}>
