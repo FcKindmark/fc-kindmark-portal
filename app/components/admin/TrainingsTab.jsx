@@ -1,4 +1,5 @@
 "use client";
+import CoachEventReplies from "../CoachEventReplies";
 import PersonAvatar from "../PersonAvatar";
 import { useState, useEffect, useMemo } from "react";
 import { Card, Input, Button, Empty } from "../UI";
@@ -6,7 +7,7 @@ import { supabase } from "../../lib/supabaseClient";
 import { upcomingFirst, trainingPeriod, coachTrainingPeriod, daysBefore } from "../../lib/schedule";
 import { useStockholmToday } from "../../lib/useStockholmToday";
 
-export default function TrainingsTab({ data, onUpdate, canDelete=false, compactWeek=false }) {
+export default function TrainingsTab({ data, userId, onUpdate, canDelete=false, compactWeek=false }) {
   const today = useStockholmToday();
   const [archiveFrom,setArchiveFrom]=useState("");
   const trainings = useMemo(() => upcomingFirst(data?.trainings || [], today), [data?.trainings, today]);
@@ -148,7 +149,7 @@ export default function TrainingsTab({ data, onUpdate, canDelete=false, compactW
       {compactWeek&&showPast&&<label className="field">Visa tidigare träningar från<input type="date" value={archiveFrom||daysBefore(today,7)} max={today} onChange={e=>setArchiveFrom(e.target.value)}/></label>}
       {showPast && <p className="muted" style={{ marginBottom: "16px" }}>Här kan du se och rätta tidigare träningar. Registrera deltagarnas närvaro under Närvaro → Tidigare träningar.</p>}
       {callNotice&&<p role="status" className="economy-notice">{callNotice}</p>}{callError&&<p role="alert" className="error-banner">{callError}</p>}
-      {callTraining&&<Card className="training-call-editor"><form onSubmit={sendCall}><h3>Kallelse · {callTraining.date} kl {callTraining.time?.slice(0,5)}</h3><p>{teams.find(t=>t.id===callTraining.team_id)?.name} · {callTraining.location}</p><p className="muted">Kallelsen och meddelandet visas i portalen för spelaren och kopplade föräldrar. Inga mejl skickas här. Befintliga svar behålls.</p><div className="button-group"><Button variant="secondary" disabled={loading} onClick={()=>setSelected(players.filter(p=>p.team_id===callTraining.team_id).map(p=>p.id))}>Alla i laget</Button><Button variant="secondary" disabled={loading} onClick={()=>setSelected([])}>Rensa val</Button></div><fieldset disabled={loading}><legend>Välj spelare ({selected.length})</legend>{players.filter(p=>p.team_id===callTraining.team_id).map(p=><label className="attendance-row" key={p.id}><span className="person-name"><PersonAvatar playerId={p.id} name={p.name}/>{p.name}</span><input type="checkbox" checked={selected.includes(p.id)} onChange={e=>setSelected(prev=>e.target.checked?[...prev,p.id]:prev.filter(id=>id!==p.id))}/></label>)}</fieldset><label className="field">Meddelande<textarea maxLength={1000} disabled={loading} value={callNote} onChange={e=>setCallNote(e.target.value)} placeholder="Till exempel: Ta med vattenflaska."/></label><div className="button-group"><Button type="submit" disabled={loading||!selected.length}>{loading?"Skickar…":"Skicka kallelse"}</Button><Button variant="secondary" disabled={loading} onClick={()=>setCallTraining(null)}>Avbryt</Button></div></form></Card>}
+      {callTraining&&<Card className="training-call-editor"><form onSubmit={sendCall}><h3>Kallelse · {callTraining.date} kl {callTraining.time?.slice(0,5)}</h3><p>{teams.find(t=>t.id===callTraining.team_id)?.name} · {callTraining.location}</p><p className="muted">Kallelsen och meddelandet visas i portalen för spelaren och kopplade föräldrar. Inga mejl skickas här. Befintliga svar behålls.</p><div className="button-group"><Button variant="secondary" disabled={loading} onClick={()=>setSelected(players.filter(p=>p.team_id===callTraining.team_id).map(p=>p.id))}>Alla i laget</Button><Button variant="secondary" disabled={loading} onClick={()=>setSelected([])}>Rensa val</Button></div><fieldset disabled={loading}><legend>Välj spelare ({selected.length})</legend>{players.filter(p=>p.team_id===callTraining.team_id).map(p=><label className="attendance-row" key={p.id}><span className="person-name"><PersonAvatar playerId={p.id} name={p.name}/>{p.name}</span><input type="checkbox" checked={selected.includes(p.id)} onChange={e=>setSelected(prev=>e.target.checked?[...prev,p.id]:prev.filter(id=>id!==p.id))}/></label>)}</fieldset><label className="field">Meddelande<textarea maxLength={1000} disabled={loading} value={callNote} onChange={e=>setCallNote(e.target.value)} placeholder="Till exempel: Ta med vattenflaska."/></label><p className="muted">Alla tränare i laget kallas också och svarar Kommer eller Kommer inte.</p><div className="button-group"><Button type="submit" disabled={loading||!selected.length}>{loading?"Skickar…":"Skicka kallelse"}</Button><Button variant="secondary" disabled={loading} onClick={()=>setCallTraining(null)}>Avbryt</Button></div></form></Card>}
       {showAdd && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0, 0, 0, 0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }} onClick={(e) => { if (e.target === e.currentTarget) resetForm(); }}>
           <Card style={{ maxWidth: "500px", width: "90%" }}>
@@ -225,6 +226,7 @@ export default function TrainingsTab({ data, onUpdate, canDelete=false, compactW
 
                   {expandedId === t.id && (
                     <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #ddd" }}>
+                      <CoachEventReplies kind="training" eventId={t.id} userId={userId} revision={t.calls_sent_at}/>
                       <h4 style={{ color: "var(--text-dark)", marginBottom: "12px", fontSize: "14px", fontWeight: "600" }}>Deltagare ({teamPlayers.length}):</h4>
                       <div style={{ display: "grid", gap: "8px" }}>
                         {teamPlayers.map((player) => {

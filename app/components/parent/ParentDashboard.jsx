@@ -43,7 +43,7 @@ export default function ParentDashboard({ user, profile, onLogout, onBackToStaff
     if(!silent)setLoading(true);
     setError("");
     try {
-      const [playersRes, trainingsRes, matchesRes, paymentsRes, messagesRes, teamsRes, profileRes, accessRes, cardsRes, trainingCallsRes, trainingRepliesRes, matchCallsRes, matchRepliesRes, readsRes, targetsRes] = await Promise.all([
+      const [playersRes, trainingsRes, matchesRes, paymentsRes, messagesRes, teamsRes, profileRes, accessRes, cardsRes, trainingCallsRes, trainingRepliesRes, matchCallsRes, matchRepliesRes, readsRes, targetsRes, coachInvitesRes] = await Promise.all([
         supabase.from("players").select("*"),
         supabase.from("trainings").select("*"),
         supabase.from("matches").select("*"),
@@ -59,9 +59,10 @@ export default function ParentDashboard({ user, profile, onLogout, onBackToStaff
         supabase.from("club_match_replies").select("*"),
         supabase.from("club_message_reads").select("message_id"),
         supabase.rpc("club_message_targets"),
+        supabase.rpc("club_coach_invitations"),
       ]);
 
-      const failures = [playersRes, trainingsRes, matchesRes, paymentsRes, messagesRes, teamsRes, cardsRes, trainingCallsRes, trainingRepliesRes, matchCallsRes, matchRepliesRes, readsRes, targetsRes].filter(r => r.error);
+      const failures = [playersRes, trainingsRes, matchesRes, paymentsRes, messagesRes, teamsRes, cardsRes, trainingCallsRes, trainingRepliesRes, matchCallsRes, matchRepliesRes, readsRes, targetsRes, coachInvitesRes].filter(r => r.error);
       if (failures.length) setError("Vissa uppgifter kunde inte läsas: " + failures.map(r => r.error.message).join(" · "));
       const {data:links,error:accessError}=accessRes;
       setAccess(links || []);
@@ -74,6 +75,7 @@ export default function ParentDashboard({ user, profile, onLogout, onBackToStaff
         messages: (messagesRes.data||[]).filter(m=>m.recipient_email?.toLowerCase()===user.email?.toLowerCase()),
         trainingCalls:trainingCallsRes.data||[],trainingReplies:trainingRepliesRes.data||[],matchCalls:matchCallsRes.data||[],matchReplies:matchRepliesRes.data||[],messageReads:readsRes.data||[],messageTargets:targetsRes.data||[],
         teams: teamsRes.data || [],
+        coachInvitations:(coachInvitesRes.data||[]).map(i=>({...i,answer:i.answer??undefined})),
         ownMemberIds: (cardsRes.data||[]).map(c=>c.id),
       });
 
@@ -92,7 +94,7 @@ export default function ParentDashboard({ user, profile, onLogout, onBackToStaff
 
   const mine = data.players.filter(p => access.some(a => a.player_id === String(p.id)) || [p.mother_email?.toLowerCase(),p.father_email?.toLowerCase()].includes(user.email?.toLowerCase()));
   const teamIds = new Set(mine.map(p => p.team_id).filter(Boolean));
-  const invitations=familyInvitations(data,mine);
+  const invitations=[...familyInvitations(data,mine),...(data.coachInvitations||[])];
   const notificationState=familyNotifications(data,invitations,today);
   const tabs = [
     { id: "overview", label: "Hem" },

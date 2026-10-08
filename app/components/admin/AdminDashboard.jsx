@@ -12,6 +12,7 @@ import PaymentsTab from "./PaymentsTab";
 import EconomyTab from "./EconomyTab";
 import MessagesTab from "./MessagesTab";
 import UsersTab from "./UsersTab";
+import CoachKallelser from "../CoachKallelser";
 import ClubShell from "../ClubShell";
 import MemberCards from "../MemberCards";
 import ClubNews from "../ClubNews";
@@ -29,7 +30,7 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
     setMemberAdd({kind,key:Date.now()});
     setActiveTab(kind === "player" ? "players" : kind === "coach" ? "users" : "membership");
   }
-  const [activeTab, setActiveTab] = usePortalView(profile?.role === "coach" ? "coach" : "admin", profile?.role === "coach" ? ["overview","calendar","players","trainings","matches","attendance","development"] : ["overview","calendar","membership","news","attendance","equipment","development","players","teams","trainings","matches","payments","economy","messages","users"], "overview", user.id);
+  const [activeTab, setActiveTab] = usePortalView(profile?.role === "coach" ? "coach" : "admin", profile?.role === "coach" ? ["overview","calendar","calls","players","trainings","matches","attendance","development"] : ["overview","calendar","membership","news","attendance","equipment","development","players","teams","trainings","matches","payments","economy","messages","users"], "overview", user.id);
   const [data, setData] = useState({
     players: [],
     teams: [],
@@ -96,6 +97,7 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
   const tabs = [
     { id: "overview", label: "Översikt" },
     { id: "calendar", label: "Kalender" },
+    ...(profile?.role === "coach" ? [{id:"calls",label:"Kallelser"}] : []),
     { id: "membership", label: "Medlemmar" },
     { id: "news", label: "Klubbinformation" },
     { id: "attendance", label: "Närvaro" },
@@ -111,7 +113,7 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
     { id: "users", label: "Användare", icon: "👥" },
   ];
 
-  const allowedTabs = profile?.role === "coach" ? tabs.filter(t => ["overview","calendar","players","trainings","matches","attendance","development"].includes(t.id)) : tabs;
+  const allowedTabs = profile?.role === "coach" ? tabs.filter(t => ["overview","calendar","calls","players","trainings","matches","attendance","development"].includes(t.id)) : tabs;
   return <ClubShell tabs={allowedTabs} active={activeTab} onChange={tab=>{setMemberAdd(null);setActiveTab(tab);}} user={user} role={profile?.role === "coach" ? "Tränare" : "Admin"} onLogout={onLogout}>
     {onOpenFamily&&<div className="page-heading"><p>Du är i {profile?.role === "coach" ? "tränarportalen" : "administratörsportalen"}.</p><Button variant="secondary" onClick={onOpenFamily}>Föräldraportal · Mina barn</Button></div>}
     {activeTab === "overview" && profile?.role !== "coach" && <div className="page-heading"><Button onClick={()=>setShowMemberChoice(true)}>+ Lägg till medlem</Button></div>}
@@ -119,6 +121,7 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
     {error && <p className="error-banner" role="alert">{error}<button onClick={loadData}>Försök igen</button></p>}
     {loading ? <p role="status">Läser in…</p> : <>
     {activeTab === "overview" && <OverviewTab data={data} onNavigate={setActiveTab} coach={profile?.role === "coach"}/>}
+    {activeTab === "calls" && <CoachKallelser/>}
     {activeTab === "news" && <ClubNews admin/>}
     {activeTab === "membership" && <MemberCards key={memberAdd?.key || "members"} admin initialShowAdd={Boolean(memberAdd)} initialMembershipType={memberAdd?.kind} onCloseAdd={()=>setMemberAdd(null)} onUpdate={loadData}/>}
     {activeTab === "calendar" && <EventSchedule data={data} onNavigate={setActiveTab}/>}
@@ -127,8 +130,8 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
     {activeTab === "development" && <PlayerRecords players={data.players} kind="development" canDelete={profile?.role !== "coach"}/>}
     {activeTab === "players" && <PlayersTab key={memberAdd?.key || "players"} data={data} initialShowAdd={memberAdd?.kind === "player"} onCloseAdd={()=>setMemberAdd(null)} onUpdate={loadData} readOnly={profile?.role === "coach"}/>}
     {activeTab === "teams" && <TeamsTab data={data} onUpdate={loadData}/>}
-    {activeTab === "trainings" && <TrainingsTab data={data} compactWeek={profile?.role === "coach"} onUpdate={loadData} canDelete={profile?.role !== "coach"}/>}
-    {activeTab === "matches" && <MatchesTab data={data} onUpdate={loadData} canDelete={profile?.role !== "coach"}/>}
+    {activeTab === "trainings" && <TrainingsTab userId={user.id} data={data} compactWeek={profile?.role === "coach"} onUpdate={loadData} canDelete={profile?.role !== "coach"}/>}
+    {activeTab === "matches" && <MatchesTab userId={user.id} data={data} onUpdate={loadData} canDelete={profile?.role !== "coach"}/>}
     {activeTab === "payments" && <PaymentsTab data={data} onUpdate={loadData}/>}
     {activeTab === "economy" && profile?.role !== "coach" && <EconomyTab userId={user.id} payments={data.payments} onPaymentsChanged={refreshPayments}/>}
     {activeTab === "messages" && <MessagesTab data={data} onUpdate={loadData}/>}

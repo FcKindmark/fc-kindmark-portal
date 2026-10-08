@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Card, Input, Button, Empty } from "../UI";
 import { supabase } from "../../lib/supabaseClient";
 import ReplyStatus from "../ReplyStatus";
+import CoachEventReplies from "../CoachEventReplies";
 import PersonAvatar from "../PersonAvatar";
 import { parseResult, resultLabel, matchVenue, matchInformation } from "../../lib/matches";
 
@@ -31,7 +32,7 @@ function MatchResult({ match, onUpdate }) {
   </form>;
 }
 
-export default function MatchesTab({ data, onUpdate, canDelete=false }) {
+export default function MatchesTab({ data, userId, onUpdate, canDelete=false }) {
   const matches = [...(data?.matches || [])].sort((a,b)=>a.date.localeCompare(b.date));
   const teams = data?.teams || [], players = data?.players || [];
   const [form, setForm] = useState(null);
@@ -92,7 +93,7 @@ export default function MatchesTab({ data, onUpdate, canDelete=false }) {
         <p>{selected.length} kallade · <span className="reply-count-yes">{answered.filter(r=>r.attending).length} kommer</span> · <span className="reply-count-no">{answered.filter(r=>!r.attending).length} kommer inte</span> · {selected.length-answered.length} väntar</p>
         <div className="match-actions compact-match-actions"><Button aria-label="Öppna resultat och kallelser" aria-expanded={expandedId===m.id} onClick={()=>setExpandedId(expandedId===m.id ? null : m.id)}>Kallelse / resultat</Button><Button variant="secondary" onClick={()=>setForm({...m,time:m.time||"",location:m.location||"",team_id:m.team_id||"",admin_comment:m.admin_comment||"",venue_type:matchVenue(m)})}>Redigera</Button><Button variant="danger" disabled={busy} onClick={()=>deleteMatch(m.id)}>Ta bort</Button></div>
         {expandedId===m.id&&!callsReady&&<p role="status">Läser kallelser…</p>}
-        {expandedId===m.id && callsReady && <div className="match-management"><MatchResult match={m} onUpdate={onUpdate}/><MatchCallEditor key={m.id} match={m} squad={squad} calls={selected} replies={answered} busy={busy} canDelete={canDelete} onClear={playerId=>clearAnswer(m.id,playerId)} onSent={async()=>{await loadCalls();await onUpdate();}}/></div>}
+        {expandedId===m.id && callsReady && <div className="match-management"><CoachEventReplies kind="match" eventId={m.id} userId={userId} revision={m.calls_sent_at}/><MatchResult match={m} onUpdate={onUpdate}/><MatchCallEditor key={m.id} match={m} squad={squad} calls={selected} replies={answered} busy={busy} canDelete={canDelete} onClear={playerId=>clearAnswer(m.id,playerId)} onSent={async()=>{await loadCalls();await onUpdate();}}/></div>}
       </Card>;
     })}</div>
   </section>;
@@ -110,7 +111,7 @@ function MatchCallEditor({match,squad,calls,replies,busy,canDelete,onClear,onSen
       await onSent();
     }catch(e){setError(e.message);}finally{setSending(false);}
   }
-  return <section><form onSubmit={send}><h4>Välj spelare att kalla</h4><p className="muted">Välj spelare och tryck på Skicka kallelse. Kallelsen visas under Matcher och Meddelanden i portalen. Befintliga svar behålls för spelare som är kvar i urvalet.</p>
+  return <section><form onSubmit={send}><h4>Välj spelare att kalla</h4><p className="muted">Alla tränare i laget kallas också och svarar Kommer eller Kommer inte.</p><p className="muted">Välj spelare och tryck på Skicka kallelse. Kallelsen visas under Matcher och Meddelanden i portalen. Befintliga svar behålls för spelare som är kvar i urvalet.</p>
     {!squad.length&&<p>Inga spelare i matchens lag.</p>}
     {squad.map(p=>{
       const called=calls.some(c=>c.player_id===p.id),reply=replies.find(r=>r.player_id===p.id);
