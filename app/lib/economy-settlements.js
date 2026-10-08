@@ -12,7 +12,11 @@ export function invoiceSettlement(d, data) {
   const ids=new Set(data.journal.filter(j=>posted.has(j.id) && !j.bank_id && j.document_id===d.id).map(j=>j.id));
   const control=incomingInvoice(d)?'1510':'2440';
   const booked=data.lines.filter(l=>ids.has(l.journal_id) && l.account===control).reduce((n,l)=>n+(incomingInvoice(d)?1:-1)*(cents(l.debit)-cents(l.credit)),0)>0;
-  return {paid:paid/100,remaining:Math.max(0,cents(d.amount)-paid)/100,booked,account:booked?control:d.kind==='sponsor'?'3910':d.kind==='grant'?'3980':incomingInvoice(d)?'3990':'6990'};
+  const controlBalance=data.lines.filter(l=>ids.has(l.journal_id) && l.account===control).reduce((n,l)=>n+(incomingInvoice(d)?1:-1)*(cents(l.debit)-cents(l.credit)),0)
+    -allocations.filter(a=>a.document_id===d.id && a.account===control && posted.has(a.journal_id)).reduce((n,a)=>n+cents(a.amount),0)
+    +data.journal.filter(j=>posted.has(j.id) && j.bank_id && j.document_id===d.id && !allocations.some(a=>a.journal_id===j.id)).reduce((n,j)=>n+data.lines.filter(l=>l.journal_id===j.id && l.account===control).reduce((n,l)=>n+(incomingInvoice(d)?1:-1)*(cents(l.debit)-cents(l.credit)),0),0);
+  const needsCorrection=booked && controlBalance!==Math.max(0,cents(d.amount)-paid);
+  return {needsCorrection,controlBalance:controlBalance/100,paid:paid/100,remaining:Math.max(0,cents(d.amount)-paid)/100,booked,account:booked?control:d.kind==='sponsor'?'3910':d.kind==='grant'?'3980':incomingInvoice(d)?'3990':'6990'};
 }
 export function settlementProposal(bank, allocations, paymentIds, data, payments) {
   const incoming=Number(bank.amount)>0, total=cents(Math.abs(bank.amount));
@@ -43,4 +47,19 @@ export function settlementProposal(bank, allocations, paymentIds, data, payments
   }
   if(allocated>total) throw Error('Valda betalningar överstiger bankbeloppet.');
   return {date:bank.date,bank_id:bank.id,document_id:'',partner_id:'',description:bank.description || 'Samlad bankbetalning',document_allocations:documents,payment_ids:unique,lines,remaining:(total-allocated)/100};
+}
+
+// Reopening or changing bank rows must preserve saved drafts, including old
+// single-document drafts and payment selections written before allocations.
+export function settlementDraft(bank, data) {
+  const draft=data.journal.find(j=>j.bank_id===bank?.id && j.status==='draft');
+  if(!draft)return {exists:false,documents:[],paymentIds:[]};
+  let documents=(data.document_links || []).filter(a=>a.journal_id===draft.id).map(a=>({...a}));
+  if(!documents.length){
+    const d=data.documents.find(d=>d.id===draft.document_id && d.kind!=='statement');
+    if(d){const state=invoiceSettlement(d,data);documents=[{document_id:d.id,amount:Math.min(Math.abs(Number(bank.amount)),state.remaining),account:state.account}];}
+  }
+  const saved=data.settlement_selections?.find(s=>s.journal_id===draft.id);
+  const audit=(data.audit || []).filter(a=>a.entity_id===draft.id && ['save','post'].includes(a.action)).sort((a,b)=>new Date(b.at)-new Date(a.at)).find(a=>Array.isArray(a.detail?.payment_ids));
+  return {exists:true,documents,paymentIds:saved?.payment_ids || audit?.detail.payment_ids || (data.payment_links || []).filter(a=>a.journal_id===draft.id).map(a=>a.payment_id)};
 }

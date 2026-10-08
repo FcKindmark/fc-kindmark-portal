@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 const base='data:text/javascript;base64,'+Buffer.from(fs.readFileSync('app/lib/economy.js','utf8').replace("import { csvText } from './attendance';",fs.readFileSync('app/lib/attendance.js','utf8').replaceAll('export ',''))).toString('base64');
 const source=fs.readFileSync('app/lib/economy-settlements.js','utf8').replace("'./economy'",JSON.stringify(base));
-const {invoiceSettlement,settlementProposal}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const {invoiceSettlement,settlementProposal,settlementDraft}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 const data={documents:[{id:'a',kind:'sponsor',amount:400,document_date:'2026-09-01'},{id:'b',kind:'sales',amount:450,document_date:'2026-09-01'},{id:'supplier',kind:'purchase',amount:1000,document_date:'2026-09-01'}],journal:[],lines:[],document_links:[],payment_links:[]};
 const bank={id:'bank',amount:1000,date:'2026-09-30'};
 const payments=[{id:'member',amount:150,payment_kind:'membership'}];
@@ -20,3 +20,14 @@ const booked={...data,journal:[{id:'invoice',status:'posted',document_id:'a'}],l
 assert.equal(settlementProposal(bank,[{document_id:'a',amount:400}],[],booked,[]).lines[1].account,'1510');
 assert.equal(settlementProposal({...bank,amount:-1000},[{document_id:'supplier',amount:1000}],[],data,[]).lines[1].debit,1000);
 console.log('PASS: grouped invoices plus membership, partial invoices, direction, limits, reversals and control-account settlement.');
+
+const legacy={...data,journal:[{id:'draft',status:'draft',bank_id:'bank',document_id:'a'}],audit:[{entity_id:'draft',action:'save',at:'2026-10-08',detail:{payment_ids:['member']}}]};
+assert.deepEqual(settlementDraft(bank,legacy).paymentIds,['member']);
+assert.equal(settlementDraft(bank,legacy).documents[0].document_id,'a');
+assert.equal(settlementDraft(bank,{...legacy,document_links:[{journal_id:'draft',document_id:'b',amount:200,account:'3990'}]}).documents[0].amount,200);
+const restored={...booked,journal:[...booked.journal,{id:'legacy-paid',status:'posted',bank_id:'bank',document_id:'statement',partner_id:'partner'}],document_links:[{journal_id:'legacy-paid',document_id:'a',amount:400,account:'3910'}]};
+assert.equal(invoiceSettlement(data.documents[0],restored).paid,400);
+assert.equal(invoiceSettlement(data.documents[0],restored).remaining,0);
+assert.equal(invoiceSettlement(data.documents[0],restored).needsCorrection,true);
+assert.equal(invoiceSettlement(data.documents[0],{...restored,document_links:[{...restored.document_links[0],account:'1510'}]}).needsCorrection,false);
+console.log('PASS: legacy draft choices, restored statement/partner payment links, no duplicate payment and control balance discrepancy.');

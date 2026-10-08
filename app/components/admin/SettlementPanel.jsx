@@ -2,18 +2,18 @@
 import { useState } from 'react';
 import { Button, Input, Select } from '../UI';
 import { money, matchedBank, cents } from '../../lib/economy';
-import { incomingInvoice, invoiceSettlement, settlementProposal } from '../../lib/economy-settlements';
+import { incomingInvoice, invoiceSettlement, settlementProposal, settlementDraft } from '../../lib/economy-settlements';
 
 export default function SettlementPanel({data,payments,invoice,initialBank,onSave,onManual,busy,error}) {
   const [bankId,setBankId]=useState(initialBank?.id || '');
-  const [selected,setSelected]=useState(initialBank ? data.document_links?.filter(a=>data.journal.some(j=>j.id===a.journal_id && j.bank_id===initialBank.id && j.status==='draft')).map(a=>({...a})) || [] : []);
-  const [paymentIds,setPaymentIds]=useState(initialBank ? data.settlement_selections?.find(a=>data.journal.some(j=>j.id===a.journal_id && j.bank_id===initialBank.id && j.status==='draft'))?.payment_ids || [] : []);
+  const [selected,setSelected]=useState(()=>settlementDraft(initialBank,data).documents);
+  const [paymentIds,setPaymentIds]=useState(()=>settlementDraft(initialBank,data).paymentIds);
   const [search,setSearch]=useState('');
   const bank=data.bank.find(b=>b.id===bankId);
   const state=invoice ? invoiceSettlement(invoice,data) : null;
   function chooseBank(id) {
-    const b=data.bank.find(b=>b.id===id);setBankId(id);setPaymentIds([]);
-    setSelected(invoice && b && state.remaining>0 ? [{document_id:invoice.id,amount:Math.min(state.remaining,Math.abs(b.amount)),account:state.account}] : []);
+    const b=data.bank.find(b=>b.id===id),saved=settlementDraft(b,data);setBankId(id);setPaymentIds(saved.paymentIds);
+    setSelected(saved.exists ? saved.documents : invoice && b && state.remaining>0 ? [{document_id:invoice.id,amount:Math.min(state.remaining,Math.abs(b.amount)),account:state.account}] : []);
   }
   let proposal,problem='';
   try {if(bank) proposal=settlementProposal(bank,selected,paymentIds,data,payments);} catch(e) {problem=e.message;}
@@ -21,7 +21,7 @@ export default function SettlementPanel({data,payments,invoice,initialBank,onSav
   const visible=d=>`${d.party || d.player_name} ${d.reference || ''} ${d.description || ''}`.toLocaleLowerCase('sv').includes(search.toLocaleLowerCase('sv'));
   const usablePayments=payments.filter(p=>!data.payment_links.some(a=>a.payment_id===p.id && data.journal.some(j=>j.id===a.journal_id && j.status==='posted') && !data.journal.some(j=>j.reversal_of===a.journal_id)));
   return <div className="economy-settlement">
-    {invoice && <><p><strong>{invoice.party} · {invoice.reference}</strong></p><p>Fakturadatum {invoice.document_date} · Förfallodatum {invoice.due_date || 'Ej angivet'}</p><p>{incomingInvoice(invoice)?'Inbetalt':'Utbetalt'}: {money(state.paid)} · Kvar: <strong>{money(state.remaining)}</strong></p><details><summary>Betalningshistorik</summary>{data.journal.filter(j=>j.status==='posted' && (j.document_id===invoice.id && j.bank_id || data.document_links?.some(a=>a.journal_id===j.id && a.document_id===invoice.id))).map(j=><p key={j.id}>{j.date} · {j.description} · {money(data.document_links?.find(a=>a.journal_id===j.id && a.document_id===invoice.id)?.amount ?? data.lines.filter(l=>l.journal_id===j.id && l.account==='1930').reduce((n,l)=>n+(incomingInvoice(invoice)?1:-1)*(Number(l.debit)-Number(l.credit)),0))}</p>)}</details></>}
+    {invoice && <>{state.needsCorrection && <p role="alert" className="economy-notice">Betalningen är kopplad. Bokförd fordran/skuld stämmer inte med kvarvarande fakturabelopp. Kontrollera rättelse i Bokföring innan bokslut; bokför inte betalningen igen.</p>}<p><strong>{invoice.party} · {invoice.reference}</strong></p><p>Fakturadatum {invoice.document_date} · Förfallodatum {invoice.due_date || 'Ej angivet'}</p><p>{incomingInvoice(invoice)?'Inbetalt':'Utbetalt'}: {money(state.paid)} · Kvar: <strong>{money(state.remaining)}</strong></p><details open><summary>Betalningshistorik</summary>{data.journal.filter(j=>j.status==='posted' && (j.document_id===invoice.id && j.bank_id || data.document_links?.some(a=>a.journal_id===j.id && a.document_id===invoice.id))).map(j=><p key={j.id}>{j.date} · {j.description} · {money(data.document_links?.find(a=>a.journal_id===j.id && a.document_id===invoice.id)?.amount ?? data.lines.filter(l=>l.journal_id===j.id && l.account==='1930').reduce((n,l)=>n+(incomingInvoice(invoice)?1:-1)*(Number(l.debit)-Number(l.credit)),0))}</p>)}</details></>}
     <label>Välj banktransaktion<Select value={bankId} onChange={e=>chooseBank(e.target.value)}><option value="">Välj inbetalning / utbetalning</option>{data.bank.filter(b=>!matchedBank(b,data.journal,data.lines) && (!invoice || (b.amount>0)===incomingInvoice(invoice) && b.date>=invoice.document_date)).map(b=><option key={b.id} value={b.id}>{b.date} · {b.description || b.reference} · {money(b.amount)}</option>)}</Select></label>
     {bank && <><p className="economy-notice">Bankbelopp: <strong>{money(Math.abs(bank.amount))}</strong> · Fördelat: {money(Math.abs(bank.amount)-(proposal?.remaining ?? Math.abs(bank.amount)))} · Kvar att fördela: <strong>{money(proposal?.remaining ?? Math.abs(bank.amount))}</strong></p><p>Välj alla fakturor och medlemsbetalningar som ingår i den samlade banktransaktionen. Du kan ange delbetalning på en faktura.</p><label>Sök namn eller referens<Input value={search} onChange={e=>setSearch(e.target.value)} /></label><h3>{bank.amount>0?'Kundfakturor / inbetalningar':'Leverantörsfakturor / utbetalningar'}</h3>
       {available.filter(visible).map(d=>{
