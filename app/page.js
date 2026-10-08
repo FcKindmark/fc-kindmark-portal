@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "./lib/supabaseClient";
+import {sessionIdentity} from "./lib/sessionIdentity";
 import PortalChoice from "./components/PortalChoice";
 import PasswordRecovery from "./components/PasswordRecovery";
 import LoginScreen from "./components/LoginScreen";
@@ -22,17 +23,22 @@ export default function App() {
   const [profile, setProfile] = useState(null);
   const [recovering, setRecovering] = useState(false);
   const [loading, setLoading] = useState(true);
+  const identity = useRef("");
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("recovery") === "1") setRecovering(true);
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (_event === "PASSWORD_RECOVERY") setRecovering(true);
       if (_event === "SIGNED_OUT") { setRecovering(false); setSupporter(null); setPortalMode(null); }
-      setUser(session?.user || null);
-      setProfile(null);setProfileReady(false);
+      const next = session?.user || null;
+      const nextIdentity = sessionIdentity(next);
+      if (identity.current !== nextIdentity) {
+        identity.current = nextIdentity;
+        setProfile(null);setProfileReady(false);
+      }
+      setUser(next);
       setLoading(false);
     });
-    checkAuth();
     return () => subscription.unsubscribe();
   }, []);
 
@@ -54,14 +60,12 @@ export default function App() {
       setHasChildren(Boolean(links.data?.length));setSupporter(Boolean(membership.data?.length));setProfile(profileResult.data);setProfileReady(true);
     }).catch(error=>{if(active)setProfileError(error.message);});
     return ()=>{active=false;};
-  }, [user,profileAttempt]);
+  }, [user?.id,user?.app_metadata?.club_role,profileAttempt]);
 
-  async function checkAuth() {
-    const {data}=await supabase.auth.getSession();
-    setUser(data?.session?.user||null);setLoading(false);
+  function handleLogin(u) {
+    if (identity.current !== sessionIdentity(u)) { identity.current = sessionIdentity(u); setProfileReady(false); }
+    setUser(u);
   }
-
-  function handleLogin(u) {setProfileReady(false);setUser(u);}
 
   async function logout() {
     await supabase.auth.signOut();
@@ -92,11 +96,11 @@ export default function App() {
   const isAdmin = ["admin", "coach"].includes(role);
 
   if (!isAdmin && supporter === null) return <p role="status">Läser medlemskap…</p>;
-  if (!isAdmin && supporter && !hasChildren) return <SupporterDashboard user={user} onLogout={logout}/>;
+  if (!isAdmin && supporter && !hasChildren) return <SupporterDashboard key={user.id} user={user} onLogout={logout}/>;
   if(role==="coach"&&!portalMode)return <PortalChoice onSelect={setPortalMode} onLogout={logout}/>;
   return isAdmin && portalMode!=="parent" ? (
-    <AdminDashboard user={user} profile={{...profile, role}} onLogout={logout} onOpenFamily={role==="coach"?()=>setPortalMode("parent"):undefined} />
+    <AdminDashboard key={user.id} user={user} profile={{...profile, role}} onLogout={logout} onOpenFamily={role==="coach"?()=>setPortalMode("parent"):undefined} />
   ) : (
-    <ParentDashboard user={user} profile={{...profile, role: role==="player"?"player":"parent"}} onLogout={logout} onBackToStaff={role==="coach"?()=>setPortalMode("coach"):undefined} staffRole={role} />
+    <ParentDashboard key={user.id} user={user} profile={{...profile, role: role==="player"?"player":"parent"}} onLogout={logout} onBackToStaff={role==="coach"?()=>setPortalMode("coach"):undefined} staffRole={role} />
   );
 }

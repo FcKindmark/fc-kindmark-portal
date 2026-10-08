@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import usePortalView from "../../lib/usePortalView";
 import { supabase } from "../../lib/supabaseClient";
 import { Card, Button } from "../UI";
 import ClubShell from "../ClubShell";
@@ -17,7 +18,7 @@ import PaymentsView from "./PaymentsView";
 import MessagesView from "./MessagesView";
 
 export default function ParentDashboard({ user, profile, onLogout, onBackToStaff, staffRole }) {
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = usePortalView("family", ["overview","calendar","membership","news","children","equipment","development","trainings","matches","payments","messages"], "overview", user.id);
   const [data, setData] = useState({
     players: [],
     trainings: [],

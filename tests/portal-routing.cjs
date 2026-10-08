@@ -5,8 +5,9 @@ function route({role='parent',mode=null,supporter=false,children=false,metadata=
   const state=[{id:'account',email:'account@example.com',app_metadata:metadata},mode,true,'',0,supporter,children,{role},false,false];let index=0;
   const module={exports:{}};
   const requireMock=name=>{
-    if(name==='react')return {useState:()=>[state[index++],()=>{}],useEffect:()=>{}};
+    if(name==='react')return {useState:()=>[state[index++],()=>{}],useEffect:()=>{},useRef:()=>({current:''})};
     if(name.startsWith('./components/')){if(!components.has(name))components.set(name,()=>null);return {__esModule:true,default:components.get(name)};}
+    if(name==='./lib/sessionIdentity')return {sessionIdentity:u=>`${u?.id||''}:${u?.app_metadata?.club_role||''}`};
     if(name==='./lib/supabaseClient')return {supabase:{}};
     return require(name);
   };

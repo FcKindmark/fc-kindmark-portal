@@ -1,0 +1,17 @@
+{
+  "id": "/",
+  "name": "FC Kindmark Medlemsportal",
+  "short_name": "FC Kindmark",
+  "description": "Din klubbportal för familj, lag och administration",
+  "lang": "sv",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6f7f9",
+  "theme_color": "#dfbc4d",
+  "icons": [
+    {"src":"/icons/app-192.png","sizes":"192x192","type":"image/png","purpose":"any"},
+    {"src":"/icons/app-512.png","sizes":"512x512","type":"image/png","purpose":"any"},
+    {"src":"/icons/app-maskable-512.png","sizes":"512x512","type":"image/png","purpose":"maskable"}
+  ]
+}

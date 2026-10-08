@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import usePortalView from "../../lib/usePortalView";
 import { supabase } from "../../lib/supabaseClient";
 import { Card, Button } from "../UI";
 import PlayersTab from "./PlayersTab";
@@ -28,7 +29,7 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
     setMemberAdd({kind,key:Date.now()});
     setActiveTab(kind === "player" ? "players" : kind === "coach" ? "users" : "membership");
   }
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = usePortalView(profile?.role === "coach" ? "coach" : "admin", profile?.role === "coach" ? ["overview","calendar","players","trainings","matches","attendance","development"] : ["overview","calendar","membership","news","attendance","equipment","development","players","teams","trainings","matches","payments","economy","messages","users"], "overview", user.id);
   const [data, setData] = useState({
     players: [],
     teams: [],
@@ -128,7 +129,7 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
     {activeTab === "trainings" && <TrainingsTab data={data} onUpdate={loadData} canDelete={profile?.role !== "coach"}/>}
     {activeTab === "matches" && <MatchesTab data={data} onUpdate={loadData} canDelete={profile?.role !== "coach"}/>}
     {activeTab === "payments" && <PaymentsTab data={data} onUpdate={loadData}/>}
-    {activeTab === "economy" && profile?.role !== "coach" && <EconomyTab payments={data.payments} onPaymentsChanged={refreshPayments}/>}
+    {activeTab === "economy" && profile?.role !== "coach" && <EconomyTab userId={user.id} payments={data.payments} onPaymentsChanged={refreshPayments}/>}
     {activeTab === "messages" && <MessagesTab data={data} onUpdate={loadData}/>}
     {activeTab === "users" && <UsersTab key={memberAdd?.key || "users"} data={data} initialShowCoach={memberAdd?.kind === "coach"} onCloseAdd={()=>setMemberAdd(null)} currentUserId={user.id} onUpdate={loadData}/>}
     </>}

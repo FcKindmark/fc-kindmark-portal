@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "node tests/attendance.test.mjs && node tests/schedule.test.mjs && node tests/matches.test.mjs && node tests/member-export.test.mjs && node tests/payments.test.mjs && node tests/membership-report.test.mjs && node tests/economy.test.mjs && node tests/economy-automation.test.mjs"
+    "test": "node tests/attendance.test.mjs && node tests/schedule.test.mjs && node tests/matches.test.mjs && node tests/member-export.test.mjs && node tests/payments.test.mjs && node tests/membership-report.test.mjs && node tests/economy.test.mjs && node tests/economy-automation.test.mjs && node tests/session-navigation.cjs && node tests/portal-routing.cjs"
   },
   "dependencies": {
     "react": "^18.0.0",

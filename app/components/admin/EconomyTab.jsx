@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { Card, Button, Input, Select } from '../UI';
 import { money, cents, parseCSV, bankRows, fingerprints, suggestAccount, entryForBank, report, matchedBank, journalRows, downloadCSV, downloadArchive } from '../../lib/economy';
+import usePortalView from "../../lib/usePortalView";
 import { readInvoice } from '../../lib/economy-documents';
 import { makeBackup, verifyBackup, downloadBackup } from '../../lib/economy-backup';
 const today = () => new Intl.DateTimeFormat('sv-SE', {
@@ -35,13 +36,17 @@ const emptyEntry = () => ({
   }]
 });
 export default function EconomyTab({
+  userId = "",
   payments = [],
   onPaymentsChanged,
   initialData = null,
   initialView = "overview"
 }) {
-  const [view, setView] = useState(initialView),
-    [year, setYear] = useState(Number(today().slice(0, 4))),
+  const [view, setView] = usePortalView("economy", ["overview","documents","bank","partners","journal","reports"], initialView, userId);
+  const [savedYear, setSavedYear] = usePortalView("economyYear", Array.from({length:101},(_,i)=>String(2000+i)), today().slice(0,4), userId);
+  const year=Number(savedYear);
+  const setYear=value=>setSavedYear(String(value));
+  const
     [data, setData] = useState(initialData || {
       accounts: [],
       partners: [],
