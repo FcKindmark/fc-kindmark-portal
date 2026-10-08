@@ -1,63 +1,15 @@
-﻿"use client";
-import { useState } from "react";
-import { Card, Empty, Button } from "../UI";
-import { supabase } from "../../lib/supabaseClient";
-
-export default function MessagesView({ data, userEmail, onRefresh }) {
-  const messages = data?.messages || [];
-  const [loading, setLoading] = useState(false);
-
-  async function deleteMessage(id) {
-    if (!confirm("Är du säker på att du vill ta bort detta meddelande?")) return;
-
-    setLoading(true);
-    try {
-      const { error } = await supabase.from("messages").delete().eq("id", id);
-      if (error) throw error;
-      if (onRefresh) await onRefresh();
-    } catch (err) {
-      alert("Fel: " + err.message);
-    }
-    setLoading(false);
-  }
-
-  return (
-    <>
-      <div style={{ marginBottom: "30px" }}>
-        <h2 style={{ fontSize: "24px", fontWeight: "700", color: "var(--text-dark)" }}>Meddelanden</h2>
-      </div>
-
-      {messages.length === 0 ? (
-        <Empty message="Inga meddelanden än" />
-      ) : (
-        <div style={{ display: "grid", gap: "20px" }}>
-          {messages.map((msg) => (
-            <Card key={msg.id}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "12px" }}>
-                <div style={{ flex: 1 }}>
-                  <h3 style={{ color: "var(--text-dark)", margin: "0 0 8px 0" }}>{msg.subject}</h3>
-                  {msg.team_name && (
-                    <p style={{ color: "var(--text-light)", fontSize: "13px", fontWeight: "500", marginBottom: "8px" }}>
-                      Lag: <strong>{msg.team_name}</strong>
-                    </p>
-                  )}
-                </div>
-                <Button 
-                  variant="danger" 
-                  onClick={() => deleteMessage(msg.id)} 
-                  disabled={loading}
-                  style={{ padding: "6px 10px", fontSize: "12px" }}
-                >
-                  Ta bort
-                </Button>
-              </div>
-              <p style={{ color: "var(--text-gray)", fontSize: "14px", lineHeight: "1.6", whiteSpace: "pre-wrap" }}>
-                {msg.content}
-              </p>
-            </Card>
-          ))}
-        </div>
-      )}
-    </>
-  );
+"use client";
+import {useEffect,useState} from "react";
+import {Card,Empty,Button} from "../UI";
+import {supabase} from "../../lib/supabaseClient";
+export default function MessagesView({data,onRefresh,onRead,onOpenCall,targetId}){
+ const messages=data?.messages||[],read=new Set((data.messageReads||[]).map(r=>r.message_id));
+ const [opened,setOpened]=useState(targetId||null),[busy,setBusy]=useState(false),[error,setError]=useState("");
+ useEffect(()=>{if(targetId){setOpened(targetId);onRead(targetId);}},[targetId,onRead]);
+ function open(message){setOpened(message.id);if(!read.has(message.id))onRead(message.id);}
+ async function remove(id){if(!confirm("Ta bort meddelandet?"))return;setBusy(true);setError("");try{const {error}=await supabase.from("messages").delete().eq("id",id);if(error)throw error;await onRefresh({silent:true});}catch(e){setError(e.message);}finally{setBusy(false);}}
+ return <section><h2>Meddelanden</h2>{error&&<p className="error-banner" role="alert">{error}</p>}{!messages.length?<Empty message="Inga meddelanden än"/>:<div className="match-list">{messages.map(msg=>{
+  const target=(data.messageTargets||[]).find(t=>t.message_id===msg.id);
+  return <Card key={msg.id} className={read.has(msg.id)?"":"unread-message"}><button className="message-open" aria-expanded={opened===msg.id} onClick={()=>open(msg)}><strong>{msg.subject}</strong>{!read.has(msg.id)&&<span className="reply-status reply-waiting">Nytt</span>}</button>{msg.team_name&&<p className="muted">{msg.team_name}</p>}{opened===msg.id&&<><p className="preserve-lines">{msg.content}</p><div className="button-group">{target&&<Button onClick={()=>onOpenCall(target)}>Öppna kallelse</Button>}<Button variant="secondary" disabled={busy} onClick={()=>remove(msg.id)}>Ta bort</Button></div></>}</Card>;
+ })}</div>}</section>;
 }

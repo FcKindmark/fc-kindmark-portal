@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {familyInvitations,familyNotifications} from '../app/lib/familyNotifications.js';
+const players=[{id:'one',team_id:'team',name:'One'},{id:'two',team_id:'team',name:'Two'}];
+const data={trainings:[{id:'training',team_id:'team',date:'2026-10-10',time:'18:00'}],matches:[{id:'match',team_id:'team',date:'2026-10-12',opponent:'Other'},{id:'past',team_id:'team',date:'2026-01-01'}],trainingCalls:[{training_id:'training',player_id:'one'},{training_id:'training',player_id:'two'},{training_id:'training',player_id:'someone-else'}],matchCalls:[{match_id:'match',player_id:'one'},{match_id:'past',player_id:'one'}],trainingReplies:[{training_id:'training',player_id:'two',attended:false}],messages:[{id:'call-message',subject:'Kallelse'},{id:'general-message',subject:'Club news'}],messageTargets:[{message_id:'call-message',event_kind:'training',event_id:'training'}]};
+let invitations=familyInvitations(data,players),state=familyNotifications(data,invitations,'2026-10-08');
+assert.equal(invitations.length,4);assert.equal(invitations.find(i=>i.player.id==='two').answer,false);
+assert.equal(state.pendingCount,2);assert.equal(state.unreadCount,2);assert.equal(state.notifications.length,3);
+const call=state.notifications.find(n=>n.id==='training:training');assert.deepEqual(call.messageIds,['call-message']);assert.equal(call.tab,'calls');assert.equal(call.eventId,'training');assert.deepEqual(call.players,['One']);
+assert.equal(state.notifications.find(n=>n.id==='message:general-message').tab,'messages');
+data.messageReads=[{message_id:'call-message'},{message_id:'general-message'}];data.trainingReplies.push({training_id:'training',player_id:'one',attended:true});
+state=familyNotifications(data,familyInvitations(data,players),'2026-10-08');assert.equal(state.unreadCount,0);assert.equal(state.pendingCount,1);assert.equal(state.notifications.length,1);
+assert.equal(familyInvitations(data,[]).length,0);
+console.log('PASS: own-player invitations, no-answer versus false, unread receipts, direct event/message targets, grouped alerts and past-event exclusion.');
