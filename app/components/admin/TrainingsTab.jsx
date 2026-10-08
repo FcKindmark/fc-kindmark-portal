@@ -190,7 +190,6 @@ export default function TrainingsTab({ data, onUpdate, canDelete=false }) {
                         {expandedId === t.id ? "▼" : "▶"} {t.date} kl {t.time?.slice(0,5)}
                       </h3>
                       <p style={{ color: "var(--text-light)", fontSize: "14px", marginBottom: "8px" }}>{teams.find(team=>team.id===t.team_id)?.name} · {t.location}</p>{t.calls_sent_at&&<p className="muted">Kallelse skickad · {teamPlayers.length} spelare</p>}
-                      {t.admin_comment && <p style={{ color: "var(--text-gray)", fontSize: "13px", fontStyle: "italic", marginBottom: "8px" }}>💬 {t.admin_comment}</p>}
                       <p style={{ color: "var(--text-dark)", fontSize: "13px", fontWeight: "600" }}>
                         ✓ Kommer: <span style={{ color: "var(--royal-blue)" }}>{kommerCount}</span> | 
                         ✗ Kommer inte: <span style={{ color: "var(--royal-red)" }}>{kommerIntCount}</span> |
