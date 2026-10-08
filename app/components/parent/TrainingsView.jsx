@@ -10,6 +10,8 @@ export default function TrainingsView({ data, userEmail, linkedPlayerIds = [], o
   const [expandedTraining, setExpandedTraining] = useState(null);
   const [loading, setLoading] = useState(false);
   const [attendance, setAttendance] = useState({});
+  const [calls,setCalls]=useState([]),[callsReady,setCallsReady]=useState(false),[callError,setCallError]=useState("");
+  useEffect(()=>{let active=true;setCallsReady(false);supabase.from("club_training_calls").select("training_id,player_id").then(({data,error})=>{if(!active)return;if(error)setCallError(error.message);else{setCalls(data||[]);setCallError("");}setCallsReady(!error);});return()=>{active=false;};},[data.trainings]);
 
   // Get user's children
   const myChildren = players.filter((p) => 
@@ -120,7 +122,7 @@ export default function TrainingsView({ data, userEmail, linkedPlayerIds = [], o
         <div style={{ display: "grid", gap: "20px" }}>
           {myTrainings.map((training) => {
             const information=memberEventInfo(training.admin_comment);
-            const childrenInTraining = myChildren.filter((c) => c.team_id === training.team_id);
+            const childrenInTraining = myChildren.filter((c) => c.team_id === training.team_id && (!training.calls_sent_at||(callsReady&&calls.some(row=>row.training_id===training.id&&row.player_id===c.id))));
             
             return (
               <Card key={training.id}>
@@ -148,7 +150,7 @@ export default function TrainingsView({ data, userEmail, linkedPlayerIds = [], o
 
                 {expandedTraining === training.id && (
                   <div style={{ borderTop: "1px solid #ddd", paddingTop: "16px" }}>
-                    <h4 style={{ color: "var(--text-dark)", marginBottom: "12px", fontWeight: "600" }}>Dina barn:</h4>
+                    <h4 style={{ color: "var(--text-dark)", marginBottom: "12px", fontWeight: "600" }}>{self?"Din kallelse":"Kallade barn"}</h4>{callError&&<p role="alert" className="error-banner">{callError}</p>}{training.calls_sent_at&&!callsReady&&!callError&&<p>Läser kallelse…</p>}{training.calls_sent_at&&callsReady&&!childrenInTraining.length&&<p>Ingen av dina kopplade spelare är kallad till denna träning.</p>}
                     {childrenInTraining.map((child) => {
                       const isAttending = attendance[`${training.id}_${child.id}`];
                       return (

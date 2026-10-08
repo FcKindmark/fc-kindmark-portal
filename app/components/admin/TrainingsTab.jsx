@@ -17,6 +17,11 @@ export default function TrainingsTab({ data, onUpdate, canDelete=false }) {
   const [adminComment, setAdminComment] = useState("");
   const [loading, setLoading] = useState(false);
   const [attendance, setAttendance] = useState({});
+  const [calls,setCalls]=useState([]),[callTraining,setCallTraining]=useState(null),[selected,setSelected]=useState([]),[callNote,setCallNote]=useState(""),[callError,setCallError]=useState(""),[callNotice,setCallNotice]=useState("");
+  async function loadCalls(){const {data:rows,error}=await supabase.from("club_training_calls").select("training_id,player_id");if(error)setCallError(error.message);else setCalls(rows||[]);}
+  useEffect(()=>{loadCalls();},[trainings]);
+  function openCall(training){setCallTraining(training);setCallError("");setCallNote("");setSelected(training.calls_sent_at?calls.filter(c=>c.training_id===training.id).map(c=>c.player_id):players.filter(p=>p.team_id===training.team_id).map(p=>p.id));}
+  async function sendCall(e){e.preventDefault();setLoading(true);setCallError("");setCallNotice("");try{const {data:result,error}=await supabase.rpc("club_send_training_call",{target:callTraining.id,selected,note:callNote.trim()});if(error)throw error;setCallNotice(`Kallelse sparad för ${result.players} spelare. ${result.recipients} mottagare har fått ett meddelande i portalen.`);setCallTraining(null);await loadCalls();await onUpdate();}catch(e){setCallError(e.message);}finally{setLoading(false);}}
 
   useEffect(() => {
     loadAttendance();
@@ -126,6 +131,8 @@ export default function TrainingsTab({ data, onUpdate, canDelete=false }) {
         <Button variant="primary" onClick={() => { resetForm(); setShowAdd(true); }}>+ Lägg till träning</Button>
       </div>
 
+      {callNotice&&<p role="status" className="economy-notice">{callNotice}</p>}{callError&&<p role="alert" className="error-banner">{callError}</p>}
+      {callTraining&&<Card className="training-call-editor"><form onSubmit={sendCall}><h3>Kallelse · {callTraining.date} kl {callTraining.time?.slice(0,5)}</h3><p>{teams.find(t=>t.id===callTraining.team_id)?.name} · {callTraining.location}</p><p className="muted">Kallelsen och meddelandet visas i portalen för spelaren och kopplade föräldrar. Inga mejl skickas här. Befintliga svar behålls.</p><div className="button-group"><Button variant="secondary" disabled={loading} onClick={()=>setSelected(players.filter(p=>p.team_id===callTraining.team_id).map(p=>p.id))}>Alla i laget</Button><Button variant="secondary" disabled={loading} onClick={()=>setSelected([])}>Rensa val</Button></div><fieldset disabled={loading}><legend>Välj spelare ({selected.length})</legend>{players.filter(p=>p.team_id===callTraining.team_id).map(p=><label className="attendance-row" key={p.id}><span>{p.name}</span><input type="checkbox" checked={selected.includes(p.id)} onChange={e=>setSelected(prev=>e.target.checked?[...prev,p.id]:prev.filter(id=>id!==p.id))}/></label>)}</fieldset><label className="field">Meddelande<textarea maxLength={1000} disabled={loading} value={callNote} onChange={e=>setCallNote(e.target.value)} placeholder="Till exempel: Ta med vattenflaska."/></label><div className="button-group"><Button type="submit" disabled={loading||!selected.length}>{loading?"Skickar…":"Skicka kallelse"}</Button><Button variant="secondary" disabled={loading} onClick={()=>setCallTraining(null)}>Avbryt</Button></div></form></Card>}
       {showAdd && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0, 0, 0, 0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }} onClick={(e) => { if (e.target === e.currentTarget) resetForm(); }}>
           <Card style={{ maxWidth: "500px", width: "90%" }}>
@@ -171,7 +178,7 @@ export default function TrainingsTab({ data, onUpdate, canDelete=false }) {
         <Card>
           <div style={{ display: "grid", gap: "15px" }}>
             {trainings.map((t) => {
-              const teamPlayers = players.filter((p) => p.team_id === t.team_id);
+              const teamPlayers = players.filter((p) => p.team_id === t.team_id && (!t.calls_sent_at||calls.some(c=>c.training_id===t.id&&c.player_id===p.id)));
               const kommerCount = teamPlayers.filter((p) => attendance[`${t.id}_${p.id}`] === true).length;
               const kommerIntCount = teamPlayers.filter((p) => attendance[`${t.id}_${p.id}`] === false).length;
 
@@ -180,9 +187,9 @@ export default function TrainingsTab({ data, onUpdate, canDelete=false }) {
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "8px" }}>
                     <div style={{ flex: 1 }}>
                       <h3 style={{ color: "var(--text-dark)", marginBottom: "5px", cursor: "pointer" }} onClick={() => setExpandedId(expandedId === t.id ? null : t.id)}>
-                        {expandedId === t.id ? "▼" : "▶"} {t.date} kl {t.time}
+                        {expandedId === t.id ? "▼" : "▶"} {t.date} kl {t.time?.slice(0,5)}
                       </h3>
-                      <p style={{ color: "var(--text-light)", fontSize: "14px", marginBottom: "8px" }}>{t.location}</p>
+                      <p style={{ color: "var(--text-light)", fontSize: "14px", marginBottom: "8px" }}>{teams.find(team=>team.id===t.team_id)?.name} · {t.location}</p>{t.calls_sent_at&&<p className="muted">Kallelse skickad · {teamPlayers.length} spelare</p>}
                       {t.admin_comment && <p style={{ color: "var(--text-gray)", fontSize: "13px", fontStyle: "italic", marginBottom: "8px" }}>💬 {t.admin_comment}</p>}
                       <p style={{ color: "var(--text-dark)", fontSize: "13px", fontWeight: "600" }}>
                         ✓ Kommer: <span style={{ color: "var(--royal-blue)" }}>{kommerCount}</span> | 
@@ -190,7 +197,8 @@ export default function TrainingsTab({ data, onUpdate, canDelete=false }) {
                         ? Svar väntas: <span style={{ color: "var(--text-light)" }}>{teamPlayers.length - kommerCount - kommerIntCount}</span>
                       </p>
                     </div>
-                    <div style={{ display: "flex", gap: "8px" }}>
+                    <div className="match-actions">
+                      <Button disabled={loading} onClick={()=>openCall(t)}>Kallelse</Button>
                       <Button variant="secondary" onClick={() => startEdit(t)} style={{ padding: "8px 12px", fontSize: "12px" }}>Redigera</Button>
                       <Button variant="danger" onClick={() => deleteTraining(t.id)} disabled={loading} style={{ padding: "8px 12px", fontSize: "12px" }}>Ta bort</Button>
                     </div>
