@@ -35,14 +35,14 @@ Deno.serve(async (req: Request) => {
     let sent=false;
     if(userId && kind==="player" && ["admin","coach"].includes(profile.role)) return reply(409,{error:"Använd ett separat spelarkonto."});
     if(!userId) {
-      const invited=await service.auth.admin.inviteUserByEmail(email,{redirectTo:"https://portal.fckindmark.se/?invite=1",data:{full_name:String(body.name||"").slice(0,150)}});
+      const invited=await service.auth.admin.inviteUserByEmail(email,{redirectTo:"https://portal.fckindmark.se/?recovery=1",data:{full_name:String(body.name||"").slice(0,150)}});
       if(invited.error) throw invited.error;
       userId=invited.data.user.id; sent=true;
     } else if(body.resend === true) {
       const account=await service.auth.admin.getUserById(userId);
       if(account.error) throw account.error;
       if(!account.data.user.email_confirmed_at) {
-        const invited=await service.auth.admin.inviteUserByEmail(email,{redirectTo:"https://portal.fckindmark.se/?invite=1"});
+        const invited=await service.auth.admin.inviteUserByEmail(email,{redirectTo:"https://portal.fckindmark.se/?recovery=1"});
         if(invited.error) throw invited.error;
         sent=true;
       }

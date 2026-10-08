@@ -17,7 +17,7 @@ async function run(body,{role='admin',authenticated=true,existing=false,confirme
  let r=await run(body,{authenticated:false});assert.equal(r.status,401);assert.equal(r.calls.length,0);
  r=await run(body,{role:'coach'});assert.equal(r.status,403);assert.equal(r.calls.length,0);
  r=await run({...body,email:'bad'});assert.equal(r.status,400);assert.equal(r.calls.length,0);
- r=await run(body);assert.equal(r.status,200);assert.equal(r.data.sent,true);assert.deepEqual(r.calls.map(c=>c[0]),['invite','link']);assert.equal(r.calls[0][1],'parent@example.com');assert.equal(r.calls[0][2].redirectTo,'https://portal.fckindmark.se/?invite=1');
+ r=await run(body);assert.equal(r.status,200);assert.equal(r.data.sent,true);assert.deepEqual(r.calls.map(c=>c[0]),['invite','link']);assert.equal(r.calls[0][1],'parent@example.com');assert.equal(r.calls[0][2].redirectTo,'https://portal.fckindmark.se/?recovery=1');
  r=await run({...body,resend:true},{existing:true});assert.equal(r.data.sent,false);assert.deepEqual(r.calls.map(c=>c[0]),['link']);
  r=await run({...body,resend:true},{existing:true,confirmed:false});assert.equal(r.data.sent,true);
  r=await run({...body,kind:'player'});assert.deepEqual(r.calls.map(c=>c[0]),['invite','club_link_player_account']);
