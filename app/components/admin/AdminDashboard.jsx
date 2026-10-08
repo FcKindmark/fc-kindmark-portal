@@ -61,7 +61,7 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
         profile?.role === "coach" ? Promise.resolve({data: []}) : supabase.from("profiles").select("*"),
         supabase.from("profiles").select("*").eq("id", user.id).single(),
         profile?.role === "coach" ? Promise.resolve({data: []}) : supabase.from("club_member_cards").select("*"),
-        profile?.role === "coach" ? supabase.from("club_coach_teams").select("team_id").eq("user_id",user.id) : Promise.resolve({data: []}),
+        profile?.role === "coach" ? supabase.from("club_coach_teams").select("user_id,team_id").eq("user_id",user.id) : supabase.from("club_coach_teams").select("user_id,team_id"),
       ]);
 
       const failures = [playersRes, teamsRes, trainingsRes, matchesRes, paymentsRes, messagesRes, profilesRes, cardsRes, coachTeamsRes].filter(r => r.error);
