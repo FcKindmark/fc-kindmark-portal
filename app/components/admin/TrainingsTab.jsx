@@ -28,18 +28,22 @@ export default function TrainingsTab({ data, userId, onUpdate, canDelete=false, 
   const [attendance, setAttendance] = useState({});
   const [calls,setCalls]=useState([]),[callTraining,setCallTraining]=useState(null),[selected,setSelected]=useState([]),[callNote,setCallNote]=useState(""),[callError,setCallError]=useState(""),[callNotice,setCallNotice]=useState("");
   async function loadCalls(){const {data:rows,error}=await supabase.from("club_training_calls").select("training_id,player_id");if(error)setCallError(error.message);else setCalls(rows||[]);}
-  useEffect(()=>{loadCalls();},[trainings]);
+
   function openCall(training){setCallTraining(training);setCallError("");setCallNote("");setSelected(training.calls_sent_at?calls.filter(c=>c.training_id===training.id).map(c=>c.player_id):players.filter(p=>p.team_id===training.team_id).map(p=>p.id));}
   async function sendCall(e){e.preventDefault();setLoading(true);setCallError("");setCallNotice("");try{const {data:result,error}=await supabase.rpc("club_send_training_call",{target:callTraining.id,selected,note:callNote.trim()});if(error)throw error;setCallNotice(`Kallelse sparad för ${result.players} spelare. ${result.recipients} mottagare har fått ett meddelande i portalen.`);setCallTraining(null);await loadCalls();await onUpdate();}catch(e){setCallError(e.message);}finally{setLoading(false);}}
 
   useEffect(() => {
-    loadAttendance();
+    const refresh=()=>{loadCalls();loadAttendance();};
+    refresh();
+    const timer=setInterval(refresh,15000);
+    window.addEventListener("focus",refresh);
+    return()=>{clearInterval(timer);window.removeEventListener("focus",refresh);};
   }, [trainings]);
 
   async function loadAttendance() {
     try {
       const trainingIds = trainings.map((t) => t.id);
-      if (trainingIds.length === 0) return;
+      if (trainingIds.length === 0) {setAttendance({});return;}
 
       const { data: attendanceData } = await supabase
         .from("training_attendance")
