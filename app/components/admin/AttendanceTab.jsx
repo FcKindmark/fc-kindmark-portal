@@ -5,7 +5,7 @@ import { Card, Button } from "../UI";
 import { downloadAttendance } from "../../lib/attendance";
 import { trainingPeriod } from "../../lib/schedule";
 import { useStockholmToday } from "../../lib/useStockholmToday";
-export default function AttendanceTab({ data, canDelete=false }) {
+export default function AttendanceTab({ data, canDelete=false, canExport=false }) {
   const [trainingId,setTrainingId] = useState("");
   const [showPast,setShowPast] = useState(false);
   const today = useStockholmToday();
@@ -40,5 +40,5 @@ export default function AttendanceTab({ data, canDelete=false }) {
   {!visibleTrainings.length && <p className="muted">{showPast?"Inga tidigare träningar":"Inga kommande träningar"}</p>}
   {players.map(p=>{const row=records.find(r=>r.training_id===trainingId && r.player_id===String(p.id));return <div className="attendance-row" key={p.id}><div><strong>{p.name}</strong><p className="muted">{row ? row.present ? "Närvarande" : "Frånvarande" : "Ej registrerad"}</p></div><div className="button-group"><Button disabled={busy} variant={row?.present===true?"primary":"secondary"} onClick={()=>mark(p.id,true)}>Närvarande</Button><Button disabled={busy} variant={row?.present===false?"danger":"secondary"} onClick={()=>mark(p.id,false)}>Frånvarande</Button>{canDelete && row && <Button disabled={busy} variant="danger" onClick={()=>remove(p.id)}>Ta bort registrering</Button>}</div></div>;})}
   {training && !players.length && <p>Inga spelare är kopplade till laget.</p>}</Card>
-  <Card><h2>Exportera närvarounderlag</h2><p>CSV med registrerad närvaro. Kontrollera underlaget innan rapportering.</p><div className="button-group"><label className="field">Från<input type="date" value={from} onChange={e=>setFrom(e.target.value)}/></label><label className="field">Till<input type="date" value={to} onChange={e=>setTo(e.target.value)}/></label><Button disabled={!!error || !!(from && to && from>to)} onClick={()=>downloadAttendance(data.trainings,records,data.players,from,to || undefined)}>Ladda ner CSV</Button></div></Card></>;
+  {canExport && <Card><h2>Exportera närvarounderlag</h2><p>CSV med registrerad närvaro. Kontrollera underlaget innan rapportering.</p><div className="button-group"><label className="field">Från<input type="date" value={from} onChange={e=>setFrom(e.target.value)}/></label><label className="field">Till<input type="date" value={to} onChange={e=>setTo(e.target.value)}/></label><Button disabled={!!error || !!(from && to && from>to)} onClick={()=>downloadAttendance(data.trainings,records,data.players,from,to || undefined)}>Ladda ner CSV</Button></div></Card>}</>;
 }

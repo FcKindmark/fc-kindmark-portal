@@ -122,7 +122,7 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
     {activeTab === "news" && <ClubNews admin/>}
     {activeTab === "membership" && <MemberCards key={memberAdd?.key || "members"} admin initialShowAdd={Boolean(memberAdd)} initialMembershipType={memberAdd?.kind} onCloseAdd={()=>setMemberAdd(null)} onUpdate={loadData}/>}
     {activeTab === "calendar" && <EventSchedule data={data} onNavigate={setActiveTab}/>}
-    {activeTab === "attendance" && <AttendanceTab data={data} canDelete={profile?.role !== "coach"}/>}
+    {activeTab === "attendance" && <AttendanceTab data={data} canDelete={profile?.role !== "coach"} canExport={profile?.role !== "coach"}/>}
     {activeTab === "equipment" && <PlayerRecords players={data.players} kind="equipment" canDelete={profile?.role !== "coach"}/>}
     {activeTab === "development" && <PlayerRecords players={data.players} kind="development" canDelete={profile?.role !== "coach"}/>}
     {activeTab === "players" && <PlayersTab key={memberAdd?.key || "players"} data={data} initialShowAdd={memberAdd?.kind === "player"} onCloseAdd={()=>setMemberAdd(null)} onUpdate={loadData} readOnly={profile?.role === "coach"}/>}
