@@ -1,10 +1,11 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, Input, Button, Empty } from "../UI";
 import { supabase } from "../../lib/supabaseClient";
+import { upcomingFirst } from "../../lib/schedule";
 
 export default function TrainingsTab({ data, onUpdate, canDelete=false }) {
-  const trainings = data?.trainings || [];
+  const trainings = useMemo(() => upcomingFirst(data?.trainings || []), [data?.trainings]);
   const teams = data?.teams || [];
   const players = data?.players || [];
   const [showAdd, setShowAdd] = useState(false);

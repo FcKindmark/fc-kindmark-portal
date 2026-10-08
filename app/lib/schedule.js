@@ -1,6 +1,15 @@
 export function stockholmToday() {
   return new Intl.DateTimeFormat("sv-SE", {timeZone:"Europe/Stockholm"}).format(new Date());
 }
+export function upcomingFirst(events, today = stockholmToday()) {
+  return [...events].sort((a, b) => {
+    const aUpcoming = (a.date || "") >= today;
+    const bUpcoming = (b.date || "") >= today;
+    if (aUpcoming !== bUpcoming) return aUpcoming ? -1 : 1;
+    const order = `${a.date || ""} ${a.time || ""}`.localeCompare(`${b.date || ""} ${b.time || ""}`);
+    return aUpcoming ? order : -order;
+  });
+}
 export function nextSevenDays(events, today = stockholmToday()) {
   const end = new Date(`${today}T12:00:00Z`);
   end.setUTCDate(end.getUTCDate() + 7);

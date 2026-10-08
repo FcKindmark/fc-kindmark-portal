@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { Card, Button } from "../UI";
 import { downloadAttendance } from "../../lib/attendance";
+import { upcomingFirst } from "../../lib/schedule";
 export default function AttendanceTab({ data, canDelete=false }) {
   const [trainingId,setTrainingId] = useState("");
   const [records,setRecords] = useState([]); const [error,setError] = useState(""); const [busy,setBusy] = useState(false);
@@ -26,7 +27,7 @@ export default function AttendanceTab({ data, canDelete=false }) {
   }
   return <><div className="page-heading"><div><p className="eyebrow">TRÄNARENS REGISTRERING</p><h1>Närvaro</h1><p>Registrera vilka som deltog. Föräldrarnas svar finns under Träningar.</p></div></div>
   {error && <p role="alert" className="error-banner">{error}</p>}
-  <Card><label className="field">Träning<select value={trainingId} onChange={e=>setTrainingId(e.target.value)}><option value="">Välj träning</option>{[...data.trainings].sort((a,b)=>b.date.localeCompare(a.date)).map(t=><option key={t.id} value={t.id}>{t.date} {t.time?.slice(0,5)} · {t.location}</option>)}</select></label>
+  <Card><label className="field">Träning<select value={trainingId} onChange={e=>setTrainingId(e.target.value)}><option value="">Välj träning</option>{upcomingFirst(data.trainings).map(t=><option key={t.id} value={t.id}>{t.date} {t.time?.slice(0,5)} · {t.location}</option>)}</select></label>
   {players.map(p=>{const row=records.find(r=>r.training_id===trainingId && r.player_id===String(p.id));return <div className="attendance-row" key={p.id}><div><strong>{p.name}</strong><p className="muted">{row ? row.present ? "Närvarande" : "Frånvarande" : "Ej registrerad"}</p></div><div className="button-group"><Button disabled={busy} variant={row?.present===true?"primary":"secondary"} onClick={()=>mark(p.id,true)}>Närvarande</Button><Button disabled={busy} variant={row?.present===false?"danger":"secondary"} onClick={()=>mark(p.id,false)}>Frånvarande</Button>{canDelete && row && <Button disabled={busy} variant="danger" onClick={()=>remove(p.id)}>Ta bort registrering</Button>}</div></div>;})}
   {training && !players.length && <p>Inga spelare är kopplade till laget.</p>}</Card>
   <Card><h2>Exportera närvarounderlag</h2><p>CSV med registrerad närvaro. Kontrollera underlaget innan rapportering.</p><div className="button-group"><label className="field">Från<input type="date" value={from} onChange={e=>setFrom(e.target.value)}/></label><label className="field">Till<input type="date" value={to} onChange={e=>setTo(e.target.value)}/></label><Button disabled={!!error || !!(from && to && from>to)} onClick={()=>downloadAttendance(data.trainings,records,data.players,from,to || undefined)}>Ladda ner CSV</Button></div></Card></>;
