@@ -190,3 +190,5 @@ body{background:var(--beige)}h1,h2,h3{font-weight:700}.club-sidebar{width:248px;
 }
 
 .coach-event-replies{margin:16px 0;padding:16px 0;border-bottom:1px solid var(--border-color)}.coach-reply-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 0}.coach-reply-row .invitation-answer-buttons{margin:0}.coach-reply-row .person-name{flex:1;min-width:150px}
+
+.telegram-settings{margin-top:24px;padding-top:20px;border-top:1px solid #e5e7eb}.telegram-settings h3{margin-bottom:8px}.telegram-settings p{margin:8px 0 14px}.telegram-settings details{margin-top:16px}.telegram-settings summary{cursor:pointer;font-weight:600}

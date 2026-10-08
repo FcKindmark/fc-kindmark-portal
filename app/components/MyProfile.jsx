@@ -5,6 +5,7 @@ import {Button} from "./UI";
 const bucket="club-profile-photos";
 import MyPlayerProfiles from "./MyPlayerProfiles";
 import PushSettings from "./PushSettings";
+import TelegramSettings from "./TelegramSettings";
 import {preparePhoto} from "../lib/photos";
 export default function MyProfile({user,profile,photo,onClose,onSaved}){
   const dialog=useRef(null),gallery=useRef(null),camera=useRef(null);
@@ -36,5 +37,6 @@ export default function MyProfile({user,profile,photo,onClose,onSaved}){
     </form>
     <MyPlayerProfiles userId={user.id}/>
     <PushSettings userId={user.id}/>
+    <TelegramSettings userId={user.id} isAdmin={user.app_metadata?.club_role==="admin"}/>
   </dialog>;
 }

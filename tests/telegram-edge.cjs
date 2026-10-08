@@ -1,0 +1,29 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),ts=require('typescript');
+let handler,config=null,user={id:'member-id',app_metadata:{club_role:'parent'}},calls=[];
+const db={auth:{getUser:async token=>({data:{user:token==='valid'?user:null},error:token==='valid'?null:{}})},rpc:async(name,args)=>{calls.push({name,args});let data=null;if(name==='club_telegram_config')data=config;if(name==='club_telegram_status')data={ready:!!config?.ready,connected:false,bot:config?.username};if(name==='club_telegram_save_config')config=args.config;if(name==='club_telegram_update')data='Sparat';if(name==='club_claim_telegram')data=[];return {data,error:null};}};
+const context=vm.createContext({createClient:()=>db,crypto:require('node:crypto').webcrypto,TextEncoder,Uint8Array,Set,Array,Number,JSON,Promise,Error,Response,Request,AbortSignal,console,Deno:{env:{get:key=>key==='SUPABASE_URL'?'https://test.supabase.co':'server-secret'},serve:fn=>handler=fn},fetch:async(url)=>({ok:true,status:200,json:async()=>url.endsWith('/getMe')?{ok:true,result:{is_bot:true,username:'KindmarkTestBot'}}:{ok:true,result:true}})});
+for(const file of ['helpers.ts','index.ts']){const source=fs.readFileSync('supabase/functions/club-telegram/'+file,'utf8').replace(/^import .*;\n/gm,'').replace(/^export /gm,'');vm.runInContext(ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText,context);}
+const send=(body,headers={})=>handler(new Request('https://test.supabase.co/functions/v1/club-telegram',{method:'POST',body:JSON.stringify(body),headers}));
+const headers={origin:'https://portal.fckindmark.se',authorization:'Bearer valid','content-type':'application/json'};
+(async()=>{
+ assert.equal((await send({action:'status'})).status,403);
+ assert.equal((await send({action:'status'},{...headers,authorization:'Bearer expired'})).status,401);
+ assert.equal((await send({action:'setup',token:'123456:'+ 'x'.repeat(35)},headers)).status,403);
+ assert.equal((await send({action:'connect'},headers)).status,409);
+ assert.equal((await send({action:'status',uid:'victim'},headers)).status,200);
+ assert.equal(calls.findLast(x=>x.name==='club_telegram_status').args.uid,'member-id');
+ user={id:'admin-id',app_metadata:{club_role:'admin'}};
+ const result=await send({action:'setup',token:'123456:'+ 'x'.repeat(35)},headers);
+ assert.equal(result.status,200);assert.equal(config.ready,true);
+ const publicResponse=await result.text();assert.equal(publicResponse.includes('token'),false);assert.equal(publicResponse.includes(config.webhookSecret),false);
+ assert.equal((await send({update_id:1},{'x-telegram-bot-api-secret-token':'fake'})).status,401);
+ assert.equal((await send({action:'dispatch'},{'x-kindmark-telegram':'fake'})).status,401);
+ assert.equal((await send({action:'dispatch'},{'x-kindmark-telegram':config.dispatchSecret})).status,200);
+ const update={update_id:1,callback_query:{id:'cb',from:{id:123,is_bot:false},message:{chat:{id:123,type:'private'}},data:'r:12345678-1234-1234-1234-123456789012:n'}};
+ assert.equal((await send(update,{'x-telegram-bot-api-secret-token':config.webhookSecret})).status,200);
+ assert.equal(calls.findLast(x=>x.name==='club_telegram_update').args.answer,false);
+ const count=calls.filter(x=>x.name==='club_telegram_update').length;
+ update.callback_query.message.chat.type='group';await send(update,{'x-telegram-bot-api-secret-token':config.webhookSecret});
+ assert.equal(calls.filter(x=>x.name==='club_telegram_update').length,count);
+ console.log('PASS Telegram Edge: JWT/origin/admin checks, private webhook secret, account isolation, activation, hidden credentials, worker secret and callback routing');
+})().catch(error=>{console.error(error);process.exitCode=1;});
