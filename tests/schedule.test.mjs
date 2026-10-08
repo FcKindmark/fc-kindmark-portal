@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 const source = fs.readFileSync(new URL('../app/lib/schedule.js', import.meta.url),'utf8');
-const {monthDays,shiftMonth,scheduleEvents,nextSevenDays,upcomingFirst} = await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const {monthDays,shiftMonth,scheduleEvents,nextSevenDays,upcomingFirst,trainingPeriod} = await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 assert.equal(monthDays('2024-02').filter(Boolean).length,29);
 assert.equal(monthDays('2026-02').filter(Boolean).length,28);
 assert.equal(monthDays('2026-10').indexOf('2026-10-01'),3);
@@ -14,6 +14,10 @@ assert.equal(events[1].kind,'training');
 const unsorted = [{id:'far',date:'2027-03-23'}, {id:'old',date:'2026-09-01'}, {id:'todayLate',date:'2026-10-08',time:'20:00'}, {id:'next',date:'2026-10-09'}, {id:'recent',date:'2026-10-07'}, {id:'todayEarly',date:'2026-10-08',time:'18:00'}];
 assert.deepEqual(upcomingFirst(unsorted,'2026-10-08').map(e=>e.id),['todayEarly','todayLate','next','far','recent','old']);
 assert.equal(unsorted[0].id,'far');
+assert.deepEqual(trainingPeriod(unsorted,false,'2026-10-08').map(e=>e.id),['todayEarly','todayLate','next','far']);
+assert.deepEqual(trainingPeriod(unsorted,true,'2026-10-08').map(e=>e.id),['recent','old']);
+assert.deepEqual(trainingPeriod(unsorted,true,'2026-10-09').map(e=>e.id),['todayLate','todayEarly','recent','old']);
+assert.deepEqual(trainingPeriod([{date:null},{date:''}],false,'2026-10-08'),[]);
 for (const [today, last, outside] of [['2026-10-08','2026-10-14','2026-10-15'],['2026-12-29','2027-01-04','2027-01-05'],['2024-02-27','2024-03-04','2024-03-05'],['2026-10-23','2026-10-29','2026-10-30']]) {
   assert.deepEqual(nextSevenDays([{date:outside},{date:last},{date:today},{date:'2020-01-01'},{date:null}],today).map(e=>e.date),[today,last]);
 }

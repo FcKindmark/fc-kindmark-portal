@@ -10,6 +10,11 @@ export function upcomingFirst(events, today = stockholmToday()) {
     return aUpcoming ? order : -order;
   });
 }
+export function trainingPeriod(events, past = false, today = stockholmToday()) {
+  return upcomingFirst(events, today).filter(event =>
+    /^\d{4}-\d{2}-\d{2}$/.test(event.date || "") && (past ? event.date < today : event.date >= today)
+  );
+}
 export function nextSevenDays(events, today = stockholmToday()) {
   const end = new Date(`${today}T12:00:00Z`);
   end.setUTCDate(end.getUTCDate() + 7);
