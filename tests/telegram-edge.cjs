@@ -26,6 +26,12 @@ const headers={origin:'https://portal.fckindmark.se',authorization:'Bearer valid
  const update={update_id:1,callback_query:{id:'cb',from:{id:123,is_bot:false},message:{chat:{id:123,type:'private'}},data:'r:12345678-1234-1234-1234-123456789012:n'}};
  assert.equal((await send(update,{'x-telegram-bot-api-secret-token':config.webhookSecret})).status,200);
  assert.equal(calls.findLast(x=>x.name==='club_telegram_update').args.answer,false);
+ update.callback_query.data='test:y';
+ const beforeTest=calls.filter(x=>x.name==='club_telegram_update').length;
+ await send(update,{'x-telegram-bot-api-secret-token':config.webhookSecret});
+ assert.equal(calls.filter(x=>x.name==='club_telegram_update').length,beforeTest);
+ assert.equal(requests.findLast(x=>x.url.endsWith('/answerCallbackQuery')).body.text,'Testsvar: Kommer ✅');
+ update.callback_query.data='r:12345678-1234-1234-1234-123456789012:n';
  const count=calls.filter(x=>x.name==='club_telegram_update').length;
  update.callback_query.message.chat.type='group';await send(update,{'x-telegram-bot-api-secret-token':config.webhookSecret});
  assert.equal(calls.filter(x=>x.name==='club_telegram_update').length,count);

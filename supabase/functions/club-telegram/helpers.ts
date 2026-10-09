@@ -5,6 +5,7 @@ export function privateUpdate(update: any) {
   const sender = callback?.from || message?.from;
   if (message?.chat?.type !== 'private' || !Number.isSafeInteger(sender?.id) || sender.id <= 0 || sender.id !== message.chat.id || sender.is_bot) return null;
   if (callback) {
+    if (/^test:[yn]$/.test(callback.data || '') && typeof callback.id === 'string') return {updateId:update.update_id,chat:sender.id,command:'test',token:null,action:null,answer:callback.data==='test:y',callbackId:callback.id};
     const match = /^r:([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}):([yn])$/.exec(callback.data || '');
     if (!match || typeof callback.id !== 'string') return null;
     return {updateId:update.update_id,chat:sender.id,command:'reply',token:null,action:match[1],answer:match[2]==='y',callbackId:callback.id};
