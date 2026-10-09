@@ -48,8 +48,8 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
     loadData();
   }, []);
 
-  async function loadData() {
-    setLoading(true);
+  async function loadData(background = false) {
+    if(background !== true)setLoading(true);
     setError("");
     try {
       const [playersRes, teamsRes, trainingsRes, matchesRes, paymentsRes, messagesRes, profilesRes, adminRes, cardsRes, coachTeamsRes] = await Promise.all([
@@ -128,7 +128,7 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
     {activeTab === "attendance" && <AttendanceTab data={data} compactWeek={profile?.role === "coach"} canDelete={profile?.role !== "coach"} canExport={profile?.role !== "coach"}/>}
     {activeTab === "equipment" && <PlayerRecords players={data.players} kind="equipment" canDelete={profile?.role !== "coach"}/>}
     {activeTab === "development" && <PlayerRecords players={data.players} kind="development" canDelete={profile?.role !== "coach"}/>}
-    {activeTab === "players" && <PlayersTab key={memberAdd?.key || "players"} data={data} initialShowAdd={memberAdd?.kind === "player"} onCloseAdd={()=>setMemberAdd(null)} onUpdate={loadData} readOnly={profile?.role === "coach"}/>}
+    {activeTab === "players" && <PlayersTab key={memberAdd?.key || "players"} data={data} initialShowAdd={memberAdd?.kind === "player"} onCloseAdd={()=>setMemberAdd(null)} onUpdate={()=>loadData(true)} readOnly={profile?.role === "coach"}/>}
     {activeTab === "teams" && <TeamsTab data={data} onUpdate={loadData}/>}
     {activeTab === "trainings" && <TrainingsTab userId={user.id} data={data} compactWeek={profile?.role === "coach"} onUpdate={loadData} canDelete={profile?.role !== "coach"}/>}
     {activeTab === "matches" && <MatchesTab userId={user.id} data={data} onUpdate={loadData} canDelete={profile?.role !== "coach"}/>}

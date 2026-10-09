@@ -2,8 +2,8 @@
 import {useState} from "react";
 import {inviteAccount} from "../../lib/invitations";
 import {Button,Input} from "../UI";
-export default function InviteAccountForm({kind,playerId,cardId,name,onSaved}) {
-  const [email,setEmail]=useState(""),[busy,setBusy]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState("");
+export default function InviteAccountForm({kind,playerId,cardId,name,onSaved,initialEmail=""}) {
+  const [email,setEmail]=useState(initialEmail),[busy,setBusy]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState("");
   async function submit(event) {
     event.preventDefault();setBusy(true);setError("");setNotice("");
     try {const result=await inviteAccount({email,kind,player_id:playerId,card_id:cardId,name,resend:true});setNotice(result.message);await onSaved?.();setEmail("");}
