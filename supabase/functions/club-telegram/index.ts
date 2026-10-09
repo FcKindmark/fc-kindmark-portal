@@ -19,7 +19,7 @@ Deno.serve(async req=>{
    const update=privateUpdate(body);if(!update)return respond({ok:true});
    const text=await rpc('club_telegram_update',{update_id:update.updateId,chat:update.chat,command:update.command,hash:update.token?await hashToken(update.token):null,action:update.action,answer:update.answer});
    if(text){
-     if(update.callbackId)await telegramRequest(config.token,'answerCallbackQuery',{callback_query_id:update.callbackId,text:text.slice(0,200),show_alert:true});
+     if(update.callbackId)await telegramRequest(config.token,'answerCallbackQuery',{callback_query_id:update.callbackId,text:text.slice(0,200),show_alert:false});
      else await telegramRequest(config.token,'sendMessage',{chat_id:update.chat,text});
    }
    return respond({ok:true});

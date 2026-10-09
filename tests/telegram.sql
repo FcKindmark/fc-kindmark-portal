@@ -25,10 +25,14 @@ do $$begin
 end $$;
 reset role;
 do $$declare q record;payload jsonb;aid uuid;msg text;begin
- for q in select * from public.club_claim_telegram() loop
+ for q in select o.id as job_id,public.club_telegram_payload(o.id) as payload from public.club_telegram_outbox o
+ where o.user_id=current_setting('test.uid')::uuid and
+ (exists(select 1 from public.club_training_notices n where n.message_id=o.message_id and n.training_id=current_setting('test.training')::uuid)
+ or exists(select 1 from public.club_match_notices n where n.message_id=o.message_id and n.match_id=current_setting('test.match')::uuid)) loop
  payload:=q.payload;
- if jsonb_array_length(payload->'reply_markup'->'inline_keyboard')<>3 then raise exception 'Child and coach buttons missing';end if;
- perform public.club_finish_telegram(q.job_id,q.lease_id,200);
+ if jsonb_array_length(payload->'reply_markup'->'inline_keyboard')<>2 then raise exception 'Child and coach buttons missing';end if;
+ if payload->>'text' like '%Öppna Kallelser i portalen%' or payload::text like '%Öppna i medlemsportalen%' then raise exception 'Invitation incorrectly redirects to portal';end if;
+
  end loop;
  select id into aid from public.club_telegram_actions where kind='training' and event_id=current_setting('test.training')::uuid and not staff;
  perform set_config('test.action',aid::text,true);
@@ -39,7 +43,7 @@ do $$declare q record;payload jsonb;aid uuid;msg text;begin
  if not(select attended from public.training_attendance where training_id=current_setting('test.training')::uuid and player_id=current_setting('test.player')::uuid) then raise exception 'Replay altered RSVP';end if;
  perform public.club_telegram_update(9000000000005,900000000001,'reply',null,aid,false);
  if(select attended from public.training_attendance where training_id=current_setting('test.training')::uuid and player_id=current_setting('test.player')::uuid) is distinct from false then raise exception 'Player no not saved';end if;
- select id into aid from public.club_telegram_actions where kind='match' and event_id=current_setting('test.match')::uuid and staff;
+ select id into aid from public.club_telegram_actions where kind='match' and event_id=current_setting('test.match')::uuid and staff and target_id=current_setting('test.uid')::uuid;
  msg:=public.club_telegram_update(9000000000006,900000000001,'reply',null,aid,true);
  if msg not like '%Kommer ✅%' then raise exception 'Coach RSVP failed: %',msg;end if;
  if not(select attending from public.club_coach_calls where event_kind='match' and event_id=current_setting('test.match')::uuid and coach_id=current_setting('test.uid')::uuid) then raise exception 'Coach reply absent';end if;
@@ -52,7 +56,7 @@ do $$declare q record;payload jsonb;aid uuid;msg text;begin
  if public.club_telegram_update(9000000000009,900000000002,'reply',null,aid,true) not like 'Kallelsen är inte%' then raise exception 'Cross-user action allowed';end if;
  -- A revoked team assignment cannot reuse a coach button.
  delete from public.club_coach_teams where user_id=current_setting('test.uid')::uuid and team_id=current_setting('test.team')::uuid;
- select id into aid from public.club_telegram_actions where kind='match' and event_id=current_setting('test.match')::uuid and staff;
+ select id into aid from public.club_telegram_actions where kind='match' and event_id=current_setting('test.match')::uuid and staff and target_id=current_setting('test.uid')::uuid;
  if public.club_telegram_update(9000000000010,900000000001,'reply',null,aid,false) not like 'Du är inte längre%' then raise exception 'Revoked coach replied';end if;
  -- Removed call and expired event cannot be answered.
  aid:=current_setting('test.action')::uuid;

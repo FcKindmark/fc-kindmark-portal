@@ -68,7 +68,7 @@ begin
 end $$;
 create trigger club_message_telegram after insert or update of subject,content on public.messages for each row execute function public.club_enqueue_telegram();
 
-create function public.club_telegram_payload(job uuid) returns jsonb language plpgsql security definer set search_path='' as $$
+create or replace function public.club_telegram_payload(job uuid) returns jsonb language plpgsql security definer set search_path='' as $$
 declare o record; kind text; eid uuid; activity jsonb; r record; rows jsonb:='[]'; aid uuid; start_at timestamptz; path text;
 begin
  select q.*,l.chat_id,m.subject,m.content,u.email into o from public.club_telegram_outbox q
@@ -100,7 +100,12 @@ begin
  end loop;
  end if;
  end if;
- rows:=rows||jsonb_build_array(jsonb_build_array(jsonb_build_object('text','Öppna i medlemsportalen','url','https://portal.fckindmark.se'||path)));
+ if eid is null then
+ rows:=rows||jsonb_build_array(jsonb_build_array(jsonb_build_object('text','Öppna meddelandet','url','https://portal.fckindmark.se'||path)));
+ else
+ o.content:=replace(o.content,' Öppna Kallelser i portalen och svara Kommer eller Kommer inte.','');
+ o.content:=o.content||case when jsonb_array_length(rows)>0 then E'\n\nSvara direkt med knapparna nedan. Ditt svar sparas automatiskt.' else E'\n\nSvarstiden har gått ut.' end;
+ end if;
  return jsonb_build_object('chat_id',o.chat_id,'text',left(o.subject,140)||E'\n\n'||left(o.content,2800),'reply_markup',jsonb_build_object('inline_keyboard',rows));
 end $$;
 create function public.club_claim_telegram() returns table(job_id uuid,lease_id uuid,payload jsonb) language plpgsql security definer set search_path='' as $$
