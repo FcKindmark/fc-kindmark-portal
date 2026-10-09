@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabaseClient';
 import { Card, Button, Input, Select, Modal } from '../UI';
 import SettlementPanel from './SettlementPanel';
 import InvoiceEditor, {storeInvoicePdf} from './InvoiceEditor';
-import { invoiceSettlement, incomingInvoice } from '../../lib/economy-settlements';
+import { invoiceSettlement, incomingInvoice, invoiceBookingProposal } from '../../lib/economy-settlements';
 import { money, cents, parseCSV, decodeBankCSV, guessBankColumns, documentCandidates, documentBankProposal, bankRows, fingerprints, suggestAccount, entryForBank, report, matchedBank, journalRows, downloadCSV, downloadArchive } from '../../lib/economy';
 import usePortalView from "../../lib/usePortalView";
 import { readInvoice, invoicePartner } from '../../lib/economy-documents';
@@ -251,33 +251,15 @@ export default function EconomyTab({
   }
   function fromDocument(d) {
     if (d.is_proforma || !(Number(d.amount)>0)) { setError('Komplettera med slutfaktura och ett giltigt SEK-belopp före konteringsförslag.'); return; }
-    const incoming = ['sales', 'sponsor', 'grant'].includes(d.kind),
-      account = d.kind === 'sponsor' ? '3910' : d.kind === 'grant' ? '3980' : incoming ? '3990' : '6990';
     setEntry({
       ...emptyEntry(),
       date: d.document_date,
       description: `${kinds[d.kind]} · ${d.party} · ${d.reference}`,
       document_id: d.id,
       partner_id: d.partner_id || '',
-      lines: incoming ? [{
-        account: '1510',
-        debit: d.amount,
-        credit: 0
-      }, {
-        account,
-        debit: 0,
-        credit: d.amount
-      }] : [{
-        account,
-        debit: d.amount,
-        credit: 0
-      }, {
-        account: '2440',
-        debit: 0,
-        credit: d.amount
-      }]
+      lines: invoiceBookingProposal(d,data)
     });
-    setNotice('Fakturaförslag: fordran eller skuld. Vid senare betalning används 1510 eller 2440 som motkonto så intäkten/kostnaden inte bokförs två gånger.');
+    setNotice(invoiceSettlement(d,data).advance>0?'Förskott avräknas mot fakturan. Kontrollera att varorna eller tjänsterna är levererade, datum och kontering före bokföring.':'Fakturaförslag: fordran eller skuld. Vid senare betalning används 1510 eller 2440 som motkonto så intäkten/kostnaden inte bokförs två gånger.');
   }
   async function saveEntry(action) {
     await run(async () => {
@@ -478,7 +460,7 @@ export default function EconomyTab({
                 partner_id: e.target.value
               })}><option value="">Ingen koppling</option>{data.partners.map(p => <option key={p.id} value={p.id}>{p.name} · {p.year}</option>)}</Select></label><div className="economy-actions"><Button type="submit" disabled={busy || reading}>Spara underlag</Button><Button variant="secondary" disabled={reading} onClick={() => setDocument(null)}>Avbryt</Button></div></fieldset></form></Card>}{yearDocuments.map(d => {
           const booked = data.journal.some(j => j.document_id === d.id && j.status === 'posted') || (data.document_links || []).some(a=>a.document_id===d.id && data.journal.some(j=>j.id===a.journal_id && j.status==='posted'));
-          return <Card key={d.id}><div className="page-heading"><div><h3>{d.party || d.name}</h3><p>{kinds[d.kind]} · {d.document_date} · {d.reference}</p></div><div><strong>{money(d.amount)}</strong>{d.source_currency !== 'SEK' && d.source_amount != null && <p>Original: {d.source_amount} {d.source_currency}</p>}{d.is_proforma && <p>Proformafaktura</p>}</div></div>{d.partner_id && <p>Kopplat till {data.partners.find(p=>p.id===d.partner_id)?.name || 'sponsor / bidragsgivare'}</p>}{d.conversion_note && <p>{d.conversion_note}</p>}{d.kind!=='statement' && !d.is_proforma && <p>{incomingInvoice(d)?'Inbetalt':'Utbetalt'}: {money(invoiceSettlement(d,data).paid)} · Kvar: <strong>{money(invoiceSettlement(d,data).remaining)}</strong></p>}{!d.is_proforma && d.kind!=='statement' && invoiceSettlement(d,data).needsCorrection && <p className="economy-notice">Betalningen är kopplad; bokförd fordran/skuld behöver kontrolleras i Bokföring. Bokför inte betalningen igen.</p>}{!locked && invoiceSettlement(d,data).needsCorrection && <Button variant="secondary" disabled={busy} onClick={()=>{if(confirm('Rätta betalningen mot den bokförda kundfordran? Originalet bevaras med en motverifikation. Ingen ny bankbetalning registreras.'))run(async()=>{const r=await supabase.rpc('club_econ_repair_invoice_payment',{p_document:d.id});if(r.error)throw r.error;setNotice('Dubbel intäkt rättad. Betalning och faktura är fortsatt kopplade.');});}}>Rätta dubbel bokföring</Button>}<p>{booked ? 'Kopplat till bokföring' : 'Ej bokfört'}{d.due_date ? ` · Förfallodatum ${d.due_date}` : ''}</p><div className="economy-actions">{!d.is_proforma && d.kind!=='statement' && Number(d.amount)>0 && <Button onClick={()=>{setError('');setSettlement({invoiceId:d.id});}}>{incomingInvoice(d)?'Inbetalningar':'Utbetalningar'}</Button>}<details><summary>Hantera faktura</summary><Button variant="secondary" disabled={busy} onClick={() => openDocument(d)}>Hämta fil</Button>{!locked && !booked && <><Button variant="secondary" onClick={() => {
+          return <Card key={d.id}><div className="page-heading"><div><h3>{d.party || d.name}</h3><p>{kinds[d.kind]} · {d.document_date} · {d.reference}</p></div><div><strong>{money(d.amount)}</strong>{d.source_currency !== 'SEK' && d.source_amount != null && <p>Original: {d.source_amount} {d.source_currency}</p>}{d.is_proforma && <p>Proformafaktura</p>}</div></div>{d.partner_id && <p>Kopplat till {data.partners.find(p=>p.id===d.partner_id)?.name || 'sponsor / bidragsgivare'}</p>}{d.conversion_note && <p>{d.conversion_note}</p>}{d.kind!=='statement' && !d.is_proforma && <p>{incomingInvoice(d)?'Inbetalt':'Utbetalt'}: {money(invoiceSettlement(d,data).paid)} · Kvar: <strong>{money(invoiceSettlement(d,data).remaining)}</strong></p>}{!d.is_proforma && d.kind!=='statement' && invoiceSettlement(d,data).needsCorrection && <p className="economy-notice">Betalningen är kopplad; bokförd fordran/skuld behöver kontrolleras i Bokföring. Bokför inte betalningen igen.</p>}{!locked && incomingInvoice(d) && invoiceSettlement(d,data).needsCorrection && <Button variant="secondary" disabled={busy} onClick={()=>{if(confirm('Rätta betalningen mot den bokförda kundfordran? Originalet bevaras med en motverifikation. Ingen ny bankbetalning registreras.'))run(async()=>{const r=await supabase.rpc('club_econ_repair_invoice_payment',{p_document:d.id});if(r.error)throw r.error;setNotice('Dubbel intäkt rättad. Betalning och faktura är fortsatt kopplade.');});}}>Rätta dubbel bokföring</Button>}<p>{booked ? 'Kopplat till bokföring' : 'Ej bokfört'}{d.due_date ? ` · Förfallodatum ${d.due_date}` : ''}</p><div className="economy-actions">{!d.is_proforma && d.kind!=='statement' && Number(d.amount)>0 && <Button onClick={()=>{setError('');setSettlement({invoiceId:d.id});}}>{incomingInvoice(d)?'Inbetalningar':'Utbetalningar'}</Button>}<details><summary>Hantera faktura</summary><Button variant="secondary" disabled={busy} onClick={() => openDocument(d)}>Hämta fil</Button>{!locked && invoiceSettlement(d,data).advance>0 && <Button disabled={busy} onClick={()=>fromDocument(d)}>Avräkna förskott mot fakturan</Button>}{!locked && !booked && <><Button variant="secondary" onClick={() => {
                   setDocument(d);
                   setReadText('');
                   setFile(null);

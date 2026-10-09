@@ -1,0 +1,22 @@
+begin;
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"464a9f89-ae01-4c5a-98f1-5984354118d8","app_metadata":{"club_role":"admin"}}',true);
+do $$declare doc uuid;bank uuid;entry uuid;clearing uuid;body jsonb;caught boolean;begin
+ insert into public.club_econ_documents(name,path,kind,party,document_date,amount) values('TEST advance','test/'||gen_random_uuid(),'purchase','TEST supplier','2098-09-25',1000) returning id into doc;
+ insert into public.club_econ_bank(date,amount,description,fingerprint,import_name) values('2098-09-14',-300,'TEST advance','test-'||gen_random_uuid(),'TEST') returning id into bank;
+ body:=jsonb_build_object('date','2098-09-14','description','TEST advance','bank_id',bank,'document_allocations',jsonb_build_array(jsonb_build_object('document_id',doc,'amount',300,'account','1480')),'lines','[{"account":"1930","debit":0,"credit":300},{"account":"1480","debit":300,"credit":0}]'::jsonb);
+ entry:=public.club_econ_entry('save',body);
+ entry:=public.club_econ_entry('post',body||jsonb_build_object('id',entry));
+ if not exists(select 1 from public.club_econ_document_links where journal_id=entry and account='1480' and amount=300) then raise exception 'Advance allocation missing';end if;
+ if(select sum(debit-credit) from public.club_econ_lines where journal_id=entry and account='1930')<>-300 then raise exception 'Bank amount/date changed';end if;
+ caught:=false;begin perform public.club_econ_entry('post',body);exception when others then caught:=true;end;if not caught then raise exception 'Duplicate accepted';end if;
+ caught:=false;begin perform public.club_econ_entry('post',jsonb_build_object('date','2098-09-25','description','TEST excess clearing','document_id',doc,'lines','[{"account":"6990","debit":1000,"credit":0},{"account":"1480","debit":0,"credit":400},{"account":"2440","debit":0,"credit":600}]'::jsonb));exception when others then caught:=true;end;if not caught then raise exception 'Excess advance clearing accepted';end if;
+ clearing:=public.club_econ_entry('post',jsonb_build_object('date','2098-09-25','description','TEST final invoice','document_id',doc,'lines','[{"account":"6990","debit":1000,"credit":0},{"account":"1480","debit":0,"credit":300},{"account":"2440","debit":0,"credit":700}]'::jsonb));
+ if (select sum(l.debit-l.credit) from public.club_econ_lines l where l.journal_id in(entry,clearing) and l.account='1480')<>0 then raise exception 'Advance not cleared';end if;
+ caught:=false;begin perform public.club_econ_entry('reverse',jsonb_build_object('id',entry,'date','2098-09-25','reason','TEST reverse'));exception when others then caught:=true;end;if not caught then raise exception 'Linked clearing allowed broken reversal';end if;
+ perform public.club_econ_entry('reverse',jsonb_build_object('id',clearing,'date','2098-09-25','reason','TEST reverse clearing'));
+ perform public.club_econ_entry('reverse',jsonb_build_object('id',entry,'date','2098-09-25','reason','TEST reverse payment'));
+ if(select sum(a.amount) from public.club_econ_document_links a join public.club_econ_journal j on j.id=a.journal_id where a.document_id=doc and j.status='posted')<>0 then raise exception 'Reversal lost paid amount';end if;
+end $$;
+rollback;
+select 'PASS: supplier prepayment before invoice, draft/post, original bank date/amount, duplicate denial, controlled advance clearing and linked reversal safety; fixtures rolled back' result;

@@ -15,8 +15,10 @@ export function invoiceSettlement(d, data) {
   const controlBalance=data.lines.filter(l=>ids.has(l.journal_id) && l.account===control).reduce((n,l)=>n+(incomingInvoice(d)?1:-1)*(cents(l.debit)-cents(l.credit)),0)
     -allocations.filter(a=>a.document_id===d.id && a.account===control && posted.has(a.journal_id)).reduce((n,a)=>n+cents(a.amount),0)
     +data.journal.filter(j=>posted.has(j.id) && j.bank_id && j.document_id===d.id && !allocations.some(a=>a.journal_id===j.id)).reduce((n,j)=>n+data.lines.filter(l=>l.journal_id===j.id && l.account===control).reduce((n,l)=>n+(incomingInvoice(d)?1:-1)*(cents(l.debit)-cents(l.credit)),0),0);
+  const advance=allocations.filter(a=>a.document_id===d.id && a.account==='1480' && posted.has(a.journal_id)).reduce((n,a)=>n+cents(a.amount),0)
+    -data.lines.filter(l=>ids.has(l.journal_id) && l.account==='1480').reduce((n,l)=>n+cents(l.credit)-cents(l.debit),0);
   const needsCorrection=booked && controlBalance!==Math.max(0,cents(d.amount)-paid);
-  return {needsCorrection,controlBalance:controlBalance/100,paid:paid/100,remaining:Math.max(0,cents(d.amount)-paid)/100,booked,account:booked?control:d.kind==='sponsor'?'3910':d.kind==='grant'?'3980':incomingInvoice(d)?'3990':'6990'};
+  return {advance:Math.max(0,advance)/100,needsCorrection,controlBalance:controlBalance/100,paid:paid/100,remaining:Math.max(0,cents(d.amount)-paid)/100,booked,account:booked?control:d.kind==='sponsor'?'3910':d.kind==='grant'?'3980':incomingInvoice(d)?'3990':'6990'};
 }
 export function settlementProposal(bank, allocations, paymentIds, data, payments) {
   const incoming=Number(bank.amount)>0, total=cents(Math.abs(bank.amount));
@@ -34,7 +36,7 @@ export function settlementProposal(bank, allocations, paymentIds, data, payments
     seen.add(d.id);
     const state=invoiceSettlement(d,data);
     if(!Number.isFinite(amount) || amount<=0 || amount>cents(state.remaining)) throw Error('Beloppet måste rymmas i fakturans kvarvarande belopp.');
-    const account=state.booked?state.account:(a.account || state.account);
+    const account=!incoming && bank.date<d.document_date?'1480':state.booked?state.account:(a.account || state.account);
     documents.push({document_id:d.id,amount:amount/100,account});add(account,amount);allocated+=amount;
   }
   const unique=[...new Set(paymentIds)];
@@ -62,4 +64,13 @@ export function settlementDraft(bank, data) {
   const saved=data.settlement_selections?.find(s=>s.journal_id===draft.id);
   const audit=(data.audit || []).filter(a=>a.entity_id===draft.id && ['save','post'].includes(a.action)).sort((a,b)=>new Date(b.at)-new Date(a.at)).find(a=>Array.isArray(a.detail?.payment_ids));
   return {exists:true,documents,paymentIds:saved?.payment_ids || audit?.detail.payment_ids || (data.payment_links || []).filter(a=>a.journal_id===draft.id).map(a=>a.payment_id)};
+}
+
+export function invoiceBookingProposal(d,data) {
+ const state=invoiceSettlement(d,data),incoming=incomingInvoice(d);
+ const account=d.kind==='sponsor'?'3910':d.kind==='grant'?'3980':incoming?'3990':'6990';
+ if(incoming)return [{account:'1510',debit:Number(d.amount),credit:0},{account,debit:0,credit:Number(d.amount)}];
+ if(state.advance>0 && state.booked)return [{account:'2440',debit:state.advance,credit:0},{account:'1480',debit:0,credit:state.advance}];
+ const amount=(cents(d.amount)-cents(state.paid)+cents(state.advance))/100;
+ return [{account,debit:amount,credit:0},...(state.advance>0?[{account:'1480',debit:0,credit:state.advance}]:[]),...(amount>state.advance?[{account:'2440',debit:0,credit:(cents(amount)-cents(state.advance))/100}]:[])];
 }
