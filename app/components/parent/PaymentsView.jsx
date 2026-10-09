@@ -1,4 +1,5 @@
 "use client";
+import ClubGift from "../ClubGift";
 import PaymentInstructions from "../PaymentInstructions";
 import { Card, Empty, Badge } from "../UI";
 import {overdue,sek,CLUB_SWISH,CLUB_BANKGIRO} from "../../lib/payments";
@@ -23,6 +24,7 @@ export default function PaymentsView({ data, userEmail, linkedPlayerIds = [], me
         <h2 style={{ fontSize: "24px", fontWeight: "700", color: "var(--text-dark)" }}>Betalningar</h2>
       </div>
 
+<ClubGift/>
 <Card className="payment-bank-details"><strong>FC Kindmark Idrottsförening</strong><p>Swish: {CLUB_SWISH} · Bankgiro: {CLUB_BANKGIRO}</p><p className="muted">Ange spelarens namn och betalningsreferens i meddelandet. Klubben bekräftar betalningen när pengarna har kommit in.</p></Card>
       {myPayments.length === 0 ? (
         <Empty message={memberPayments ? "Inga medlemsbetalningar" : self?"Inga betalningar registrerade":"Inga betalningar för dig eller dina barn"} />

@@ -1,0 +1,27 @@
+begin;
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"464a9f89-ae01-4c5a-98f1-5984354118d8","app_metadata":{"club_role":"admin"}}',true);
+do $$declare b uuid; p uuid; e uuid; b2 uuid; b3 uuid; result jsonb; caught boolean; payload jsonb;
+begin
+insert into public.club_econ_bank(date,amount,description,fingerprint,import_name) values('2098-01-01',850,'TEST split','test-'||gen_random_uuid(),'TEST') returning id into b;
+insert into public.payments(player_name,amount,status,reference,payment_kind) values('TEST member',50,'pending','TEST-SPLIT','membership') returning id into p;
+payload:=jsonb_build_object('date','2098-01-01','description','TEST split','bank_id',b,'payment_ids',jsonb_build_array(p),'income_allocations','[{"category":"training","amount":400},{"category":"clothing","amount":400}]'::jsonb,'lines','[{"account":"1930","debit":850,"credit":0},{"account":"3901","debit":0,"credit":50},{"account":"3902","debit":0,"credit":400},{"account":"3903","debit":0,"credit":400}]'::jsonb);
+e:=public.club_econ_entry('save',payload);
+if not exists(select 1 from public.club_econ_settlement_selections where journal_id=e and jsonb_array_length(income_allocations)=2) then raise exception 'Income draft missing';end if;
+e:=public.club_econ_entry('post',payload||jsonb_build_object('id',e));
+if not exists(select 1 from public.payments where id=p and status='paid') then raise exception 'Membership not paid';end if;
+perform public.club_econ_entry('reverse',jsonb_build_object('id',e,'date','2098-01-01','reason','TEST'));
+if not exists(select 1 from public.payments where id=p and status='pending') then raise exception 'Member reversal missing';end if;
+caught:=false;begin perform public.club_econ_entry('post',payload||jsonb_build_object('income_allocations','[{"category":"training","amount":801}]'::jsonb));exception when others then caught:=true;end;if not caught then raise exception 'Overallocation accepted';end if;
+insert into public.club_econ_bank(date,amount,description,fingerprint,import_name) values('2098-01-02',50,'TEST kiosk','test-'||gen_random_uuid(),'TEST') returning id into b2;
+insert into public.club_econ_bank(date,amount,description,fingerprint,import_name) values('2098-01-02',100,'TEST kiosk','test-'||gen_random_uuid(),'TEST') returning id into b3;
+result:=public.club_econ_income_batch(array[b2,b3],'kiosk','TEST kiosk','save');
+if (result->>'count')::int<>2 then raise exception 'Batch draft failed';end if;
+result:=public.club_econ_income_batch(array[b2,b3],'kiosk','TEST kiosk','post');
+if (select sum(l.credit) from public.club_econ_lines l join public.club_econ_journal j on j.id=l.journal_id where j.bank_id in(b2,b3) and j.status='posted' and l.account='3054')<>150 then raise exception 'Batch total failed';end if;
+caught:=false;begin perform public.club_econ_income_batch(array[b2,b3],'kiosk','TEST kiosk','post');exception when others then caught:=true;end;if not caught then raise exception 'Duplicate batch accepted';end if;
+end $$;
+select set_config('request.jwt.claims','{"sub":"374e427a-43bb-4944-ae3a-514b0d8569b8","app_metadata":{"club_role":"parent"}}',true);
+do $$declare caught boolean:=false;begin begin perform public.club_econ_income_batch(array[gen_random_uuid()],'donation','TEST gift','post');exception when others then caught:=true;end;if not caught then raise exception 'Parent batch allowed';end if;end $$;
+select 'PASS: mixed allocations, saved draft, membership posting/reversal, over-allocation, kiosk batch drafts/posting, duplicate and parent rejection' as result;
+rollback;

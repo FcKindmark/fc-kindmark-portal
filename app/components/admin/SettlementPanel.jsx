@@ -1,5 +1,6 @@
 "use client";
 import { useState } from 'react';
+import { SWISH_INCOME } from '../../lib/swish-income';
 import { Button, Input, Select } from '../UI';
 import { money, matchedBank, cents } from '../../lib/economy';
 import { incomingInvoice, invoiceSettlement, settlementProposal, settlementDraft } from '../../lib/economy-settlements';
@@ -8,15 +9,16 @@ export default function SettlementPanel({data,payments,invoice,initialBank,onSav
   const [bankId,setBankId]=useState(initialBank?.id || '');
   const [selected,setSelected]=useState(()=>settlementDraft(initialBank,data).documents);
   const [paymentIds,setPaymentIds]=useState(()=>settlementDraft(initialBank,data).paymentIds);
+  const [incomeAllocations,setIncomeAllocations]=useState(()=>settlementDraft(initialBank,data).incomeAllocations);
   const [search,setSearch]=useState('');
   const bank=data.bank.find(b=>b.id===bankId);
   const state=invoice ? invoiceSettlement(invoice,data) : null;
   function chooseBank(id) {
-    const b=data.bank.find(b=>b.id===id),saved=settlementDraft(b,data);setBankId(id);setPaymentIds(saved.paymentIds);
+    const b=data.bank.find(b=>b.id===id),saved=settlementDraft(b,data);setBankId(id);setPaymentIds(saved.paymentIds);setIncomeAllocations(saved.incomeAllocations);
     setSelected(saved.exists ? saved.documents : invoice && b && state.remaining>0 ? [{document_id:invoice.id,amount:Math.min(state.remaining,Math.abs(b.amount)),account:state.account}] : []);
   }
   let proposal,problem='';
-  try {if(bank) proposal=settlementProposal(bank,selected,paymentIds,data,payments);} catch(e) {problem=e.message;}
+  try {if(bank) proposal=settlementProposal(bank,selected,paymentIds,data,payments,incomeAllocations);} catch(e) {problem=e.message;}
   const available=bank ? data.documents.filter(d=>(!incomingInvoice(d) || d.document_date<=bank.date) && !d.is_proforma && ['sales','sponsor','grant','purchase','receipt'].includes(d.kind) && incomingInvoice(d)===(bank.amount>0) && invoiceSettlement(d,data).remaining>0) : [];
   const visible=d=>`${d.party || d.player_name} ${d.reference || ''} ${d.description || ''}`.toLocaleLowerCase('sv').includes(search.toLocaleLowerCase('sv'));
   const usablePayments=payments.filter(p=>!data.payment_links.some(a=>a.payment_id===p.id && data.journal.some(j=>j.id===a.journal_id && j.status==='posted') && !data.journal.some(j=>j.reversal_of===a.journal_id)));
@@ -29,9 +31,10 @@ export default function SettlementPanel({data,payments,invoice,initialBank,onSav
         return <div className="settlement-row" key={d.id}><label className="economy-check"><input type="checkbox" checked={Boolean(a)} onChange={e=>setSelected(e.target.checked?[...selected,{document_id:d.id,amount:remaining,account:invoiceSettlement(d,data).account}]:selected.filter(a=>a.document_id!==d.id))} /><span>{d.party} · {d.reference}<small>Kvar {money(remaining)}</small></span></label>{a && <label>Belopp SEK<Input type="number" min="0.01" max={remaining} step="0.01" value={a.amount} onChange={e=>setSelected(selected.map(a=>a.document_id===d.id?{...a,amount:e.target.value}:a))} /></label>}</div>;
       })}
       {bank.amount>0 && <><h3>Medlemsbetalningar</h3>{usablePayments.filter(visible).map(p=><label className="economy-check" key={p.id}><input type="checkbox" checked={paymentIds.includes(p.id)} onChange={e=>setPaymentIds(e.target.checked?[...paymentIds,p.id]:paymentIds.filter(id=>id!==p.id))} /><span>{p.player_name} · {p.description} · {money(p.amount)}<small>{p.reference}</small></span></label>)}</>}
+      {bank.amount>0 && <section><h3>Fördela resten av inbetalningen</h3><p>Ange belopp för träning, kläder, kiosk eller gåva. Summan ska motsvara bankbeloppet tillsammans med valda medlemsbetalningar och fakturor.</p><div className="economy-form">{Object.entries(SWISH_INCOME).map(([category,item])=><label key={category}>{item.label} · SEK<Input type="number" min="0" step="0.01" value={incomeAllocations.find(a=>a.category===category)?.amount ?? ''} onChange={e=>setIncomeAllocations([...incomeAllocations.filter(a=>a.category!==category),...(Number(e.target.value)>0?[{category,amount:e.target.value}]:[])])}/></label>)}</div></section>}
       {problem && <p role="alert" className="error-banner">{problem}</p>}{error && <p role="alert" className="error-banner">{error}</p>}
       {proposal && <details><summary>Visa konteringsförslag</summary><p>Kontrollera moms mot originalet. Fördelningen beräknar inte moms automatiskt. Bokför först fakturan med korrekt moms om beloppet behöver delas på moms och kostnad/intäkt.</p>{proposal.lines.map((l,i)=><p key={i}>{l.account} · Debet {money(l.debit)} · Kredit {money(l.credit)}</p>)}</details>}
-      <div className="economy-actions"><Button disabled={busy || !proposal || cents(proposal.remaining)!==0 || !selected.length && !paymentIds.length} onClick={()=>onSave(proposal,'post')}>Bekräfta avstämning</Button><Button variant="secondary" disabled={busy || !proposal || cents(proposal.remaining)!==0 || !selected.length && !paymentIds.length} onClick={()=>onSave(proposal,'save')}>Spara utkast</Button></div>
+      <div className="economy-actions"><Button disabled={busy || !proposal || cents(proposal.remaining)!==0 || !selected.length && !paymentIds.length && !incomeAllocations.length} onClick={()=>onSave(proposal,'post')}>Bekräfta avstämning</Button><Button variant="secondary" disabled={busy || !proposal || cents(proposal.remaining)!==0 || !selected.length && !paymentIds.length && !incomeAllocations.length} onClick={()=>onSave(proposal,'save')}>Spara utkast</Button></div>
       <details><summary>Annan transaktion eller avancerad kontering</summary><Button variant="secondary" disabled={busy} onClick={()=>onManual(bank)}>Öppna manuell kontering</Button></details>
     </>}
   </div>;

@@ -1,4 +1,5 @@
 import { cents } from './economy';
+import { SWISH_INCOME } from './swish-income';
 
 export const incomingInvoice = d => ['sales','sponsor','grant'].includes(d.kind);
 export function invoiceSettlement(d, data) {
@@ -20,7 +21,7 @@ export function invoiceSettlement(d, data) {
   const needsCorrection=booked && controlBalance!==Math.max(0,cents(d.amount)-paid);
   return {advance:Math.max(0,advance)/100,needsCorrection,controlBalance:controlBalance/100,paid:paid/100,remaining:Math.max(0,cents(d.amount)-paid)/100,booked,account:booked?control:d.kind==='sponsor'?'3910':d.kind==='grant'?'3980':incomingInvoice(d)?'3990':'6990'};
 }
-export function settlementProposal(bank, allocations, paymentIds, data, payments) {
+export function settlementProposal(bank, allocations, paymentIds, data, payments, incomeAllocations = []) {
   const incoming=Number(bank.amount)>0, total=cents(Math.abs(bank.amount));
   const lines=[{account:'1930',debit:incoming?total/100:0,credit:incoming?0:total/100}];
   let allocated=0;
@@ -47,15 +48,21 @@ export function settlementProposal(bank, allocations, paymentIds, data, payments
     if(linked) throw Error('Betalningen är redan avstämd.');
     const amount=cents(p.amount);allocated+=amount;add(p.payment_kind==='membership'?'3901':'3990',amount);
   }
+  const incomeSeen=new Set();
+  for(const a of incomeAllocations){
+    const category=SWISH_INCOME[a.category],amount=cents(a.amount);
+    if(!incoming || !category || incomeSeen.has(a.category) || !Number.isFinite(amount) || amount<=0)throw Error('Kontrollera inbetalningens fördelning.');
+    incomeSeen.add(a.category);add(category.account,amount);allocated+=amount;
+  }
   if(allocated>total) throw Error('Valda betalningar överstiger bankbeloppet.');
-  return {date:bank.date,bank_id:bank.id,document_id:'',partner_id:'',description:bank.description || 'Samlad bankbetalning',document_allocations:documents,payment_ids:unique,lines,remaining:(total-allocated)/100};
+  return {date:bank.date,bank_id:bank.id,document_id:'',partner_id:'',description:bank.description || 'Samlad bankbetalning',document_allocations:documents,payment_ids:unique,income_allocations:incomeAllocations.map(a=>({category:a.category,amount:cents(a.amount)/100})),lines,remaining:(total-allocated)/100};
 }
 
 // Reopening or changing bank rows must preserve saved drafts, including old
 // single-document drafts and payment selections written before allocations.
 export function settlementDraft(bank, data) {
   const draft=data.journal.find(j=>j.bank_id===bank?.id && j.status==='draft');
-  if(!draft)return {exists:false,documents:[],paymentIds:[]};
+  if(!draft)return {exists:false,documents:[],paymentIds:[],incomeAllocations:[]};
   let documents=(data.document_links || []).filter(a=>a.journal_id===draft.id).map(a=>({...a}));
   if(!documents.length){
     const d=data.documents.find(d=>d.id===draft.document_id && d.kind!=='statement');
@@ -63,7 +70,7 @@ export function settlementDraft(bank, data) {
   }
   const saved=data.settlement_selections?.find(s=>s.journal_id===draft.id);
   const audit=(data.audit || []).filter(a=>a.entity_id===draft.id && ['save','post'].includes(a.action)).sort((a,b)=>new Date(b.at)-new Date(a.at)).find(a=>Array.isArray(a.detail?.payment_ids));
-  return {exists:true,documents,paymentIds:saved?.payment_ids || audit?.detail.payment_ids || (data.payment_links || []).filter(a=>a.journal_id===draft.id).map(a=>a.payment_id)};
+  return {exists:true,documents,incomeAllocations:saved?.income_allocations || audit?.detail.income_allocations || [],paymentIds:saved?.payment_ids || audit?.detail.payment_ids || (data.payment_links || []).filter(a=>a.journal_id===draft.id).map(a=>a.payment_id)};
 }
 
 export function invoiceBookingProposal(d,data) {

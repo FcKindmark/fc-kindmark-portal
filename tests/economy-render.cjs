@@ -27,3 +27,12 @@ const customerEarly={...supplierData,documents:[{...supplierData.documents[0],ki
 const customerHTML=renderToStaticMarkup(React.createElement(Panel,{data:customerEarly,payments:[],invoice:customerEarly.documents[0]}));
 assert.ok(!customerHTML.includes('Europabetalning'));
 console.log('PASS: early supplier bank row and invoice remain selectable; customer date guard retained.');
+assert.ok(panelHTML.includes('Fördela resten av inbetalningen'));
+assert.ok(panelHTML.includes('Träningsavgift'));
+assert.ok(panelHTML.includes('Kläder och utrustning'));
+const Gift=load('app/components/ClubGift.jsx').default;
+const giftHTML=renderToStaticMarkup(React.createElement(Gift));
+assert.ok(giftHTML.includes('Ge en gåva med Swish'));
+assert.ok(giftHTML.includes('app.swish.nu'));
+assert.ok(candidateHTML.includes('Kiosk och gåvor'));
+console.log('PASS: mixed payment fields, member Swish gift link and kiosk bank batch view.');

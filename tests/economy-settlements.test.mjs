@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 const base='data:text/javascript;base64,'+Buffer.from(fs.readFileSync('app/lib/economy.js','utf8').replace("import { csvText } from './attendance';",fs.readFileSync('app/lib/attendance.js','utf8').replaceAll('export ',''))).toString('base64');
-const source=fs.readFileSync('app/lib/economy-settlements.js','utf8').replace("'./economy'",JSON.stringify(base));
+const source=fs.readFileSync('app/lib/economy-settlements.js','utf8').replace("'./economy'",JSON.stringify(base)).replace("import { SWISH_INCOME } from './swish-income';",fs.readFileSync('app/lib/swish-income.js','utf8').replaceAll('export ',''));
 const {invoiceSettlement,settlementProposal,settlementDraft}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 const data={documents:[{id:'a',kind:'sponsor',amount:400,document_date:'2026-09-01'},{id:'b',kind:'sales',amount:450,document_date:'2026-09-01'},{id:'supplier',kind:'purchase',amount:1000,document_date:'2026-09-01'}],journal:[],lines:[],document_links:[],payment_links:[]};
 const bank={id:'bank',amount:1000,date:'2026-09-30'};
@@ -48,3 +48,12 @@ assert.deepEqual(invoiceBookingProposal(supplier,bookedAdvance),[{account:'2440'
 const paidAdvance={...advanced,document_links:[{journal_id:'advance',document_id:'supplier',amount:1000,account:'1480'}]};
 assert.deepEqual(invoiceBookingProposal(supplier,paidAdvance),[{account:'6990',debit:1000,credit:0},{account:'1480',debit:0,credit:1000}]);
 console.log('PASS: earlier supplier payment, advance balance, full/partial invoice clearing and existing liability without duplicate cost.');
+
+const split=settlementProposal({...bank,amount:850},[],['fee'],data,[{id:'fee',amount:50,payment_kind:'membership'}],[{category:'training',amount:400},{category:'clothing',amount:400}]);
+assert.equal(split.remaining,0);
+assert.deepEqual(split.lines.map(l=>[l.account,l.credit]),[['1930',0],['3901',50],['3902',400],['3903',400]]);
+assert.throws(()=>settlementProposal({...bank,amount:-850},[],[],data,[],[{category:'training',amount:850}]),/fördelning/);
+assert.throws(()=>settlementProposal(bank,[],[],data,[],[{category:'unknown',amount:20}]),/fördelning/);
+assert.throws(()=>settlementProposal(bank,[],[],data,[],[{category:'kiosk',amount:1001}]),/överstiger/);
+assert.deepEqual(settlementDraft(bank,{...data,journal:[{id:'split',status:'draft',bank_id:bank.id}],settlement_selections:[{journal_id:'split',payment_ids:['fee'],income_allocations:split.income_allocations}]}).incomeAllocations,split.income_allocations);
+console.log('PASS: mixed membership/training/clothing, saved allocations, direction and over-allocation.');
