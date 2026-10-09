@@ -29,7 +29,12 @@ Deno.serve(async req=>{
    const jobs=await rpc('club_claim_telegram');
    // A small concurrent batch completes within the scheduled wake-up timeout.
    await Promise.all((jobs||[]).map(async(job:any)=>{
-     const result=job.payload?await telegramRequest(config.token,'sendMessage',job.payload):{status:410,retryAfter:120};
+     const payloads=Array.isArray(job.payload)?job.payload:(job.payload?[job.payload]:[]);
+     let result={status:410,retryAfter:120};
+     for(const payload of payloads){
+       result=await telegramRequest(config.token,'sendMessage',payload);
+       if(result.status!==200)break;
+     }
      await rpc('club_finish_telegram',{job:job.job_id,claim:job.lease_id,status:result.status,retry_seconds:result.retryAfter});
    }));
    return respond({processed:jobs?.length||0});

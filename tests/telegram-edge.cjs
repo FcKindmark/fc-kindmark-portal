@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),ts=require('typescript');
-let handler,config=null,user={id:'member-id',app_metadata:{club_role:'parent'}},calls=[];
-const db={auth:{getUser:async token=>({data:{user:token==='valid'?user:null},error:token==='valid'?null:{}})},rpc:async(name,args)=>{calls.push({name,args});let data=null;if(name==='club_telegram_config')data=config;if(name==='club_telegram_status')data={ready:!!config?.ready,connected:false,bot:config?.username};if(name==='club_telegram_save_config')config=args.config;if(name==='club_telegram_update')data='Sparat';if(name==='club_claim_telegram')data=[];return {data,error:null};}};
-const context=vm.createContext({createClient:()=>db,crypto:require('node:crypto').webcrypto,TextEncoder,Uint8Array,Set,Array,Number,JSON,Promise,Error,Response,Request,AbortSignal,console,Deno:{env:{get:key=>key==='SUPABASE_URL'?'https://test.supabase.co':'server-secret'},serve:fn=>handler=fn},fetch:async(url)=>({ok:true,status:200,json:async()=>url.endsWith('/getMe')?{ok:true,result:{is_bot:true,username:'KindmarkTestBot'}}:{ok:true,result:true}})});
+let handler,config=null,user={id:'member-id',app_metadata:{club_role:'parent'}},calls=[],jobs=[],requests=[];
+const db={auth:{getUser:async token=>({data:{user:token==='valid'?user:null},error:token==='valid'?null:{}})},rpc:async(name,args)=>{calls.push({name,args});let data=null;if(name==='club_telegram_config')data=config;if(name==='club_telegram_status')data={ready:!!config?.ready,connected:false,bot:config?.username};if(name==='club_telegram_save_config')config=args.config;if(name==='club_telegram_update')data='Sparat';if(name==='club_claim_telegram')data=jobs;return {data,error:null};}};
+const context=vm.createContext({createClient:()=>db,crypto:require('node:crypto').webcrypto,TextEncoder,Uint8Array,Set,Array,Number,JSON,Promise,Error,Response,Request,AbortSignal,console,Deno:{env:{get:key=>key==='SUPABASE_URL'?'https://test.supabase.co':'server-secret'},serve:fn=>handler=fn},fetch:async(url,options)=>{requests.push({url,body:JSON.parse(options.body)});return ({ok:true,status:200,json:async()=>url.endsWith('/getMe')?{ok:true,result:{is_bot:true,username:'KindmarkTestBot'}}:{ok:true,result:true}});}});
 for(const file of ['helpers.ts','index.ts']){const source=fs.readFileSync('supabase/functions/club-telegram/'+file,'utf8').replace(/^import .*;\n/gm,'').replace(/^export /gm,'');vm.runInContext(ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText,context);}
 const send=(body,headers={})=>handler(new Request('https://test.supabase.co/functions/v1/club-telegram',{method:'POST',body:JSON.stringify(body),headers}));
 const headers={origin:'https://portal.fckindmark.se',authorization:'Bearer valid','content-type':'application/json'};
@@ -19,6 +19,10 @@ const headers={origin:'https://portal.fckindmark.se',authorization:'Bearer valid
  assert.equal((await send({update_id:1},{'x-telegram-bot-api-secret-token':'fake'})).status,401);
  assert.equal((await send({action:'dispatch'},{'x-kindmark-telegram':'fake'})).status,401);
  assert.equal((await send({action:'dispatch'},{'x-kindmark-telegram':config.dispatchSecret})).status,200);
+ jobs=[{job_id:'job',lease_id:'lease',payload:[{chat_id:123,text:'Child one'},{chat_id:123,text:'Child two'},{chat_id:123,text:'Coach'}]}];
+ requests=[];await send({action:'dispatch'},{'x-kindmark-telegram':config.dispatchSecret});
+ assert.deepEqual(requests.filter(x=>x.url.endsWith('/sendMessage')).map(x=>x.body.text),['Child one','Child two','Coach']);
+ assert.equal(calls.findLast(x=>x.name==='club_finish_telegram').args.status,200);
  const update={update_id:1,callback_query:{id:'cb',from:{id:123,is_bot:false},message:{chat:{id:123,type:'private'}},data:'r:12345678-1234-1234-1234-123456789012:n'}};
  assert.equal((await send(update,{'x-telegram-bot-api-secret-token':config.webhookSecret})).status,200);
  assert.equal(calls.findLast(x=>x.name==='club_telegram_update').args.answer,false);

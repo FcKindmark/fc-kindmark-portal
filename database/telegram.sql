@@ -69,7 +69,7 @@ end $$;
 create trigger club_message_telegram after insert or update of subject,content on public.messages for each row execute function public.club_enqueue_telegram();
 
 create or replace function public.club_telegram_payload(job uuid) returns jsonb language plpgsql security definer set search_path='' as $$
-declare o record; kind text; eid uuid; activity jsonb; r record; rows jsonb:='[]'; aid uuid; start_at timestamptz; path text;
+declare o record; kind text; eid uuid; activity jsonb; r record; rows jsonb:='[]'; aid uuid; start_at timestamptz; path text; payloads jsonb:='[]'; person_content text; marker int;
 begin
  select q.*,l.chat_id,m.subject,m.content,u.email into o from public.club_telegram_outbox q
  join public.club_telegram_links l on l.user_id=q.user_id join public.messages m on m.id=q.message_id
@@ -83,7 +83,6 @@ begin
  if kind='training' then select to_jsonb(t) into activity from public.trainings t where t.id=eid;
  else select to_jsonb(m) into activity from public.matches m where m.id=eid;end if;
  start_at:=((activity->>'date')::date+coalesce((activity->>'time')::time,'23:59'::time)) at time zone 'Europe/Stockholm';
- if start_at>now() then
  for r in
  select p.id,p.name,false as staff from public.players p where p.team_id=(activity->>'team_id')::uuid and public.club_telegram_owns(o.user_id,p.id) and
  ((kind='training' and exists(select 1 from public.club_training_calls c where c.training_id=eid and c.player_id=p.id)) or
@@ -91,21 +90,27 @@ begin
  union all
  select c.coach_id,coalesce(p.full_name,'Tränare'),true from public.club_coach_calls c join public.profiles p on p.id=c.coach_id
  where c.coach_id=o.user_id and c.event_kind=kind and c.event_id=eid and exists(select 1 from public.club_coach_teams ct where ct.user_id=c.coach_id and ct.team_id=(activity->>'team_id')::uuid)
+ order by staff,name,id
  loop
+ rows:='[]';
+ if start_at>now() then
  insert into public.club_telegram_actions(job_id,kind,event_id,target_id,staff) values(job,kind,eid,r.id,r.staff)
  on conflict(job_id,target_id,staff) do update set kind=excluded.kind returning id into aid;
  rows:=rows||jsonb_build_array(jsonb_build_array(
- jsonb_build_object('text','🟢 '||left(r.name,22)||' · Kommer','callback_data','r:'||aid||':y'),
+ jsonb_build_object('text','🟢 Kommer','callback_data','r:'||aid||':y'),
  jsonb_build_object('text','🔴 Kommer inte','callback_data','r:'||aid||':n')));
+ end if;
+ -- One private message per called person; the parent is the recipient, not the subject.
+ marker:=strpos(o.content,' är kallad till');
+ person_content:=case when marker>0 then 'Hej! '||r.name||substr(o.content,marker)
+ else r.name||' är kallad till '||case when kind='training' then 'träning.' else 'match.' end||E'\nDatum: '||(activity->>'date')||' kl '||coalesce(activity->>'time','ej angiven')||'. Plats: '||coalesce(activity->>'location','ej angiven')||'.' end;
+ person_content:=replace(person_content,' Öppna Kallelser i portalen och svara Kommer eller Kommer inte.','');
+ person_content:=person_content||case when start_at>now() then E'\n\nSvara direkt med knapparna nedan. Ditt svar sparas automatiskt.' else E'\n\nSvarstiden har gått ut.' end;
+ payloads:=payloads||jsonb_build_array(jsonb_build_object('chat_id',o.chat_id,'text',left(o.subject,140)||E'\n\n'||left(person_content,2800),'reply_markup',jsonb_build_object('inline_keyboard',rows)));
  end loop;
+ return payloads;
  end if;
- end if;
- if eid is null then
- rows:=rows||jsonb_build_array(jsonb_build_array(jsonb_build_object('text','Öppna meddelandet','url','https://portal.fckindmark.se'||path)));
- else
- o.content:=replace(o.content,' Öppna Kallelser i portalen och svara Kommer eller Kommer inte.','');
- o.content:=o.content||case when jsonb_array_length(rows)>0 then E'\n\nSvara direkt med knapparna nedan. Ditt svar sparas automatiskt.' else E'\n\nSvarstiden har gått ut.' end;
- end if;
+ rows:=jsonb_build_array(jsonb_build_array(jsonb_build_object('text','Öppna meddelandet','url','https://portal.fckindmark.se'||path)));
  return jsonb_build_object('chat_id',o.chat_id,'text',left(o.subject,140)||E'\n\n'||left(o.content,2800),'reply_markup',jsonb_build_object('inline_keyboard',rows));
 end $$;
 create function public.club_claim_telegram() returns table(job_id uuid,lease_id uuid,payload jsonb) language plpgsql security definer set search_path='' as $$
