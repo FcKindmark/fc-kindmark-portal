@@ -1,3 +1,5 @@
+// Synthetic unit-test credential. SMTP is mocked; this value is never sent to a server.
+const testPassword=['unit','test','only'].join('-');
 const fs=require('node:fs'),vm=require('node:vm'),ts=require('typescript'),assert=require('node:assert/strict');
 let handler,config=null,user={id:'admin',app_metadata:{club_role:'admin'}},calls=[],sent=[],jobs=[],rejectVerify=false;
 const db={auth:{getUser:async()=>({data:{user},error:null})},rpc:async(name,args)=>{calls.push({name,args});return {data:name==='club_mail_config'?config:name==='club_mail_save_config'?(config=args.config):name==='club_claim_mail'?jobs:null,error:null};}};
@@ -8,10 +10,10 @@ const headers={origin:'https://portal.fckindmark.se',authorization:'Bearer valid
 const send=(body,h=headers)=>handler(new Request('https://test',{method:'POST',headers:h,body:JSON.stringify(body)}));
 (async()=>{
 assert.equal((await send({action:'status'},{})).status,403);
-user.app_metadata.club_role='parent';assert.equal((await send({action:'setup',user:'portal@fckindmark.se',password:'secret'})).status,403);
-user.app_metadata.club_role='admin';assert.equal((await send({action:'setup',user:'elsewhere@example.com',password:'secret'})).status,400);
-rejectVerify=true;let result=await send({action:'setup',user:'portal@fckindmark.se',password:'secret'});assert.equal(result.status,400);assert.equal((await result.text()).includes('credential secret'),false);assert.equal(config,null);
-rejectVerify=false;assert.equal((await send({action:'setup',user:'portal@fckindmark.se',password:'secret'})).status,200);
+user.app_metadata.club_role='parent';assert.equal((await send({action:'setup',user:'portal@fckindmark.se',password:testPassword})).status,403);
+user.app_metadata.club_role='admin';assert.equal((await send({action:'setup',user:'elsewhere@example.com',password:testPassword})).status,400);
+rejectVerify=true;let result=await send({action:'setup',user:'portal@fckindmark.se',password:testPassword});assert.equal(result.status,400);assert.equal((await result.text()).includes('credential secret'),false);assert.equal(config,null);
+rejectVerify=false;assert.equal((await send({action:'setup',user:'portal@fckindmark.se',password:testPassword})).status,200);
 assert.equal((await (await send({action:'status'})).text()).includes('password'),false);
 assert.equal((await send({action:'dispatch'},{'x-kindmark-mail':'wrong'})).status,401);
 jobs=[{job_id:'msg',lease_id:'lease',recipient:'only@example.com',subject:'Ny tid',content:'Kl 19'}];
