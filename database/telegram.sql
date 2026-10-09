@@ -60,6 +60,7 @@ begin
 end $$;
 create function public.club_enqueue_telegram() returns trigger language plpgsql security definer set search_path='' as $$
 begin
+ if not new.send_telegram then return new;end if;
  if tg_op='UPDATE' and new.subject is not distinct from old.subject and new.content is not distinct from old.content then return new;end if;
  insert into public.club_telegram_outbox(user_id,message_id)
  select l.user_id,new.id from public.club_telegram_links l join auth.users u on u.id=l.user_id where lower(u.email)=lower(new.recipient_email)
