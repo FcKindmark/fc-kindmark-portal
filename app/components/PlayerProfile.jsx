@@ -18,8 +18,7 @@ export default function PlayerProfile({player,onClose,readOnly=false}){
  }catch(e){setError(e.message);}finally{setBusy(false);}}
  return <dialog ref={dialog} className="member-details-dialog profile-dialog" onCancel={e=>{if(busy)e.preventDefault();else onClose();}} aria-labelledby="player-profile-title">
   <div className="page-heading"><h2 id="player-profile-title">Spelarprofil</h2><Button variant="secondary" disabled={busy} onClick={onClose}>Stäng</Button></div>
-  <h3 className="person-name"><PersonAvatar playerId={player.id} name={player.name}/>{player.name}</h3>
-  <p className="muted">{[player.number!=null?`Tröjnummer ${player.number}`:null,player.position].filter(Boolean).join(' · ')}</p>
+  <div className="player-profile-hero"><PersonAvatar playerId={player.id} name={player.name}/><h3>{player.name}</h3><p>{[player.number!=null?`Tröjnummer ${player.number}`:null,player.position].filter(Boolean).join(' · ')}</p></div>
   {loading?<p>Läser profil…</p>:loadFailed?null:<form onSubmit={save}><fieldset disabled={readOnly||busy||!!error&&loading} className="player-profile-fields">
     <label className="field">Mobilnummer<input type="tel" autoComplete="tel" inputMode="tel" pattern="\+?[0-9 ()-]{5,25}" maxLength={25} value={mobile} onChange={e=>setMobile(e.target.value)} placeholder="+46…"/></label>
     <label className="field">Klädstorlek<select value={size} onChange={e=>setSize(e.target.value)}><option value="">Välj storlek</option>{sizes.map(s=><option key={s}>{s}</option>)}</select></label>

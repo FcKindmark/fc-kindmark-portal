@@ -26,7 +26,8 @@ export default function AdminPlayerProfile({player,teams=[],accounts=[],readOnly
   setBusy(true);setError('');try{const {data,error}=await supabase.rpc('club_delete_player',{target:player.id});if(error)throw error;if(!data)throw new Error('Spelaren kunde inte tas bort.');onClose();await onUpdate();}catch(error){setError(error.message);}finally{setBusy(false);}}
  const phone={inputMode:'tel',pattern:'\\+?[0-9 ()-]{5,25}',maxLength:25};
  return <dialog ref={dialog} className="member-details-dialog admin-player-profile" aria-labelledby="admin-player-title" onCancel={e=>{if(busy)e.preventDefault();else onClose();}}>
-  <div className="player-profile-heading"><div><p className="eyebrow">Spelarprofil</p><h2 id="admin-player-title" className="person-name"><PersonAvatar playerId={player.id} name={player.name}/><span>{player.name}</span></h2></div><Button variant="secondary" disabled={busy} onClick={onClose}>Stäng</Button></div>
+  <div className="player-profile-heading"><h2>Spelarprofil</h2><Button variant="secondary" disabled={busy} onClick={onClose}>Stäng</Button></div>
+  <div className="player-profile-hero"><PersonAvatar playerId={player.id} name={player.name}/><h2 id="admin-player-title">{player.name}</h2><p>{[teams.find(team=>team.id===player.team_id)?.name,player.number!=null?`Tröjnummer ${player.number}`:null].filter(Boolean).join(" · ")}</p></div>
   {error&&<p role="alert" className="error-banner">{error}</p>}{notice&&<p role="status" className="success-banner">{notice}</p>}
   {!readOnly&&<details className="player-profile-section"><summary>Profilbild</summary><PlayerPhoto player={player} onUpdate={onUpdate}/></details>}
   {loading?<p role="status">Läser profil…</p>:!failed&&<form onSubmit={save}>
