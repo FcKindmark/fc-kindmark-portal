@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 const base='data:text/javascript;base64,'+Buffer.from(fs.readFileSync('app/lib/economy.js','utf8').replace("import { csvText } from './attendance';",fs.readFileSync('app/lib/attendance.js','utf8').replaceAll('export ',''))).toString('base64');
 const source=fs.readFileSync('app/lib/economy-settlements.js','utf8').replace("'./economy'",JSON.stringify(base)).replace("import { SWISH_INCOME } from './swish-income';",fs.readFileSync('app/lib/swish-income.js','utf8').replaceAll('export ',''));
-const {invoiceSettlement,settlementProposal,settlementDraft}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const {invoiceSettlement,settlementProposal,settlementDraft,supplierAdvances}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 const data={documents:[{id:'a',kind:'sponsor',amount:400,document_date:'2026-09-01'},{id:'b',kind:'sales',amount:450,document_date:'2026-09-01'},{id:'supplier',kind:'purchase',amount:1000,document_date:'2026-09-01'}],journal:[],lines:[],document_links:[],payment_links:[]};
 const bank={id:'bank',amount:1000,date:'2026-09-30'};
 const payments=[{id:'member',amount:150,payment_kind:'membership'}];
@@ -70,3 +70,9 @@ const feeDraft={...data,journal:[{id:'feeDraft',status:'draft',bank_id:bank.id}]
 assert.equal(settlementDraft(bank,feeDraft).bankFee,25);
 assert.equal(settlementDraft(bank,{...feeDraft,document_links:[{journal_id:'feeDraft',document_id:'supplier',amount:25,account:'6570'}]}).bankFee,0);
 console.log('PASS: restored standalone bank-cost drafts without counting invoice costs twice.');
+
+const advanceReport={documents:[{id:'advance',kind:'purchase',amount:100}],journal:[{id:'paid',status:'posted',date:'2025-12-01',bank_id:'bank'},{id:'cleared',status:'posted',date:'2027-01-02',document_id:'advance'}],document_links:[{journal_id:'paid',document_id:'advance',amount:100,account:'1480'}],lines:[{journal_id:'cleared',account:'1480',credit:100,debit:0}]};
+assert.equal(supplierAdvances(advanceReport,2024).length,0);
+assert.equal(supplierAdvances(advanceReport,2026)[0].amount,100);
+assert.equal(supplierAdvances(advanceReport,2027).length,0);
+console.log('PASS: advance report includes previous-year payments and respects year-end clearing cutoff.');

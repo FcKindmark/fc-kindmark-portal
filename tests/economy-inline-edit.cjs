@@ -19,3 +19,20 @@ for(const [screen,label,first,second,title] of [['documents','Ändra','d1','d2',
 }
 view='bank';states=[];let tree=render();click(tree,'Stäm av');tree=render();const settlement=nodes(tree).find(x=>x.props?.onManual);assert.ok(settlement);settlement.props.onManual(data.bank[0]);tree=render();assert.ok(nodes(row(tree,'b1')).some(x=>x.props?.className==='economy-editor'),'manual bank editor inside bank row');
 console.log('PASS: clicking edit opens under selected invoice/sponsor/journal; switching, cancelling and manual bank edits stay in the correct row.');
+
+const advanceDoc={id:'advanceDoc',kind:'purchase',party:'LEGEA',reference:'FV26-02824',amount:13366.49,document_date:year+'-09-25'};
+data.documents.push(advanceDoc);data.journal.push({id:'advancePost',status:'posted',year,date:year+'-09-14',bank_id:'advanceBank'});
+data.document_links.push({journal_id:'advancePost',document_id:'advanceDoc',account:'1480',amount:13366.49});
+data.lines.push({journal_id:'advancePost',account:'1480',debit:13366.49,credit:0},{journal_id:'advancePost',account:'1930',debit:0,credit:13366.49});
+data.bank.push({id:'advanceBank',date:year+'-09-14',amount:-13366.49});
+for(const screen of ['overview','reports']){
+ view=screen;states=[];tree=render();assert.ok(nodes(tree).some(x=>x.props?.children==='Utbetalda förskott till leverantörer'));
+ click(tree,'Avräkna förskott mot fakturan');tree=render();
+ assert.ok(nodes(row(tree,'advance-advanceDoc')).some(x=>x.props?.className==='economy-editor'));
+ assert.equal(nodes(tree).filter(x=>x.props?.className==='economy-editor').length,1);
+ assert.equal(nodes(tree).find(x=>x.props?.children==='Bekräfta och bokför').props.disabled,true);
+ const checkbox=nodes(tree).find(x=>x.type==='input' && x.props.type==='checkbox');checkbox.props.onChange({target:{checked:true}});tree=render();
+ assert.equal(nodes(tree).find(x=>x.props?.children==='Bekräfta och bokför').props.disabled,false);
+ const chosen=states.find(x=>x?.document_id==='advanceDoc');assert.ok(!chosen.lines.some(l=>l.account==='1930'),'clearing must not pay twice');
+}
+console.log('PASS: supplier advance visible in overview/reports; inline clearing requires delivery review and does not post another bank payment.');

@@ -89,3 +89,12 @@ export function invoiceBookingProposal(d,data) {
  const amount=(cents(d.amount)-cents(state.paid)+cents(state.advance))/100;
  return [{account,debit:amount,credit:0},...(state.advance>0?[{account:'1480',debit:0,credit:state.advance}]:[]),...(amount>state.advance?[{account:'2440',debit:0,credit:(cents(amount)-cents(state.advance))/100}]:[])];
 }
+
+// Report outstanding advances at the selected year end, including earlier payments.
+export function supplierAdvances(data, year) {
+  const cutoff = `${year}-12-31`;
+  const snapshot = {...data, journal:data.journal.filter(j=>j.date<=cutoff)};
+  return data.documents.filter(d=>['purchase','receipt'].includes(d.kind) && !d.is_proforma)
+    .map(document=>({document,amount:invoiceSettlement(document,snapshot).advance}))
+    .filter(a=>a.amount>0);
+}
