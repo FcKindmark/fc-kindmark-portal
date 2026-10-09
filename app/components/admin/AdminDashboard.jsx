@@ -21,6 +21,7 @@ import EventSchedule from "../EventSchedule";
 import AttendanceTab from "./AttendanceTab";
 import PlayerRecords from "../PlayerRecords";
 import AddMemberChoice from "./AddMemberChoice";
+import InterestApplications from "./InterestApplications";
 
 export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }) {
   const [memberAdd,setMemberAdd]=useState(null);
@@ -30,7 +31,7 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
     setMemberAdd({kind,key:Date.now()});
     setActiveTab(kind === "player" ? "players" : kind === "coach" ? "users" : "membership");
   }
-  const [activeTab, setActiveTab] = usePortalView(profile?.role === "coach" ? "coach" : "admin", profile?.role === "coach" ? ["overview","calendar","calls","players","trainings","matches","attendance","development"] : ["overview","calendar","membership","news","attendance","equipment","development","players","teams","trainings","matches","payments","economy","messages","users"], "overview", user.id);
+  const [activeTab, setActiveTab] = usePortalView(profile?.role === "coach" ? "coach" : "admin", profile?.role === "coach" ? ["overview","calendar","calls","players","trainings","matches","attendance","development"] : ["overview","calendar","applications","membership","news","attendance","equipment","development","players","teams","trainings","matches","payments","economy","messages","users"], "overview", user.id);
   const [data, setData] = useState({
     players: [],
     teams: [],
@@ -98,6 +99,7 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
     { id: "overview", label: "Översikt" },
     { id: "calendar", label: "Kalender" },
     ...(profile?.role === "coach" ? [{id:"calls",label:"Kallelser"}] : []),
+    { id: "applications", label: "Intresseanmälningar" },
     { id: "membership", label: "Medlemmar" },
     { id: "news", label: "Klubbinformation" },
     { id: "attendance", label: "Närvaro" },
@@ -121,6 +123,7 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
     {error && <p className="error-banner" role="alert">{error}<button onClick={loadData}>Försök igen</button></p>}
     {loading ? <p role="status">Läser in…</p> : <>
     {activeTab === "overview" && <OverviewTab data={data} onNavigate={setActiveTab} coach={profile?.role === "coach"}/>}
+    {activeTab === "applications" && profile?.role !== "coach" && <InterestApplications teams={data.teams} onPlayers={()=>setActiveTab("players")}/>}
     {activeTab === "calls" && <CoachKallelser/>}
     {activeTab === "news" && <ClubNews admin/>}
     {activeTab === "membership" && <MemberCards key={memberAdd?.key || "members"} admin initialShowAdd={Boolean(memberAdd)} initialMembershipType={memberAdd?.kind} onCloseAdd={()=>setMemberAdd(null)} onUpdate={loadData}/>}
