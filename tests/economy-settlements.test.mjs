@@ -57,3 +57,11 @@ assert.throws(()=>settlementProposal(bank,[],[],data,[],[{category:'unknown',amo
 assert.throws(()=>settlementProposal(bank,[],[],data,[],[{category:'kiosk',amount:1001}]),/överstiger/);
 assert.deepEqual(settlementDraft(bank,{...data,journal:[{id:'split',status:'draft',bank_id:bank.id}],settlement_selections:[{journal_id:'split',payment_ids:['fee'],income_allocations:split.income_allocations}]}).incomeAllocations,split.income_allocations);
 console.log('PASS: mixed membership/training/clothing, saved allocations, direction and over-allocation.');
+
+const net=settlementProposal({...bank,amount:990},[],[],data,[],[{category:'cup',amount:500,player_id:'p1'},{category:'cup',amount:500,member_id:'m1'}],10);
+assert.equal(net.remaining,0);assert.equal(net.lines.find(l=>l.account==='6570').debit,10);assert.equal(net.lines.find(l=>l.account==='3904').credit,1000);assert.equal(net.income_allocations[0].player_id,'p1');
+const onlyFee=settlementProposal({...bank,amount:-25},[],[],data,[],[],25);assert.equal(onlyFee.remaining,0);assert.equal(onlyFee.lines[1].account,'6570');
+const outgoingFee=settlementProposal({...bank,amount:-1010},[{document_id:'supplier',amount:1000}],[],data,[],[],10);assert.equal(outgoingFee.remaining,0);
+assert.throws(()=>settlementProposal(bank,[],[],data,[],[], -1),/bankprovision/);
+assert.throws(()=>settlementProposal(bank,[],[],data,[],[{category:'cup',amount:10,player_id:'p1'},{category:'cup',amount:20,player_id:'p1'}]),/fördelning/);
+console.log('PASS: multi-person cup allocation, net income, standalone and supplier bank fees.');

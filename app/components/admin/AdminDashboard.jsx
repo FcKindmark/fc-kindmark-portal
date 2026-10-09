@@ -133,7 +133,7 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
     {activeTab === "trainings" && <TrainingsTab userId={user.id} data={data} compactWeek={profile?.role === "coach"} onUpdate={loadData} canDelete={profile?.role !== "coach"}/>}
     {activeTab === "matches" && <MatchesTab userId={user.id} data={data} onUpdate={loadData} canDelete={profile?.role !== "coach"}/>}
     {activeTab === "payments" && <PaymentsTab data={data} onUpdate={loadData}/>}
-    {activeTab === "economy" && profile?.role !== "coach" && <EconomyTab userId={user.id} payments={data.payments} onPaymentsChanged={refreshPayments}/>}
+    {activeTab === "economy" && profile?.role !== "coach" && <EconomyTab userId={user.id} payments={data.payments} players={data.players} members={data.memberCards} onPaymentsChanged={refreshPayments}/>}
     {activeTab === "messages" && <MessagesTab data={data} onUpdate={loadData}/>}
     {activeTab === "users" && <UsersTab key={memberAdd?.key || "users"} data={data} initialShowCoach={memberAdd?.kind === "coach"} onCloseAdd={()=>setMemberAdd(null)} currentUserId={user.id} onUpdate={loadData}/>}
     </>}

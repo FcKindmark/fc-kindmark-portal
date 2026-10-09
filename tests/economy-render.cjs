@@ -28,11 +28,16 @@ const customerHTML=renderToStaticMarkup(React.createElement(Panel,{data:customer
 assert.ok(!customerHTML.includes('Europabetalning'));
 console.log('PASS: early supplier bank row and invoice remain selectable; customer date guard retained.');
 assert.ok(panelHTML.includes('Fördela resten av inbetalningen'));
-assert.ok(panelHTML.includes('Träningsavgift'));
-assert.ok(panelHTML.includes('Kläder och utrustning'));
+assert.ok(panelHTML.includes('Lägg till betalning / person'));
+assert.ok(panelHTML.includes('Bankprovision'));
+
 const Gift=load('app/components/ClubGift.jsx').default;
 const giftHTML=renderToStaticMarkup(React.createElement(Gift));
 assert.ok(giftHTML.includes('Ge en gåva med Swish'));
 assert.ok(giftHTML.includes('app.swish.nu'));
 assert.ok(candidateHTML.includes('Kiosk och gåvor'));
 console.log('PASS: mixed payment fields, member Swish gift link and kiosk bank batch view.');
+
+const personHTML=renderToStaticMarkup(React.createElement(Panel,{data:{...candidateData,journal:[{id:'choice',status:'draft',bank_id:candidateData.bank[0].id}],settlement_selections:[{journal_id:'choice',payment_ids:[],income_allocations:[{category:'cup',amount:200,player_id:'p'}],bank_fee:5}]},payments:[],players:[{id:'p',name:'Test player'}],members:[{id:'m',name:'Test member',membership_no:'123'}],initialBank:candidateData.bank[0]}));
+assert.ok(personHTML.includes('Test player'));assert.ok(personHTML.includes('Test member'));assert.ok(personHTML.includes('Cupavgift'));assert.ok(personHTML.includes('Kläder och utrustning'));
+console.log('PASS: all-player/member chooser, cup categories and persisted fee fields.');

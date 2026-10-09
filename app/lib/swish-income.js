@@ -1,1 +1,1 @@
-export const SWISH_INCOME = {training:{label:'Träningsavgift',account:'3902'},clothing:{label:'Kläder och utrustning',account:'3903'},kiosk:{label:'Kioskförsäljning',account:'3054'},donation:{label:'Gåvor',account:'3993'}};
+export const SWISH_INCOME = {training:{label:'Träningsavgift',account:'3902'},clothing:{label:'Kläder och utrustning',account:'3903'},cup:{label:'Cupavgift',account:'3904'},kiosk:{label:'Kioskförsäljning',account:'3054'},donation:{label:'Gåvor',account:'3993'}};

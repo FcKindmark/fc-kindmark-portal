@@ -1,4 +1,5 @@
 "use client";
+import {SWISH_INCOME} from '../../lib/swish-income';
 import SwishIncomePanel from './SwishIncomePanel';
 
 import { useEffect, useState } from 'react';
@@ -42,6 +43,8 @@ const emptyEntry = () => ({
 export default function EconomyTab({
   userId = "",
   payments = [],
+  players = [],
+  members = [],
   onPaymentsChanged,
   initialData = null,
   initialView = "overview"
@@ -405,7 +408,7 @@ export default function EconomyTab({
     return (legacy+allocated)/100;
   };
   return <section className="economy">{settlement && <Modal isOpen onClose={()=>!busy && setSettlement(null)} title={settlement.invoiceId ? (incomingInvoice(data.documents.find(d=>d.id===settlement.invoiceId) || {}) ? 'Inbetalningar' : 'Utbetalningar') : 'Stäm av konto'}>
-  <SettlementPanel key={settlement.invoiceId || settlement.bankId} data={data} payments={payments} invoice={data.documents.find(d=>d.id===settlement.invoiceId)} initialBank={data.bank.find(b=>b.id===settlement.bankId)} busy={busy} error={error} onManual={b=>{const draft=data.journal.find(j=>j.bank_id===b.id && j.status==='draft');if(draft)edit(draft);else startBank(b);setSettlement(null);}} onSave={(proposal,action)=>{
+  <SettlementPanel key={settlement.invoiceId || settlement.bankId} data={data} payments={payments} players={players} members={members} invoice={data.documents.find(d=>d.id===settlement.invoiceId)} initialBank={data.bank.find(b=>b.id===settlement.bankId)} busy={busy} error={error} onManual={b=>{const draft=data.journal.find(j=>j.bank_id===b.id && j.status==='draft');if(draft)edit(draft);else startBank(b);setSettlement(null);}} onSave={(proposal,action)=>{
     if(action==='post' && !confirm('Bekräfta fördelningen och bokför banktransaktionen?'))return;
     run(async()=>{
       const draft=data.journal.find(j=>j.bank_id===proposal.bank_id && j.status==='draft');
@@ -505,7 +508,7 @@ export default function EconomyTab({
                   setPreview(null);
                 }}><option value="">Välj kolumn</option>{csv.headers.map((h, i) => <option key={i} value={i}>{h}</option>)}</Select></label>)}</div><Button disabled={busy} onClick={prepareImport}>Förhandsgranska</Button></details></>}{preview && <><p>{preview.length} rader · {preview.filter(r => data.bank.some(b => b.fingerprint === r.fingerprint)).length} redan importerade. Överlappande utdrag matchas på datum, belopp, text och referens; kontrollera identiska transaktioner.</p><div className="economy-table"><table><thead><tr><th>Datum</th><th>Text</th><th>Belopp</th></tr></thead><tbody>{preview.slice(0, 20).map((r, i) => <tr key={i}><td>{r.date}</td><td>{r.description}</td><td>{money(r.amount)}</td></tr>)}</tbody></table></div><Button disabled={busy || locked} onClick={importBank}>Bekräfta import</Button></>}</Card><SwishIncomePanel data={data} year={year} busy={busy} locked={locked} onSave={async payload=>{let success=false;await run(async()=>{const r=await supabase.rpc('club_econ_income_batch',payload);if(r.error)throw r.error;setNotice(r.data.count+' inbetalningar '+(payload.p_action==='post'?'bokförda.':'sparade som utkast.'));success=true;});return success;}}/><h3>{unmatched.length} transaktioner att bokföra</h3><Button disabled={busy || locked || !unmatched.length} onClick={autoDrafts}>Skapa alla konteringsförslag</Button><p>Förslagen sparas som ändringsbara utkast. Bekräfta varje verifikation efter kontroll.</p>{yearBank.map(b => {
           const done = matchedBank(b, data.journal, data.lines);
-          return <Card key={b.id}><div className="page-heading"><div><strong>{b.description || b.reference || 'Banktransaktion'}</strong><p>{b.date} · {b.reference} · {done ? 'Avstämd' : 'Ej avstämd'}</p></div><strong>{money(b.amount)}</strong></div>{done && <p>{data.journal.filter(j=>j.bank_id===b.id && j.status==='posted' && !j.reversal_of && !data.journal.some(r=>r.reversal_of===j.id)).flatMap(j=>(data.document_links || []).filter(a=>a.journal_id===j.id).map(a=>{const d=data.documents.find(d=>d.id===a.document_id);return `${d?.party || ''} · Faktura ${d?.reference || ''} · ${money(a.amount)}`;})).join(' / ')}</p>}{!done && !locked && <Button disabled={busy} onClick={()=>{setError('');setSettlement({bankId:b.id});}}>Stäm av</Button>}</Card>;
+          return <Card key={b.id}><div className="page-heading"><div><strong>{b.description || b.reference || 'Banktransaktion'}</strong><p>{b.date} · {b.reference} · {done ? 'Avstämd' : 'Ej avstämd'}</p></div><strong>{money(b.amount)}</strong></div>{done && <p>{data.journal.filter(j=>j.bank_id===b.id && j.status==='posted' && !j.reversal_of && !data.journal.some(r=>r.reversal_of===j.id)).flatMap(j=>(data.document_links || []).filter(a=>a.journal_id===j.id).map(a=>{const d=data.documents.find(d=>d.id===a.document_id);return `${d?.party || ''} · Faktura ${d?.reference || ''} · ${money(a.amount)}`;})).join(' / ')}</p>}{done && data.journal.filter(j=>j.bank_id===b.id && j.status==='posted' && !j.reversal_of && !data.journal.some(r=>r.reversal_of===j.id)).map(j=>{const choice=data.settlement_selections?.find(s=>s.journal_id===j.id);return <div key={j.id}>{choice?.income_allocations?.map((a,i)=><p key={i}>{a.person_name || players.find(p=>p.id===a.player_id)?.name || members.find(m=>m.id===a.member_id)?.name || 'Samlad inbetalning'} · {SWISH_INCOME[a.category]?.label} · {money(a.amount)}{a.note?' · '+a.note:''}</p>)}{Number(choice?.bank_fee)>0 && <p>Bankprovision · {money(choice.bank_fee)}</p>}</div>;})}{!done && !locked && <Button disabled={busy} onClick={()=>{setError('');setSettlement({bankId:b.id});}}>Stäm av</Button>}</Card>;
         })}</>}
  {view === 'partners' && <><div className="page-heading"><h2>Sponsorer och bidrag</h2><Button onClick={() => setPartner({
             name: '',
