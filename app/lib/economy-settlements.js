@@ -75,7 +75,10 @@ export function settlementDraft(bank, data) {
   }
   const saved=data.settlement_selections?.find(s=>s.journal_id===draft.id);
   const audit=(data.audit || []).filter(a=>a.entity_id===draft.id && ['save','post'].includes(a.action)).sort((a,b)=>new Date(b.at)-new Date(a.at)).find(a=>Array.isArray(a.detail?.payment_ids));
-  return {exists:true,documents,bankFee:saved?.bank_fee ?? audit?.detail.bank_fee ?? 0,incomeAllocations:saved?.income_allocations || audit?.detail.income_allocations || [],paymentIds:saved?.payment_ids || audit?.detail.payment_ids || (data.payment_links || []).filter(a=>a.journal_id===draft.id).map(a=>a.payment_id)};
+  const savedFee=Number(saved?.bank_fee ?? audit?.detail.bank_fee ?? 0);
+  const hasAllocations=documents.length || saved?.payment_ids?.length || saved?.income_allocations?.length || audit?.detail.payment_ids?.length || audit?.detail.income_allocations?.length;
+  const bankFee=savedFee>0?savedFee:hasAllocations?0:Math.max(0,(data.lines || []).filter(l=>l.journal_id===draft.id && l.account==='6570').reduce((n,l)=>n+cents(l.debit)-cents(l.credit),0)/100);
+  return {exists:true,documents,bankFee,incomeAllocations:saved?.income_allocations || audit?.detail.income_allocations || [],paymentIds:saved?.payment_ids || audit?.detail.payment_ids || (data.payment_links || []).filter(a=>a.journal_id===draft.id).map(a=>a.payment_id)};
 }
 
 export function invoiceBookingProposal(d,data) {

@@ -65,3 +65,8 @@ const outgoingFee=settlementProposal({...bank,amount:-1010},[{document_id:'suppl
 assert.throws(()=>settlementProposal(bank,[],[],data,[],[], -1),/bankprovision/);
 assert.throws(()=>settlementProposal(bank,[],[],data,[],[{category:'cup',amount:10,player_id:'p1'},{category:'cup',amount:20,player_id:'p1'}]),/fördelning/);
 console.log('PASS: multi-person cup allocation, net income, standalone and supplier bank fees.');
+
+const feeDraft={...data,journal:[{id:'feeDraft',status:'draft',bank_id:bank.id}],lines:[{journal_id:'feeDraft',account:'6570',debit:25,credit:0}],settlement_selections:[{journal_id:'feeDraft',bank_fee:0,payment_ids:[],income_allocations:[]}]};
+assert.equal(settlementDraft(bank,feeDraft).bankFee,25);
+assert.equal(settlementDraft(bank,{...feeDraft,document_links:[{journal_id:'feeDraft',document_id:'supplier',amount:25,account:'6570'}]}).bankFee,0);
+console.log('PASS: restored standalone bank-cost drafts without counting invoice costs twice.');

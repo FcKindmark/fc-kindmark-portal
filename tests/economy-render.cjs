@@ -41,3 +41,9 @@ console.log('PASS: mixed payment fields, member Swish gift link and kiosk bank b
 const personHTML=renderToStaticMarkup(React.createElement(Panel,{data:{...candidateData,journal:[{id:'choice',status:'draft',bank_id:candidateData.bank[0].id}],settlement_selections:[{journal_id:'choice',payment_ids:[],income_allocations:[{category:'cup',amount:200,player_id:'p'}],bank_fee:5}]},payments:[],players:[{id:'p',name:'Test player'}],members:[{id:'m',name:'Test member',membership_no:'123'}],initialBank:candidateData.bank[0]}));
 assert.ok(personHTML.includes('Test player'));assert.ok(personHTML.includes('Test member'));assert.ok(personHTML.includes('Cupavgift'));assert.ok(personHTML.includes('Kläder och utrustning'));
 console.log('PASS: all-player/member chooser, cup categories and persisted fee fields.');
+
+assert.ok(selectedHTML.includes('Koppla återstående belopp till bankkostnader'));
+const bankCostHTML=renderToStaticMarkup(React.createElement(Panel,{data:{...supplierData,journal:[{id:'costDraft',status:'draft',bank_id:'cost'}],document_links:[{journal_id:'costDraft',document_id:'supplier',amount:13366.49,account:'6990'}],accounts:[{code:'6570',name:'Bankkostnader',kind:'expense'},{code:'6990',name:'Övriga kostnader',kind:'expense'}],bank:[{id:'cost',date:'2026-09-30',amount:-13366.49,description:'TEST cost'}]},payments:[],initialBank:{id:'cost'},invoice:supplierData.documents[0]}));
+assert.ok(bankCostHTML.includes('Kostnadskonto'));assert.ok(bankCostHTML.includes('6570 · Bankkostnader'));
+assert.ok(!candidateHTML.includes('Kioskbeloppen bokförs utan moms'));
+console.log('PASS: bank-cost linking button, document expense account and gross kiosk wording.');
