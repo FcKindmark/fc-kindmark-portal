@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {trainingReplySummary} from '../app/lib/trainingReplies.js';
+const players=[{id:'yes',team_id:'team'},{id:'no',team_id:'team'},{id:'pending',team_id:'team'},{id:'uncalled',team_id:'team'},{id:'other',team_id:'other'}];
+const calls=['yes','no','pending','other'].map(player_id=>({training_id:'training',player_id}));
+const answers={training_yes:true,training_no:false,training_uncalled:true,training_other:true};
+let result=trainingReplySummary({id:'training',team_id:'team'},players,calls,answers);
+assert.deepEqual(result,{players:[],coming:0,declined:0,waiting:0});
+result=trainingReplySummary({id:'training',team_id:'team',calls_sent_at:'2026-10-09T16:00:00Z'},players,calls,answers);
+assert.deepEqual(result.players.map(p=>p.id),['yes','no','pending']);
+assert.deepEqual([result.coming,result.declined,result.waiting],[1,1,1]);
+assert.equal(trainingReplySummary({id:'different',team_id:'team',calls_sent_at:'sent'},players,calls,answers).waiting,0);
+assert.equal(trainingReplySummary({id:'training',team_id:'team',calls_sent_at:'sent'},players,calls,{...answers,training_pending:false}).waiting,0);
+console.log('PASS: unsent trainings have no waiting replies; only invited team players count; explicit declines and replies to other trainings stay separate.');

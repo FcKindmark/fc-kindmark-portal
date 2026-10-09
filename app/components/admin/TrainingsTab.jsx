@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Card, Input, Button, Empty } from "../UI";
 import { supabase } from "../../lib/supabaseClient";
 import { upcomingFirst, trainingPeriod, coachTrainingPeriod, daysBefore } from "../../lib/schedule";
+import { trainingReplySummary } from "../../lib/trainingReplies";
 import { useStockholmToday } from "../../lib/useStockholmToday";
 
 export default function TrainingsTab({ data, userId, onUpdate, canDelete=false, compactWeek=false }) {
@@ -203,9 +204,7 @@ export default function TrainingsTab({ data, userId, onUpdate, canDelete=false, 
         <Card>
           <div style={{ display: "grid", gap: "15px" }}>
             {visibleTrainings.map((t) => {
-              const teamPlayers = players.filter((p) => p.team_id === t.team_id && (!t.calls_sent_at||calls.some(c=>c.training_id===t.id&&c.player_id===p.id)));
-              const kommerCount = teamPlayers.filter((p) => attendance[`${t.id}_${p.id}`] === true).length;
-              const kommerIntCount = teamPlayers.filter((p) => attendance[`${t.id}_${p.id}`] === false).length;
+              const {players:teamPlayers,coming:kommerCount,declined:kommerIntCount,waiting:waitingCount}=trainingReplySummary(t,players,calls,attendance);
 
               return (
                 <div key={t.id} style={{ padding: "15px", background: "var(--beige-light)", borderRadius: "8px", borderLeft: "4px solid var(--gold)" }}>
@@ -215,11 +214,11 @@ export default function TrainingsTab({ data, userId, onUpdate, canDelete=false, 
                         <span aria-hidden="true" style={{ fontSize: "11px" }}>{expandedId === t.id ? "▾" : "▸"}</span> {t.date} kl {t.time?.slice(0,5)}
                       </h3>
                       <p style={{ color: "var(--text-light)", fontSize: "14px", marginBottom: "8px" }}>{teams.find(team=>team.id===t.team_id)?.name} · {t.location}</p>{t.calls_sent_at&&<p className="muted">Kallelse skickad · {teamPlayers.length} spelare</p>}
-                      <div className="training-reply-counts" aria-label="Svar på kallelsen">
+                      {t.calls_sent_at?<div className="training-reply-counts" aria-label="Svar på kallelsen">
                         <div className="reply-count-yes"><span>Kommer</span><strong>{kommerCount}</strong></div>
                         <div className="reply-count-no"><span>Kommer inte</span><strong>{kommerIntCount}</strong></div>
-                        <div className="training-count-waiting"><span>Svar väntas</span><strong>{teamPlayers.length-kommerCount-kommerIntCount}</strong></div>
-                      </div>
+                        <div className="training-count-waiting"><span>Svar väntas</span><strong>{waitingCount}</strong></div>
+                      </div>:<p className="muted">Kallelse ej skickad</p>}
                     </div>
                     <div className="training-card-actions">
                       <Button disabled={loading} onClick={()=>openCall(t)}>Kallelse</Button>
@@ -230,8 +229,9 @@ export default function TrainingsTab({ data, userId, onUpdate, canDelete=false, 
 
                   {expandedId === t.id && (
                     <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #ddd" }}>
-                      <CoachEventReplies kind="training" eventId={t.id} userId={userId} revision={t.calls_sent_at}/>
+                      {t.calls_sent_at&&<CoachEventReplies kind="training" eventId={t.id} userId={userId} revision={t.calls_sent_at}/> }
                       <h4 style={{ color: "var(--text-dark)", marginBottom: "12px", fontSize: "14px", fontWeight: "600" }}>Deltagare ({teamPlayers.length}):</h4>
+                      {!t.calls_sent_at&&<p className="muted">Inga spelare är kallade ännu.</p>}
                       <div style={{ display: "grid", gap: "8px" }}>
                         {teamPlayers.map((player) => {
                           const status = attendance[`${t.id}_${player.id}`];

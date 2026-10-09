@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "node tests/attendance.test.mjs && node tests/schedule.test.mjs && node tests/matches.test.mjs && node tests/member-export.test.mjs && node tests/payments.test.mjs && node tests/membership-report.test.mjs && node tests/economy.test.mjs && node tests/economy-inline-edit.cjs && node tests/economy-settlements.test.mjs && node tests/issued-invoices.test.mjs && node tests/economy-automation.test.mjs && node tests/session-navigation.cjs && node tests/portal-routing.cjs && node tests/invitations.cjs && node tests/family-notifications.test.mjs && node tests/web-push.test.mjs && node tests/push-session.cjs && node tests/telegram.test.mjs && node tests/telegram-edge.cjs && node tests/mail-edge.cjs"
+    "test": "node tests/attendance.test.mjs && node tests/schedule.test.mjs && node tests/matches.test.mjs && node tests/member-export.test.mjs && node tests/payments.test.mjs && node tests/membership-report.test.mjs && node tests/economy.test.mjs && node tests/economy-inline-edit.cjs && node tests/economy-settlements.test.mjs && node tests/issued-invoices.test.mjs && node tests/economy-automation.test.mjs && node tests/session-navigation.cjs && node tests/portal-routing.cjs && node tests/invitations.cjs && node tests/family-notifications.test.mjs && node tests/web-push.test.mjs && node tests/push-session.cjs && node tests/telegram.test.mjs && node tests/telegram-edge.cjs && node tests/mail-edge.cjs && node tests/training-replies.test.mjs"
   },
   "dependencies": {
     "react": "^18.0.0",
