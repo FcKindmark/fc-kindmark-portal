@@ -7,7 +7,7 @@ import MyPlayerProfiles from "./MyPlayerProfiles";
 import PushSettings from "./PushSettings";
 import TelegramSettings from "./TelegramSettings";
 import {preparePhoto} from "../lib/photos";
-export default function MyProfile({user,profile,photo,onClose,onSaved}){
+export default function MyProfile({user,profile,photo,onClose,onSaved,showNotifications=true}){
   const dialog=useRef(null),gallery=useRef(null),camera=useRef(null);
   const [name,setName]=useState(profile?.full_name||""),[newPhoto,setNewPhoto]=useState(null),[preview,setPreview]=useState(photo||""),[removePhoto,setRemovePhoto]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState("");
   useEffect(()=>{dialog.current?.showModal();},[]);
@@ -36,7 +36,7 @@ export default function MyProfile({user,profile,photo,onClose,onSaved}){
       <Button type="submit" disabled={busy||!name.trim()}>{busy?"Sparar…":"Spara profil"}</Button>
     </form>
     <MyPlayerProfiles userId={user.id}/>
-    <PushSettings userId={user.id}/>
+    {showNotifications&&<PushSettings userId={user.id}/>}
     <TelegramSettings userId={user.id} isAdmin={user.app_metadata?.club_role==="admin"}/>
   </dialog>;
 }

@@ -295,3 +295,22 @@ body{background:var(--beige)}h1,h2,h3{font-weight:700}.club-sidebar{width:248px;
 .player-profile-danger summary{color:var(--royal-red)}
 .player-profile-danger p{margin:12px 0;font-size:14px}
 @media(max-width:480px){.player-list-row{grid-template-columns:36px minmax(0,1fr) auto;gap:8px}.player-list-row .person-avatar{width:36px;height:36px;flex-basis:36px}.player-list-identity h3{font-size:16px}.player-list-identity p{font-size:13px}.player-list-row .club-button{font-size:14px;padding:6px 8px}.admin-player-profile{padding:16px}.admin-player-profile .form-grid{gap:14px}}
+
+/* Training actions use the available width without crowding the text. */
+.training-period-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:min(100%,520px)}
+.training-period-tabs .club-button{font-size:17px;min-height:42px}
+.training-summary{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:20px;margin-bottom:8px}
+.training-card-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;align-self:start}
+.training-card-actions .club-button{font-size:16px;padding:6px 12px;min-height:42px;white-space:nowrap}
+.training-reply-counts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:min(100%,460px);margin-top:12px}
+.training-reply-counts>div{display:flex;flex-direction:column;gap:3px;font-size:16px;line-height:1.3}
+.training-reply-counts strong{font-size:24px;font-variant-numeric:tabular-nums;line-height:1.2}
+.training-count-waiting{color:#765712;font-weight:700}
+@media(max-width:1000px){.training-summary{grid-template-columns:1fr;gap:14px}.training-card-actions{width:min(100%,460px)}}
+@media(max-width:760px){
+ .training-period-tabs,.training-card-actions{width:100%;max-width:none}
+ .training-period-tabs .club-button,.training-card-actions .club-button{font-size:17px;padding:7px 4px;min-height:44px}
+ .training-reply-counts{width:100%;gap:8px}
+ .training-reply-counts>div{font-size:15px}
+ .training-reply-counts strong{font-size:24px}
+}

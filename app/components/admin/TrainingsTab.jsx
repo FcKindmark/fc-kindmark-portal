@@ -146,9 +146,9 @@ export default function TrainingsTab({ data, userId, onUpdate, canDelete=false, 
         <Button variant="primary" onClick={() => { resetForm(); setShowAdd(true); }}>+ Lägg till träning</Button>
       </div>
 
-      <div className="button-group" role="group" aria-label="Träningsperiod" style={{ marginBottom: "20px" }}>
-        <Button variant={showPast ? "secondary" : "primary"} aria-pressed={!showPast} disabled={loading} onClick={() => { setShowPast(false); setExpandedId(null); setCallTraining(null); }}>{compactWeek?"Nästa 7 dagar":"Kommande träningar"}</Button>
-        <Button variant={showPast ? "primary" : "secondary"} aria-pressed={showPast} disabled={loading} onClick={() => { setShowPast(true); setExpandedId(null); setCallTraining(null); }}>Tidigare träningar</Button>
+      <div className="training-period-tabs" role="group" aria-label="Träningsperiod" style={{ marginBottom: "20px" }}>
+        <Button variant={showPast ? "secondary" : "primary"} aria-pressed={!showPast} disabled={loading} onClick={() => { setShowPast(false); setExpandedId(null); setCallTraining(null); }}>{compactWeek?"Nästa 7 dagar":"Kommande"}</Button>
+        <Button variant={showPast ? "primary" : "secondary"} aria-pressed={showPast} disabled={loading} onClick={() => { setShowPast(true); setExpandedId(null); setCallTraining(null); }}>Tidigare</Button>
       </div>
       {compactWeek&&showPast&&<label className="field">Visa tidigare träningar från<input type="date" value={archiveFrom||daysBefore(today,7)} max={today} onChange={e=>setArchiveFrom(e.target.value)}/></label>}
       {showPast && <p className="muted" style={{ marginBottom: "16px" }}>Här kan du se och rätta tidigare träningar. Registrera deltagarnas närvaro under Närvaro → Tidigare träningar.</p>}
@@ -209,22 +209,22 @@ export default function TrainingsTab({ data, userId, onUpdate, canDelete=false, 
 
               return (
                 <div key={t.id} style={{ padding: "15px", background: "var(--beige-light)", borderRadius: "8px", borderLeft: "4px solid var(--gold)" }}>
-                  <div style={{ display: "grid", gap: "10px", marginBottom: "8px" }}>
+                  <div className="training-summary">
                     <div style={{ minWidth: 0 }}>
                       <h3 style={{ color: "var(--text-dark)", fontSize: "15px", lineHeight: 1.4, whiteSpace: "nowrap", marginBottom: "5px", cursor: "pointer" }} onClick={() => setExpandedId(expandedId === t.id ? null : t.id)}>
                         <span aria-hidden="true" style={{ fontSize: "11px" }}>{expandedId === t.id ? "▾" : "▸"}</span> {t.date} kl {t.time?.slice(0,5)}
                       </h3>
                       <p style={{ color: "var(--text-light)", fontSize: "14px", marginBottom: "8px" }}>{teams.find(team=>team.id===t.team_id)?.name} · {t.location}</p>{t.calls_sent_at&&<p className="muted">Kallelse skickad · {teamPlayers.length} spelare</p>}
-                      <p style={{ color: "var(--text-dark)", fontSize: "13px", fontWeight: "600" }}>
-                        ✓ Kommer: <span style={{ color: "var(--royal-blue)" }}>{kommerCount}</span> | 
-                        ✗ Kommer inte: <span style={{ color: "var(--royal-red)" }}>{kommerIntCount}</span> |
-                        ? Svar väntas: <span style={{ color: "var(--text-light)" }}>{teamPlayers.length - kommerCount - kommerIntCount}</span>
-                      </p>
+                      <div className="training-reply-counts" aria-label="Svar på kallelsen">
+                        <div className="reply-count-yes"><span>Kommer</span><strong>{kommerCount}</strong></div>
+                        <div className="reply-count-no"><span>Kommer inte</span><strong>{kommerIntCount}</strong></div>
+                        <div className="training-count-waiting"><span>Svar väntas</span><strong>{teamPlayers.length-kommerCount-kommerIntCount}</strong></div>
+                      </div>
                     </div>
-                    <div className="match-actions" style={{ margin: 0, gap: "8px" }}>
-                      <Button disabled={loading} onClick={()=>openCall(t)} style={{ padding: "8px 12px", fontSize: "12px" }}>Kallelse</Button>
-                      <Button variant="secondary" onClick={() => startEdit(t)} style={{ padding: "8px 12px", fontSize: "12px" }}>Redigera</Button>
-                      <Button variant="danger" onClick={() => deleteTraining(t.id)} disabled={loading} style={{ padding: "8px 12px", fontSize: "12px" }}>Ta bort</Button>
+                    <div className="training-card-actions">
+                      <Button disabled={loading} onClick={()=>openCall(t)}>Kallelse</Button>
+                      <Button variant="secondary" onClick={() => startEdit(t)}>Redigera</Button>
+                      <Button variant="danger" onClick={() => deleteTraining(t.id)} disabled={loading}>Ta bort</Button>
                     </div>
                   </div>
 
