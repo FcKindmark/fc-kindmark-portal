@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import usePortalView from "../../lib/usePortalView";
 import { supabase } from "../../lib/supabaseClient";
 import { Card, Button } from "../UI";
@@ -22,6 +23,7 @@ import AttendanceTab from "./AttendanceTab";
 import PlayerRecords from "../PlayerRecords";
 import AddMemberChoice from "./AddMemberChoice";
 import InterestApplications from "./InterestApplications";
+const DevelopmentSessions = dynamic(() => import("./DevelopmentSessions"), { loading: () => <p role="status">Läser träningsprogram…</p> });
 
 export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }) {
   const [memberAdd,setMemberAdd]=useState(null);
@@ -31,7 +33,7 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
     setMemberAdd({kind,key:Date.now()});
     setActiveTab(kind === "player" ? "players" : kind === "coach" ? "users" : "membership");
   }
-  const [activeTab, setActiveTab] = usePortalView(profile?.role === "coach" ? "coach" : "admin", profile?.role === "coach" ? ["overview","calendar","calls","players","trainings","matches","attendance","development"] : ["overview","calendar","applications","membership","news","attendance","equipment","development","players","teams","trainings","matches","payments","economy","messages","users"], "overview", user.id);
+  const [activeTab, setActiveTab] = usePortalView(profile?.role === "coach" ? "coach" : "admin", profile?.role === "coach" ? ["overview","calendar","calls","players","trainings","matches","attendance","development"] : ["overview","calendar","applications","membership","news","attendance","equipment","development","programs","players","teams","trainings","matches","payments","economy","messages","users"], "overview", user.id);
   const [data, setData] = useState({
     players: [],
     teams: [],
@@ -105,6 +107,7 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
     { id: "attendance", label: "Närvaro" },
     { id: "equipment", label: "Utrustning" },
     { id: "development", label: "Utveckling" },
+    { id: "programs", label: "Träningsprogram" },
     { id: "players", label: "Spelare", img: "/icons/mascot.png" },
     { id: "teams", label: "Lag", icon: "⚽" },
     { id: "trainings", label: "Träningar", icon: "📅" },
@@ -124,6 +127,7 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
     {loading ? <p role="status">Läser in…</p> : <>
     {activeTab === "overview" && <OverviewTab data={data} onNavigate={setActiveTab} coach={profile?.role === "coach"}/>}
     {activeTab === "applications" && profile?.role !== "coach" && <InterestApplications teams={data.teams} onPlayers={()=>setActiveTab("players")}/>}
+    {activeTab === "programs" && profile?.role === "admin" && <DevelopmentSessions/>}
     {activeTab === "calls" && <CoachKallelser/>}
     {activeTab === "news" && <ClubNews admin/>}
     {activeTab === "membership" && <MemberCards key={memberAdd?.key || "members"} admin initialShowAdd={Boolean(memberAdd)} initialMembershipType={memberAdd?.kind} onCloseAdd={()=>setMemberAdd(null)} onUpdate={loadData}/>}
