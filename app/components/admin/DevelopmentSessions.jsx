@@ -28,6 +28,32 @@ function SessionDiagram({ diagram, title, sport, organisation }) {
   </figure>;
 }
 
+
+// Diagrams reused by multiple exercises are deliberately not displayed.
+// A tactical illustration must be unique to its actual exercise.
+const diagramCounts = new Map();
+for (const session of DEVELOPMENT_SESSIONS) {
+  for (const part of session.blocks) {
+    const diagram = part.diagram;
+    if (!diagram) continue;
+    const signature = JSON.stringify({
+      players: diagram.players, paths: diagram.paths, kinds: diagram.kinds,
+      goals: diagram.goals, gates: diagram.gates, sidePorts: diagram.sidePorts,
+      targetZone: diagram.targetZone, goalSide: diagram.goalSide
+    });
+    diagramCounts.set(signature, (diagramCounts.get(signature) || 0) + 1);
+  }
+}
+function uniqueDiagram(part) {
+  if (!part.diagram) return false;
+  const d = part.diagram;
+  const signature = JSON.stringify({
+    players:d.players,paths:d.paths,kinds:d.kinds,goals:d.goals,gates:d.gates,
+    sidePorts:d.sidePorts,targetZone:d.targetZone,goalSide:d.goalSide
+  });
+  return diagramCounts.get(signature) === 1;
+}
+
 export default function DevelopmentSessions() {
   const [sport,setSport] = useState("futsal");
   const [age,setAge] = useState("8–10");
@@ -74,7 +100,7 @@ export default function DevelopmentSessions() {
         return <Card className="development-block" key={`${session.id}-${index}`}>
         <header><p className="development-eyebrow">Del {index+1} av {session.blocks.length} · minut {elapsed}–{elapsed+part.minutes}</p><h2>{part.title}</h2><p>{part.timing}</p></header>
         <div className="development-layout">
-          <div><h3>Ställ upp så här</h3><p>{part.organisation}</p><h3>Säg till spelarna</h3><blockquote>{part.say}</blockquote><h3>Titta efter</h3><p>{part.observe}</p></div>
+          <div>{!uniqueDiagram(part) && <p className="development-source">Taktisk illustration saknas för denna övning. Följ organisation och steg nedan; återanvända diagram visas inte.</p>}<h3>Ställ upp så här</h3><p>{part.organisation}</p><h3>Säg till spelarna</h3><blockquote>{part.say}</blockquote><h3>Titta efter</h3><p>{part.observe}</p></div>
           <div><h3>Gör i denna ordning</h3><ol className="development-steps">{part.steps.map(step=><li key={step}>{step}</li>)}</ol><h3>När bollen går ut / aktionen tar slut</h3><p>{part.restart}</p><h3>Byt roller så här</h3><p>{part.rotation}</p><h3>Anpassa svårigheten — behåll samma mål</h3><p><strong>Enklare:</strong> {part.easier}</p><p><strong>Svårare:</strong> {part.harder}</p></div>
         </div>
       </Card>;
