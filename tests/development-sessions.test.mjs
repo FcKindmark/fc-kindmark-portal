@@ -3,13 +3,13 @@ import { readFileSync } from 'node:fs';
 import { DEVELOPMENT_AGES, DEVELOPMENT_SESSIONS } from '../app/lib/developmentSessions.mjs';
 
 assert.deepEqual(DEVELOPMENT_AGES,['8–10','11–13','14–16']);
-assert.equal(DEVELOPMENT_SESSIONS.length,21);
-assert.equal(new Set(DEVELOPMENT_SESSIONS.map(s=>s.id)).size,21);
+assert.equal(DEVELOPMENT_SESSIONS.length,27);
+assert.equal(new Set(DEVELOPMENT_SESSIONS.map(s=>s.id)).size,27);
 for(const age of DEVELOPMENT_AGES){
-  assert.equal(DEVELOPMENT_SESSIONS.filter(s=>s.age===age&&s.sport==='futsal').length,4);
-  assert.equal(DEVELOPMENT_SESSIONS.filter(s=>s.age===age&&s.sport==='football').length,3);
+  assert.equal(DEVELOPMENT_SESSIONS.filter(s=>s.age===age&&s.sport==='futsal').length,5);
+  assert.equal(DEVELOPMENT_SESSIONS.filter(s=>s.age===age&&s.sport==='football').length,4);
 }
-assert.equal(new Set(DEVELOPMENT_SESSIONS.map(s=>s.title)).size,21);
+assert.equal(new Set(DEVELOPMENT_SESSIONS.map(s=>s.title)).size,27);
 for(const session of DEVELOPMENT_SESSIONS){
   assert.ok(['futsal','football'].includes(session.sport));
   assert.equal(session.status,'draft');
@@ -46,3 +46,14 @@ assert.match(youthTransition.blocks[2].organisation,/Alla tolv är aktiva/);
 for(const s of DEVELOPMENT_SESSIONS.filter(s=>s.id.includes('finish-02')))assert.match(s.blocks[2].organisation,/Sex par/);
 for(const s of DEVELOPMENT_SESSIONS.filter(s=>s.id.includes('build-02')))assert.equal(s.blocks[2].diagram.goalSide,'left');
 console.log('Development sessions: age groups, timing, diagrams and draft visibility passed.');
+const additions=DEVELOPMENT_SESSIONS.filter(s=>s.id.endsWith('-02'));
+for(const s of additions){
+  if(s.age!=='14–16')assert.equal(s.blocks[0].diagram.players.length,12);
+  assert.equal(s.blocks[4].diagram.players.length,13);
+  assert.equal(s.blocks[3].diagram.players.length,6);
+}
+assert.equal(new Set(additions.map(s=>JSON.stringify(s.blocks[3].diagram))).size,7);
+for(const s of additions.filter(s=>s.id.includes('escape'))){
+  assert.equal(s.blocks[2].diagram.players.length,4);
+  assert.equal(s.blocks[2].diagram.sidePorts,true);
+}

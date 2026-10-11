@@ -17,6 +17,26 @@ const widthDiagram=diagram([blue(75,160,'A'),blue(190,80,'B'),blue(300,235,'C')]
 const gameDiagram=diagram([blue(90,85,'1'),blue(110,240,'2'),blue(180,150,'3'),red(280,85,'4'),red(300,240,'5'),red(240,190,'6')],['M109 93L162 143'],'En av två planer: tre mot tre mot mål åt båda hållen.',{goals:true});
 const transitionDiagram=diagram([blue(210,75,'1'),blue(185,145,'2'),blue(205,220,'3'),blue(270,265,'4'),red(75,70,'5'),red(90,145,'6'),red(75,220,'7'),red(130,275,'8'),[325,60,'9','gold'],[335,130,'10','gold'],[340,215,'11','gold'],[330,280,'12','gold']],['M170 145L110 150'],'Blå anfaller röd till vänster. Gul väntar vid höger mål. Vid blått mål fortsätter blå åt höger; vid röd bollvinst anfaller röd åt höger.',{goals:true});
 
+const ownBallDiagram=diagram(Array.from({length:12},(_,i)=>blue(65+(i%4)*95,65+Math.floor(i/4)*90,String(i+1))),
+  ['M85 65Q110 45 125 85','M180 155Q215 135 230 180'],
+  'Alla tolv har egen boll. Två möjliga rörelser visas; alla väljer ledig yta och undviker andra spelare.',
+  {kinds:['dribble','dribble'],balls:Array.from({length:12},(_,i)=>[88+(i%4)*95,79+Math.floor(i/4)*90])});
+const gatherDiagram=diagram(Array.from({length:12},(_,i)=>blue(210+120*Math.cos(i*Math.PI/6),160+110*Math.sin(i*Math.PI/6),String(i+1))).concat([[210,160,'T','gold']]),[],
+  'Alla tolv samlas med tränaren efter den lugna bollrörelsen. Ingen passningsbana; spelarna berättar om ett eget val.');
+function appliedPicture(theme){
+  const illustrations={
+    duel:{players:[blue(140,140,'1'),blue(85,70,'2'),blue(110,250,'3'),red(225,145,'4'),red(300,70,'5'),red(310,245,'6')],paths:['M160 135Q215 80 275 125'],kinds:['dribble'],caption:'En blå bollhållare prövar fri väg förbi röd. Två medspelare ger stöd; tre röda försvarar. En av två 3 mot 3-planer visas.'},
+    support:{players:[blue(130,150,'1'),blue(240,80,'2'),blue(95,255,'3'),red(205,165,'4'),red(300,95,'5'),red(290,245,'6')],paths:['M149 139L220 91','M153 155Q180 215 230 225'],kinds:['pass','dribble'],caption:'Blå 1 har både passning till 2 och egen väg. Pilarna är alternativ, inte en följd. En av två 3 mot 3-planer visas.'},
+    finish:{players:[blue(185,90,'1'),blue(290,160,'2'),blue(95,255,'3'),red(240,100,'4'),red(325,225,'5'),red(150,215,'6')],paths:['M200 105L270 150','M310 160L390 160'],kinds:['pass','pass'],caption:'Exempel: markpassning från blå 1 till 2 och kontrollerat avslut. Försvararna får bryta; ingen bestämd avslutssekvens. En av två planer visas.'},
+    width:{players:[blue(145,160,'1'),blue(275,50,'2'),blue(280,270,'3'),red(235,110,'4'),red(235,215,'5'),red(325,165,'6')],paths:['M162 148L259 65','M163 173L263 255'],kinds:['pass','pass'],caption:'Blå har stöd i bredd åt två håll. Bollhållaren väljer det spelbara alternativet; båda pilarna är möjligheter. En av två 3 mot 3-planer visas.'},
+    build:{players:[blue(100,160,'1'),blue(160,55,'2'),blue(265,245,'3'),red(225,85,'4'),red(225,180,'5'),red(330,245,'6')],paths:['M120 148L147 73','M177 68Q220 55 275 80'],kinds:['pass','dribble'],caption:'Blå söker en öppen väg förbi första försvararen. Detta är slutdelens 3 mot 3 utan målvakter, inte föregående målvaktsövning.'},
+    transition:{players:[blue(150,150,'1'),blue(100,70,'2'),blue(105,250,'3'),red(230,170,'4'),red(300,70,'5'),red(305,255,'6')],paths:['M210 170Q140 185 45 160'],kinds:['dribble'],caption:'Röd 4 har just vunnit bollen och anfaller vänster. Blå byter till försvar. En av två 3 mot 3-planer visas.'},
+    escape:{players:[blue(160,160,'1'),blue(90,70,'2'),blue(260,260,'3'),red(245,140,'4'),red(300,70,'5'),red(315,235,'6')],paths:['M175 173Q210 225 235 248','M280 250Q335 280 380 180'],kinds:['pass','dribble'],caption:'När röd 4 stänger mitten kan blå 1 hitta 3 åt andra sidan. Nästa pil visar en möjlig fortsättning. En av två 3 mot 3-planer visas.'}
+  };
+  const picture=illustrations[theme];
+  const holder=picture.players[theme==='transition'?3:0];
+  return {...picture,goals:true,balls:[[holder[0]+23,holder[1]+14]]};
+}
 function makeBlock(title,minutes,timing,organisation,steps,restart,rotation,say,observe,easier,harder,picture){
   return {title,minutes,timing,organisation,steps,restart,rotation,say,observe,easier,harder,diagram:picture};
 }
@@ -47,7 +67,9 @@ function prep(sport,a,theme){
     isDuel?'Balans, lugn bollkontakt och att spelaren upptäcker en fri sida.':isFinish?'Blick före mottagning och om första touchen skapar en kontrollerad nästa handling.':'Blick före mottagning, passningens kraft och en användbar ny stödplats.',
     'Kortare avstånd och helt utan bollvinnande motståndare.',
     'Låt medspelaren ändra plats tidigare. Öka bara en svårighet åt gången.',
-    isDuel?duelDiagram:{...pairDiagram,caption:'Ett av sex par visas. Första pilen visar passningen till B; prickad pil visar ett möjligt vägval efter mottagning. Anpassa nästa handling till instruktionen.'});
+    isDuel?diagram([blue(180,160,'A'),red(220,160,'B')],['M162 150Q110 90 70 70'],'A skyddar bollen från B och vänder mot en fri port. Ett av sex par visas.',{sidePorts:true,kinds:['dribble'],balls:[[156,171]]}):isFinish?
+    diagram([blue(75,160,'A'),blue(230,160,'B')],['M95 160L208 160','M248 150L330 80'],'A passar till B. B tar emot mot en port och passar kontrollerat genom den. Ett av sex par visas.',{gates:true,kinds:['pass','pass'],balls:[[99,174]]}):
+    diagram([blue(90,160,'A'),blue(310,160,'B')],['M110 150L288 150','M85 183Q100 240 150 250','M295 174L169 242'],'A passar och löper till ny stödplats. B kan därefter passa tillbaka till den nya platsen. Ett av sex par visas.',{kinds:['pass','run','pass'],balls:[[113,175]]}));
 }
 function duel(sport,a){
   const size=sport==='football'?['12 × 8','16 × 10','20 × 12'][a]:['8 × 6','10 × 8','12 × 9'][a];
@@ -142,10 +164,39 @@ function transition(sport,a){
     'Gå igenom mål, bollvinst och boll ut långsamt utan motstånd först. Använd två lag tre mot tre om trelagssystemet blir för svårt.',
     'Kortare tid för att organisera stöd efter vändning; behåll tydlig mål- och rollfördelning. Ingen strafflöpning.',transitionDiagram);
 }
+function escapePreparation(sport,a){
+  return makeBlock('Första touch mot en öppen port',[10,10,13][a],timings[a][0],
+    `Sex par i separata rutor ${sport==='football'?'14 × 10':'10 × 8'} m. En boll per par och två portar på bortre kortsidan. A passar från startlinjen, B tar emot i mitten.`,
+    ['A pekar tydligt på en stängd port och passar sedan längs marken till B. B tittar före mottagningen.',
+     'B tar emot mot den andra porten och driver igenom den med kontroll. Flera bollkontakter är tillåtna. B för tillbaka bollen och paret byter roller.',
+     a===0?'Behåll signalen före passningen hela första omgången. Ingen tävling i fart.':'När kontrollen fungerar får A visa den stängda porten efter passningen men före mottagningen. Om signalen kom för sent gör ni om.',
+     sport==='futsal'?'B får bromsa med sulan och välja riktning efter en ny blick.':'B anpassar första touchen och passningskraften till gräsets motstånd.'],
+    'Boll ut: hämta lugnt och börja igen. Ingen passning medan någon hämtar i en annan ruta.',
+    'Byt passare och mottagare efter varje försök. Sex par arbetar samtidigt; vila enligt omgångstiden.',
+    'Var finns plats för din nästa bollkontakt?', 'Blick före mottagningen och en första touch som hjälper nästa handling.',
+    'Visa porten tidigt och tillåt att bollen stannas helt.', 'Visa sidan lite senare; ändra bara en svårighet åt gången.',
+    diagram([blue(70,160,'A'),blue(210,160,'B')],['M90 160L188 160','M225 150Q270 100 330 80'],
+      'A passar till B. B väljer en öppen port på bortre kortsidan. En av sex stationer visas.',{gates:true,kinds:['pass','dribble'],balls:[[93,169]]}));
+}
+function escapeGame(sport,a){
+  return makeBlock('Två mot två: byt väg när porten stängs',[12,15,20][a],timings[a][1],
+    `Tre planer ${sport==='football'?['18 × 14','24 × 18','30 × 22'][a]:['12 × 10','16 × 12','20 × 15'][a]} m. Fyra spelare per plan, två blå och två röda. Två konportar på varje långsida. Blå anfaller de två nedre portarna, röd de två övre. Alla tolv spelar samtidigt.`,
+    ['Visa lagens två målportar. Blå startar centralt med boll, röd minst tre meter bort. Spela två mot två.',
+     'Poäng genom att driva bollen kontrollerat genom en av lagets portar. När en port stängs kan bollhållaren vända, skydda eller passa till sin kompis och söka den andra.',
+     'Vid bollvinst anfaller det nya bollhållande laget sina portar direkt. Ingen tränarsignal krävs.',
+     a===0?'Första omgången följer försvararna lugnt utan att vinna boll. Tillåt bollvinst stående när barnen är trygga.':'Medspelaren söker en ny stödplats när bollhållaren vänder; ingen måste passa om en egen väg är öppen.'],
+    'Efter poäng startar andra laget centralt; motståndarna backar tre meter. Vid boll ut får andra laget en lugn markpassning från platsen där bollen gick ut, med två meters avstånd till motståndarna.',
+    'Behåll lagen under omgången. Byt vem som startar med boll efter varje återstart. Alla anfaller och försvarar; pauserna är vila.',
+    'Den vägen är stängd — vad ser du på andra sidan?',
+    'Om spelaren känner igen en stängd väg och väljer ett nytt alternativ med kontroll.',
+    'Bredare portar och försvarare som bara följer.', 'Smalare portar när kontrollen fungerar. Behåll fria val och flera bollkontakter.',
+    diagram([blue(150,95,'1'),blue(190,235,'2'),red(265,95,'3'),red(280,225,'4')],['M165 110Q230 160 280 290'],
+      'En av tre planer. Blå anfaller två nedre portar, röd två övre. Prickad pil visar ett möjligt vägval.',{sidePorts:true,kinds:['dribble'],balls:[[173,113]]}));
+}
 function application(sport,a,theme){
   const football=sport==='football', young=a===0;
   const size=football?['24 × 16','32 × 22','40 × 28'][a]:['18 × 12','24 × 16','28 × 18'][a];
-  const focus={duel:'Våga gå förbi när vägen är fri och hjälp till efter bollförlust.',support:'Ge bollhållaren en spelbar stödplats och välj mellan passning och dribbling.',finish:'Se målet och skapa ett kontrollerat avslut utan krav på skott direkt.',width:'Flytta isär när laget har boll och bli spelbar i en ny riktning.',build:'Hitta en fri väg framåt; spela tillbaka när framåtvägen är stängd.',transition:'Känn igen bollvinst och bollförlust och ändra uppgift direkt.'}[theme];
+  const focus={escape:'Se före mottagningen och byt väg när motståndaren stänger den första.',duel:'Våga gå förbi när vägen är fri och hjälp till efter bollförlust.',support:'Ge bollhållaren en spelbar stödplats och välj mellan passning och dribbling.',finish:'Se målet och skapa ett kontrollerat avslut utan krav på skott direkt.',width:'Flytta isär när laget har boll och bli spelbar i en ny riktning.',build:'Hitta en fri väg framåt; spela tillbaka när framåtvägen är stängd.',transition:'Känn igen bollvinst och bollförlust och ändra uppgift direkt.'}[theme];
   return makeBlock(football?'Fotboll: använd dagens lösning i spel':'Futsal: använd dagens lösning i spel',[18,20,25][a],
     ['2 min visa · 3 × 4 min spel · 2 × 1 min vila · 2 min samla.','2 min visa · 3 × 5 min spel · 2 × 1 min vila · 1 min samla.','2 min visa · 4 × 5 min spel · 3 × 1 min vila.'][a],
     `Två planer ${size} m, sex spelare per plan. Tre mot tre, små mål eller konmål i båda ändarna. Inga målvakter i denna tillämpning. Avgränsa säkert och håll planer och bollar åtskilda.`,
@@ -157,7 +208,7 @@ function application(sport,a,theme){
     'Alla tolv spelar samtidigt. Byt några jämna lagkamrater i pauserna och låt barnen själva prova olika platser. Ingen utslagning eller bonuskonditionering.',
     focus, 'Om dagens beteende syns spontant i spel — och hur spelaren reagerar när ett val misslyckas.',
     'Större yta eller större konmål. Sänk komplexiteten, inte spelarens värde.',
-    'Minska ytan något om gruppen har kontroll. Behåll fria val och möjlighet att göra mål åt båda håll.',gameDiagram);
+    'Minska ytan något om gruppen har kontroll. Behåll fria val och möjlighet att göra mål åt båda håll.',appliedPicture(theme));
 }
 function build(sport,a){
   if(a===0) return width(sport,a);
@@ -196,7 +247,13 @@ export function buildAdditionalSessions(originals){
     ['football',1,'build','Börja hos målvakten och hitta vägen fram','Upptäcka öppen yta förbi första pressen med målvakten som stöd.'],
     ['football',2,'width','Spela förbi motståndaren med stöd och bredd','Välja spelbar riktning och anpassa stödavstånd under motstånd.'],
     ['football',2,'finish','Skapa ett avslut genom ett bättre första val','Koppla mottagning och avslut till spelets verkliga alternativ.'],
-    ['football',2,'transition','Från bollvinst till nytt anfall','Vända spelriktning och fördela uppgifter utan att vänta på tränaren.']
+    ['football',2,'transition','Från bollvinst till nytt anfall','Vända spelriktning och fördela uppgifter utan att vänta på tränaren.'],
+    ['futsal',0,'escape','Titta, bromsa och hitta en annan port','Upptäcka en öppen väg med trygg bollkontakt på hallgolvet.'],
+    ['futsal',1,'escape','Första touch bort från den stängda vägen','Läsa motståndaren och använda mottagning, vändning eller stöd.'],
+    ['futsal',2,'escape','Byt anfallsriktning när pressen stänger','Behålla kontroll och skapa ett nytt alternativ i trånga ytor.'],
+    ['football',0,'escape','Se porten och vänd med bollen på gräs','Välja en fri riktning och anpassa bollkontakten till underlaget.'],
+    ['football',1,'escape','Ta emot mot fri yta och hitta nytt stöd','Se ett alternativ före mottagning och ändra väg under motstånd.'],
+    ['football',2,'escape','Locka mot en sida och spela åt den andra','Upptäcka när en väg stängs och flytta boll och stöd till nästa öppna yta.']
   ];
   return plans.map(([sport,a,theme,title,goal])=>{
     const base=originals[a];
@@ -207,12 +264,13 @@ export function buildAdditionalSessions(originals){
         steps:['För bollen med små kontrollerade kontakter mot ledig yta. Lyft blicken mellan bollkontakterna.','Bromsa, vänd åt en fri sida och fortsätt. Prova båda fötterna, i eget tempo.','I nästa omgång får barnen välja en ny vändning eller större riktningsbyte. Undvik andra bollar; ingen tävling i fart.'],
         restart:'Tappad boll: hämta den och fortsätt med kontroll. Alla fortsätter samtidigt när det är säkert.',rotation:'Alla har egen boll hela arbetsperioden. Pauserna används till vila och en kort visning, inte till köer.',say:'Var finns plats för dig och bollen?',observe:'Blick, balans, bolltrygghet och att barnet hittar en egen väg.',easier:'Gångtempo och större yta.',harder:'Välj en annan riktning efter att ha tittat upp; öka inte fart före kontroll.',diagram:originals[0].blocks[0].diagram});
     }
-    const main={duel,support,finish:finishing,width,build,transition}[theme](sport,a);
-    const preparation=prep(sport,a,theme);
+    if(a<=1) warm.diagram=ownBallDiagram;
+    const main={duel,support,finish:finishing,width,build,transition,escape:escapeGame}[theme](sport,a);
+    const preparation=theme==='escape'?escapePreparation(sport,a):prep(sport,a,theme);
     // Three thematic learning blocks plus application and reflection; order is authored here.
     const reflection={...base.blocks[4],say:'Vad upptäckte du i en situation i dag?',
       steps:['Låt spelarna göra två minuter lugn bollrörelse innan gruppen samlas.',`Ta en konkret situation från dagens mål: ${goal} Låt spelaren beskriva vad hen såg och valde.`, 'Lyft ett försök och en användbar idé, inte en jämförelse eller tabell över mål. Anteckna vad gruppen behöver nästa gång.'],
-      observe:'Om spelaren kan beskriva sitt val, känner sig trygg och är redo att avsluta.',easier:'Låt spelaren peka eller visa med bollen i stället för att prata.',harder:'Fråga om ett annat möjligt val i samma situation.'};
+      observe:'Om spelaren kan beskriva sitt val, känner sig trygg och är redo att avsluta.',easier:'Låt spelaren peka eller visa med bollen i stället för att prata.',harder:'Fråga om ett annat möjligt val i samma situation.',diagram:gatherDiagram};
     return {id:`${sport}-${a}-${theme}-02`,sport,age:ages[a],status:'draft',version:1,title,goal,minutes:base.minutes,players:12,
       equipment:sport==='football'?'12 fotbollar anpassade till gruppen, koner, två färger västar (tre för trelagsspel), små mål eller konmål. För målvaktsdelen krävs säkert förankrade mål.':'12 futsalbollar anpassade till gruppen, koner, två färger västar (tre för trelagsspel), små mål eller konmål. För målvaktsdelen krävs säkert förankrade mål.',
       principle:base.principle,
