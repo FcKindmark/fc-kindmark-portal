@@ -74,7 +74,7 @@ export default function DevelopmentSessions() {
         return <Card className="development-block" key={`${session.id}-${index}`}>
         <header><p className="development-eyebrow">Del {index+1} av {session.blocks.length} · minut {elapsed}–{elapsed+part.minutes}</p><h2>{part.title}</h2><p>{part.timing}</p></header>
         <div className="development-layout">
-          <div><SessionDiagram diagram={part.diagram} title={part.title} sport={session.sport} organisation={part.organisation}/><h3>Ställ upp så här</h3><p>{part.organisation}</p><h3>Säg till spelarna</h3><blockquote>{part.say}</blockquote><h3>Titta efter</h3><p>{part.observe}</p></div>
+          <div><h3>Ställ upp så här</h3><p>{part.organisation}</p><h3>Säg till spelarna</h3><blockquote>{part.say}</blockquote><h3>Titta efter</h3><p>{part.observe}</p></div>
           <div><h3>Gör i denna ordning</h3><ol className="development-steps">{part.steps.map(step=><li key={step}>{step}</li>)}</ol><h3>När bollen går ut / aktionen tar slut</h3><p>{part.restart}</p><h3>Byt roller så här</h3><p>{part.rotation}</p><h3>Anpassa svårigheten — behåll samma mål</h3><p><strong>Enklare:</strong> {part.easier}</p><p><strong>Svårare:</strong> {part.harder}</p></div>
         </div>
       </Card>;
