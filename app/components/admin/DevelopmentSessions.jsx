@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Button, Card } from "../UI";
 import { DEVELOPMENT_AGES, DEVELOPMENT_SESSIONS } from "../../lib/developmentSessions.mjs";
 
@@ -28,14 +28,20 @@ function SessionDiagram({ diagram, title }) {
 export default function DevelopmentSessions() {
   const [sport,setSport] = useState("futsal");
   const [age,setAge] = useState("8–10");
-  const [index,setIndex] = useState(0);
   const [selectedId,setSelectedId] = useState(null);
+  const sessionHeading = useRef(null);
+  const catalogHeading = useRef(null);
   const sessions = DEVELOPMENT_SESSIONS.filter(s=>s.sport===sport && s.age===age);
-  const session = sessions.find(s=>s.id===selectedId) || sessions[0];
-  const part = session?.blocks[index];
-  function chooseSport(value){setSport(value);setIndex(0);setSelectedId(null);}
-  function chooseAge(value){setAge(value);setIndex(0);setSelectedId(null);}
-  const elapsed = session?.blocks.slice(0,index).reduce((sum,b)=>sum+b.minutes,0) || 0;
+  const session = sessions.find(s=>s.id===selectedId);
+  function chooseSport(value){setSport(value);setSelectedId(null);}
+  function chooseAge(value){setAge(value);setSelectedId(null);}
+  useEffect(()=>{
+    if(selectedId) sessionHeading.current?.focus();
+  },[selectedId]);
+  function backToSessions(){
+    setSelectedId(null);
+    requestAnimationFrame(()=>catalogHeading.current?.focus());
+  }
 
   return <section className="development-program" aria-label="Träningsprogram">
     <div className="page-heading"><div><h1>Träningsprogram</h1><p>FC Kindmark · kompletta utvecklingspass</p></div></div>
@@ -44,26 +50,33 @@ export default function DevelopmentSessions() {
       <div role="group" aria-label="Idrott">{[["futsal","Futsal"],["football","Fotboll"]].map(([value,label])=><Button key={value} variant={sport===value?"primary":"secondary"} aria-pressed={sport===value} onClick={()=>chooseSport(value)}>{label}</Button>)}</div>
       <div role="group" aria-label="Åldersgrupp">{DEVELOPMENT_AGES.map(value=><Button key={value} variant={age===value?"primary":"secondary"} aria-pressed={age===value} onClick={()=>chooseAge(value)}>{value} år</Button>)}</div>
     </div>
-    <h2>{sport==='futsal'?'Futsal':'Fotboll'} · {age} år · {sessions.length} pass</h2>
-    <div className="development-catalog" role="group" aria-label="Välj ett komplett pass">{sessions.map((s,i)=><button type="button" key={s.id} aria-pressed={session?.id===s.id} onClick={()=>{setSelectedId(s.id);setIndex(0);}}><span>Pass {i+1} · {s.minutes} min · {s.players} spelare</span><strong>{s.title}</strong><span>{s.goal}</span></button>)}</div>
-    {!session ? <Card><h2>Fotboll · {age} år</h2><p>Separata fotbollspass är under framtagning. Futsalpassen kopieras inte automatiskt till fotboll.</p></Card> : <>
+    {!session ? <>
+      <h2 ref={catalogHeading} tabIndex={-1}>{sport==='futsal'?'Futsal':'Fotboll'} · {age} år · {sessions.length} pass</h2>
+      <p>Välj namnet på ett pass för att öppna hela sessionen med alla övningar och instruktioner.</p>
+      <div className="development-catalog" role="group" aria-label="Välj ett komplett pass">{sessions.map((s,i)=><button type="button" key={s.id} onClick={()=>setSelectedId(s.id)}><strong>{s.title}</strong><span>Pass {i+1} · {s.minutes} min · {s.players} spelare · Öppna hela passet →</span></button>)}</div>
+      {!sessions.length && <Card><p>Inga pass finns i den här gruppen ännu.</p></Card>}
+    </> : <>
+      <Button variant="secondary" onClick={backToSessions}>← Tillbaka till alla pass</Button>
       <Card className="development-summary">
         <p className="development-eyebrow">{session.sport==='futsal'?'Futsal':'Fotboll'} · {session.age} år · {session.minutes} min · {session.players} spelare · Utkast v{session.version}</p>
-        <h2>{session.title}</h2><p><strong>Utvecklingsmål:</strong> {session.goal}</p>
+        <h2 ref={sessionHeading} tabIndex={-1}>{session.title}</h2><p><strong>Utvecklingsmål:</strong> {session.goal}</p>
         <p><strong>Förbered:</strong> {session.equipment}</p><p><strong>Tränarens fokus:</strong> {session.principle}</p>
         <p className="development-ball-focus"><strong>Bolltid:</strong> {session.ballPriority}</p>
         {session.repeat && <p><strong>Utveckling över tid:</strong> {session.repeat}</p>}
         <p>Åldern hjälper dig att hitta passet. Anpassa till barnens erfarenhet, trygghet och dagsform. Avbryt vid smärta eller osäker miljö. Kontrollera yta, mål och underlag före start.</p>
       </Card>
-      <nav className="development-order" aria-label="Passets fasta ordning">{session.blocks.map((b,i)=><button type="button" key={b.title} aria-current={index===i?"step":undefined} onClick={()=>setIndex(i)}><span>Del {i+1} · {b.minutes} min</span><strong>{b.title}</strong></button>)}</nav>
-      <Card className="development-block" key={`${session.id}-${index}`}>
+      <h2>Hela passet — följ ordningen nedan</h2>
+      {session.blocks.map((part,index)=>{
+        const elapsed=session.blocks.slice(0,index).reduce((sum,b)=>sum+b.minutes,0);
+        return <Card className="development-block" key={`${session.id}-${index}`}>
         <header><p className="development-eyebrow">Del {index+1} av {session.blocks.length} · minut {elapsed}–{elapsed+part.minutes}</p><h2>{part.title}</h2><p>{part.timing}</p></header>
         <div className="development-layout">
           <div><SessionDiagram diagram={part.diagram} title={part.title}/><h3>Ställ upp så här</h3><p>{part.organisation}</p><h3>Säg till spelarna</h3><blockquote>{part.say}</blockquote><h3>Titta efter</h3><p>{part.observe}</p></div>
-          <div><h3>Gör i denna ordning</h3><ol className="development-steps">{part.steps.map(step=><li key={step}>{step}</li>)}</ol><h3>När bollen går ut / aktionen tar slut</h3><p>{part.restart}</p><h3>Byt roller så här</h3><p>{part.rotation}</p><details><summary>Anpassa svårigheten — behåll samma mål</summary><p><strong>Enklare:</strong> {part.easier}</p><p><strong>Svårare:</strong> {part.harder}</p></details></div>
+          <div><h3>Gör i denna ordning</h3><ol className="development-steps">{part.steps.map(step=><li key={step}>{step}</li>)}</ol><h3>När bollen går ut / aktionen tar slut</h3><p>{part.restart}</p><h3>Byt roller så här</h3><p>{part.rotation}</p><h3>Anpassa svårigheten — behåll samma mål</h3><p><strong>Enklare:</strong> {part.easier}</p><p><strong>Svårare:</strong> {part.harder}</p></div>
         </div>
-        <footer className="development-controls"><Button variant="secondary" disabled={index===0} onClick={()=>setIndex(i=>i-1)}>← Föregående del</Button><span>{index+1} / {session.blocks.length}</span><Button disabled={index===session.blocks.length-1} onClick={()=>setIndex(i=>i+1)}>Nästa del →</Button></footer>
-      </Card>
+      </Card>;
+      })}
+      <Button variant="secondary" onClick={backToSessions}>← Tillbaka till alla pass</Button>
       <p className="development-source">Originalförslag för FC Kindmark, utifrån klubbens Development Framework. Inte officiella pass från någon federation. Fast ordning: öppna delarna för att läsa, inte för att byta eller blanda övningar.</p>
       <details className="development-source"><summary>Metodstöd och källor</summary><p>Klubbens ramverk styr innehållet. Dessa primärkällor används som metodstöd för spelbaserat lärande, åldersanpassning och tränarkommunikation — inte som påstående att våra pass är deras officiella program.</p><ul>
         <li><a href="https://www.fifatrainingcentre.com/en/environment/interviews/coaching-perspectives/david-gordo-on-spains-playing-style.php" target="_blank" rel="noreferrer">Spanien: David Gordo · FIFA Training Centre</a></li>
