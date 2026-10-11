@@ -1,5 +1,6 @@
 // Original FC Kindmark session proposals. Drafts require sporting review before coach use.
 // Age bands are navigation groups, not uniform physical or technical standards.
+import { buildAdditionalSessions } from './developmentSessionExpansion.mjs';
 export const DEVELOPMENT_AGES = ['8–10', '11–13', '14–16'];
 const block = (title, minutes, organisation, timing, steps, restart, rotation, say, observe, easier, harder, diagram) => ({title,minutes,organisation,timing,steps,restart,rotation,say,observe,easier,harder,diagram});
 const personal = {players:[[80,80,'1','blue'],[210,75,'2','blue'],[130,175,'3','blue'],[305,150,'4','blue']],paths:['M90 85Q140 110 180 80','M145 175Q185 220 220 195'],caption:'En del av gruppen visas. Alla har en egen boll; pilar visar möjliga rörelser.'};
@@ -69,3 +70,12 @@ block('Reflektion och nedvarvning',5,'Alla vid sidan. Samtalet gäller handlinga
 'Avsluta utan strafflöpning eller offentlig kritik.','Alla får komma till tals; en individuell uppföljning kan tas separat.','Vad hjälpte oss att spela vidare — och vad gjorde vi när bollen försvann?','Förståelse, ansvar och spelarens egen upplevelse.','Utgå från en tydlig händelse i senaste spelomgången.','Be spelaren beskriva både sitt val och ett annat möjligt alternativ.',reflection)
 ]}
 ];
+DEVELOPMENT_SESSIONS.push(...buildAdditionalSessions(DEVELOPMENT_SESSIONS));
+// The 11–13 navigation band includes children in the foundation phase.
+// Give the original receiving session the same ball-rich individual opening.
+DEVELOPMENT_SESSIONS[1].blocks[0] = {...DEVELOPMENT_SESSIONS.find(s=>s.age==='11–13' && s.id.includes('duel-02')).blocks[0]};
+for(const session of DEVELOPMENT_SESSIONS){
+  session.ballPriority ||= session.age==='14–16'
+    ? 'Mycket bolltid; belastning och press anpassas individuellt.'
+    : 'Boll i centrum för alla upp till 12 år: egen boll, korta uppgifter och smålagsspel. Inga långa köer, utslagning eller separat konditionslöpning.';
+}

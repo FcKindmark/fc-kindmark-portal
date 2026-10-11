@@ -15,7 +15,8 @@ function SessionDiagram({ diagram, title }) {
       <defs><marker id={`${id}-arrow`} markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0L7 3.5L0 7Z" fill="#344e5e"/></marker></defs>
       <rect x="20" y="20" width="380" height="280" rx="8" fill="#f3f8f5" stroke="#8fa9a0" strokeWidth="2"/>
       {diagram.targetZone && <><rect x="360" y="20" width="40" height="280" fill="#f2d878" opacity=".45"/><path d="M360 20V300" stroke="#8a6618" strokeDasharray="5 5"/></>}
-      {diagram.goals && <><path d="M20 125H5V195H20M400 125H415V195H400" fill="none" stroke="#344e5e" strokeWidth="3"/><path d="M210 20V300" stroke="#b2c6bd"/></>}
+      {diagram.goals && <><path d={diagram.goalSide==='left'?"M20 125H5V195H20":diagram.goalSide==='right'?"M400 125H415V195H400":"M20 125H5V195H20M400 125H415V195H400"} fill="none" stroke="#344e5e" strokeWidth="3"/>{!diagram.goalSide && <path d="M210 20V300" stroke="#b2c6bd"/>}</>}
+      {diagram.sidePorts && [20,300].flatMap(y=>[80,280].map(x=><g key={`${x}-${y}`}><path d={`M${x} ${y}H${x+50}`} stroke="#c09422" strokeWidth="5"/>{[x,x+50].map(c=><circle key={c} cx={c} cy={y} r="5" fill="#c09422"/>)}</g>))}
       {diagram.gates && [80,240].map(y=><g key={y}><path d={`M330 ${y-28}V${y+28}`} stroke="#8a6618" strokeDasharray="4 5"/>{[y-28,y+28].map(c=><path key={c} d={`M324 ${c+6}L330 ${c-7}L336 ${c+6}Z`} fill="#d7a331"/>)}</g>)}
       {diagram.paths.map((d,i)=><path key={d} d={d} fill="none" stroke="#344e5e" strokeWidth="2.5" strokeDasharray={diagram.kinds?.[i]==="run"?"7 6":diagram.kinds?.[i]==="dribble"?"2 4":undefined} markerEnd={`url(#${id}-arrow)`}/>)}
       {diagram.players.map(([x,y,label,color],i)=><g key={i}><circle cx={x} cy={y} r="18" fill={colors[color]}/><text x={x} y={y+5} textAnchor="middle" fontSize="13" fontWeight="700" fill="white">{label}</text></g>)}
@@ -28,24 +29,30 @@ export default function DevelopmentSessions() {
   const [sport,setSport] = useState("futsal");
   const [age,setAge] = useState("8–10");
   const [index,setIndex] = useState(0);
-  const session = DEVELOPMENT_SESSIONS.find(s=>s.sport===sport && s.age===age);
+  const [selectedId,setSelectedId] = useState(null);
+  const sessions = DEVELOPMENT_SESSIONS.filter(s=>s.sport===sport && s.age===age);
+  const session = sessions.find(s=>s.id===selectedId) || sessions[0];
   const part = session?.blocks[index];
-  function chooseSport(value){setSport(value);setIndex(0);}
-  function chooseAge(value){setAge(value);setIndex(0);}
+  function chooseSport(value){setSport(value);setIndex(0);setSelectedId(null);}
+  function chooseAge(value){setAge(value);setIndex(0);setSelectedId(null);}
   const elapsed = session?.blocks.slice(0,index).reduce((sum,b)=>sum+b.minutes,0) || 0;
 
   return <section className="development-program" aria-label="Träningsprogram">
     <div className="page-heading"><div><h1>Träningsprogram</h1><p>FC Kindmark · kompletta utvecklingspass</p></div></div>
-    <p className="development-draft" role="note"><strong>Adminförhandsvisning · Utkast</strong> Tre första futsalpass för granskning. Inte publicerade för tränarna och inte bokade träningar. Innehållet måste godkännas av klubben innan användning.</p>
+    <p className="development-draft" role="note"><strong>Adminförhandsvisning · {DEVELOPMENT_SESSIONS.length} kompletta pass</strong> Utkast för granskning, inte publicerade för tränarna och inte bokade träningar. Innehållet måste godkännas av klubben innan användning. Välj ett helt pass; övningarna blandas inte fritt.</p>
     <div className="development-filters">
       <div role="group" aria-label="Idrott">{[["futsal","Futsal"],["football","Fotboll"]].map(([value,label])=><Button key={value} variant={sport===value?"primary":"secondary"} aria-pressed={sport===value} onClick={()=>chooseSport(value)}>{label}</Button>)}</div>
       <div role="group" aria-label="Åldersgrupp">{DEVELOPMENT_AGES.map(value=><Button key={value} variant={age===value?"primary":"secondary"} aria-pressed={age===value} onClick={()=>chooseAge(value)}>{value} år</Button>)}</div>
     </div>
+    <h2>{sport==='futsal'?'Futsal':'Fotboll'} · {age} år · {sessions.length} pass</h2>
+    <div className="development-catalog" role="group" aria-label="Välj ett komplett pass">{sessions.map((s,i)=><button type="button" key={s.id} aria-pressed={session?.id===s.id} onClick={()=>{setSelectedId(s.id);setIndex(0);}}><span>Pass {i+1} · {s.minutes} min · {s.players} spelare</span><strong>{s.title}</strong><span>{s.goal}</span></button>)}</div>
     {!session ? <Card><h2>Fotboll · {age} år</h2><p>Separata fotbollspass är under framtagning. Futsalpassen kopieras inte automatiskt till fotboll.</p></Card> : <>
       <Card className="development-summary">
-        <p className="development-eyebrow">Futsal · {session.age} år · {session.minutes} min · {session.players} spelare · Utkast v{session.version}</p>
+        <p className="development-eyebrow">{session.sport==='futsal'?'Futsal':'Fotboll'} · {session.age} år · {session.minutes} min · {session.players} spelare · Utkast v{session.version}</p>
         <h2>{session.title}</h2><p><strong>Utvecklingsmål:</strong> {session.goal}</p>
         <p><strong>Förbered:</strong> {session.equipment}</p><p><strong>Tränarens fokus:</strong> {session.principle}</p>
+        <p className="development-ball-focus"><strong>Bolltid:</strong> {session.ballPriority}</p>
+        {session.repeat && <p><strong>Utveckling över tid:</strong> {session.repeat}</p>}
         <p>Åldern hjälper dig att hitta passet. Anpassa till barnens erfarenhet, trygghet och dagsform. Avbryt vid smärta eller osäker miljö. Kontrollera yta, mål och underlag före start.</p>
       </Card>
       <nav className="development-order" aria-label="Passets fasta ordning">{session.blocks.map((b,i)=><button type="button" key={b.title} aria-current={index===i?"step":undefined} onClick={()=>setIndex(i)}><span>Del {i+1} · {b.minutes} min</span><strong>{b.title}</strong></button>)}</nav>
@@ -58,6 +65,13 @@ export default function DevelopmentSessions() {
         <footer className="development-controls"><Button variant="secondary" disabled={index===0} onClick={()=>setIndex(i=>i-1)}>← Föregående del</Button><span>{index+1} / {session.blocks.length}</span><Button disabled={index===session.blocks.length-1} onClick={()=>setIndex(i=>i+1)}>Nästa del →</Button></footer>
       </Card>
       <p className="development-source">Originalförslag för FC Kindmark, utifrån klubbens Development Framework. Inte officiella pass från någon federation. Fast ordning: öppna delarna för att läsa, inte för att byta eller blanda övningar.</p>
+      <details className="development-source"><summary>Metodstöd och källor</summary><p>Klubbens ramverk styr innehållet. Dessa primärkällor används som metodstöd för spelbaserat lärande, åldersanpassning och tränarkommunikation — inte som påstående att våra pass är deras officiella program.</p><ul>
+        <li><a href="https://www.fifatrainingcentre.com/en/environment/interviews/coaching-perspectives/david-gordo-on-spains-playing-style.php" target="_blank" rel="noreferrer">Spanien: David Gordo · FIFA Training Centre</a></li>
+        <li><a href="https://www.knvb.nl/assist-trainers/ontwikkel-je-vereniging/jeugdvoetbalbeleidsplan/de-inhoud-voetballen/het-geven-van-training" target="_blank" rel="noreferrer">Nederländerna: KNVB · träningens innehåll</a></li>
+        <li><a href="https://www.fff.fr/5-les-entraineurs-et-entraineures/index.html" target="_blank" rel="noreferrer">Frankrike: FFF · GIFE för barnfotboll</a></li>
+        <li><a href="https://www.figc.it/it/giovani/sviluppo-evolution-programme/evolution-programme/evolution-programme/SGS-library" target="_blank" rel="noreferrer">Italien: FIGC · Evolution Programme</a></li>
+        <li><a href="https://www.fifatrainingcentre.com/en/practice/futsal.php" target="_blank" rel="noreferrer">FIFA · futsalutbildning</a></li>
+      </ul></details>
     </>}
   </section>;
 }
