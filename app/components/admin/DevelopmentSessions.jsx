@@ -13,11 +13,11 @@ function Illustration({part,sport}){
    <rect x="20" y="20" width="380" height="280" rx="8" fill={sport==="futsal"?"#e7f0f6":"#edf5e9"} stroke="#8fa9a0" strokeWidth="2"/>
    <path d="M210 20V300" stroke="#b4c9c3" strokeDasharray="5 5"/>
    {d.goals&&<path d="M400 125H415V195H400" fill="none" stroke="#344e5e" strokeWidth="3"/>}
-   {d.paths.map((p,i)=><path key={i} d={p} fill="none" stroke="#344e5e" strokeWidth="2.5" strokeDasharray={d.kinds?.[i]==="run"?"7 6":undefined} markerEnd={`url(#${id}-arrow)`}/>)}
+   {d.paths.map((p,i)=><path key={i} d={p} fill="none" stroke="#344e5e" strokeWidth="2.5" strokeDasharray={d.kinds?.[i]==="run"?"7 6":d.kinds?.[i]==="dribble"?"2 5":undefined} markerEnd={`url(#${id}-arrow)`}/>)}
    {d.players.map(([x,y,label,color],i)=><g key={i}><circle cx={x} cy={y} r="17" fill={C[color]||C.gold}/><text x={x} y={y+5} textAnchor="middle" fontSize="13" fontWeight="700" fill="white">{label}</text></g>)}
    {d.balls?.map(([x,y],i)=><circle key={i} cx={x} cy={y} r="6" fill="#fff" stroke="#222" strokeWidth="2"/>)}
   </svg>
-  <figcaption>{d.caption} Heldragen pil = passning, streckad = löpning.</figcaption>
+  <figcaption>{d.caption} Heldragen pil = passning, streckad = löpning, prickad = driva boll.</figcaption>
  </figure>;
 }
 export default function DevelopmentSessions(){
