@@ -1,0 +1,62 @@
+// Formation-based training: coach-review drafts, not fixed match instructions.
+// Football formations are interpreted as ten outfield players plus goalkeeper.
+const formations=[
+ {sport:'futsal',shape:'2-2',age:'11–13',lines:[2,2],focus:'parvis understöd och diagonalspel'},
+ {sport:'futsal',shape:'3-1',age:'14–16',lines:[3,1],focus:'pivotspel, tredje spelare och press mot pivot'},
+ {sport:'futsal',shape:'1-2-1',age:'11–13',lines:[1,2,1],focus:'diamantens passningsvinklar och rotationer'},
+ {sport:'futsal',shape:'2-1-1',age:'14–16',lines:[2,1,1],focus:'stödspel bakom pivot och centralt överläge'},
+ {sport:'football',shape:'3-4-3',age:'14–16',lines:[3,4,3],focus:'bredd med wingbacks och press i fronttrea'},
+ {sport:'football',shape:'3-2-3-2',age:'14–16',lines:[3,2,3,2],focus:'centrala trianglar och samarbete mellan två forwards'},
+ {sport:'football',shape:'4-1-2-2-1',age:'14–16',lines:[4,1,2,2,1],focus:'sexans balans, halvrum och press från anfallare'}
+];
+const topics=[
+ {name:'Positionsspel och avstånd',detail:'Behåll grundformationen medan bollen flyttas. Närmaste spelare ger kort alternativ, bortre spelare ger djup.',movement:'support'},
+ {name:'Spela förbi första press',detail:'Lura press åt ena sidan och hitta fri spelare bakom första försvarslinjen. Vänd om framåtvägen är stängd.',movement:'break'},
+ {name:'Rotation och tredje spelare',detail:'Passa, flytta och skapa ny passningsvinkel. Tredje spelare tajmar löpning i ledig korridor.',movement:'rotate'},
+ {name:'Press och understöd',detail:'Närmaste spelare pressar på signal. Nästa spelare täcker centralt, övriga skyddar bortre ytan.',movement:'press'},
+ {name:'Omställning efter bollvinst',detail:'Vid bollvinst sök första säkra framåtpassningen. En spelare ger djup, en säkrar bakom bollen.',movement:'transition'}
+];
+const points=lines=>{
+ const out=[];
+ lines.forEach((count,line)=>{
+   const x=65+line*(290/Math.max(1,lines.length-1));
+   for(let i=0;i<count;i++)out.push([Math.round(x),Math.round(35+(i+1)*250/(count+1)),String(out.length+1),'blue']);
+ });
+ return out;
+};
+function tacticalDiagram(lines,phase,shape){
+ const players=points(lines);
+ const a=players[0],b=players[Math.min(lines[0],players.length-1)],c=players[Math.min(lines[0]+lines[1]||2,players.length-1)];
+ const paths={
+  support:[`M${a[0]+12} ${a[1]}L${b[0]-12} ${b[1]}`,`M${b[0]} ${b[1]+10}Q${b[0]+30} ${b[1]+35} ${b[0]+50} ${b[1]+45}`],
+  break:[`M${a[0]+12} ${a[1]}L${b[0]-12} ${b[1]}`,`M${b[0]+12} ${b[1]}L${c[0]-12} ${c[1]}`],
+  rotate:[`M${a[0]+10} ${a[1]}L${b[0]-10} ${b[1]}`,`M${b[0]} ${b[1]+15}Q${b[0]+20} ${b[1]+35} ${b[0]+45} ${b[1]+20}`],
+  press:[`M${b[0]} ${b[1]}L${Math.min(385,b[0]+50)} ${b[1]-25}`,`M${a[0]} ${a[1]}L${Math.min(385,a[0]+50)} ${a[1]+15}`],
+  transition:[`M${a[0]+12} ${a[1]}L${b[0]-12} ${b[1]}`,`M${b[0]+12} ${b[1]}L${c[0]-12} ${c[1]}`]
+ };
+ if(phase==='press')players.push([385,130,'X','red']);
+ return {players,paths:paths[phase],kinds:phase==='press'?['run','run']:phase==='rotate'?['pass','run']:['pass','pass'],caption:`${shape}: ${topics.find(t=>t.movement===phase).name}. Blå = laget i formation, röd = motståndare.`};
+}
+const minutes=[12,15,15,15,18];
+export const FORMATION_TACTICAL_SESSIONS=formations.map((f,i)=>({
+ id:`${f.sport}-formation-${f.shape.replaceAll('-','')}-kindmark`,
+ sport:f.sport,age:f.age,status:'draft',version:1,
+ title:`Taktik ${f.shape} · ${f.focus}`,
+ minutes:minutes.reduce((a,b)=>a+b,0),players:f.sport==='futsal'?12:16,
+ goal:`Förstå ${f.shape} genom aktiva spelövningar: ${f.focus}.`,
+ equipment:'Bollar, koner, västar i två färger, småmål och markerade korridorer.',
+ principle:'Förenkla först till del av formationen; behåll spelets riktning, med- och motspelare och val.',
+ ballPriority:'Många bollkontakter och korta byten; anpassa spelarnas belastning.',
+ blocks:topics.map((t,j)=>({
+  title:`${f.shape} · ${t.name}`,minutes:minutes[j],timing:`${minutes[j]} minuter: 2 min instruktion, 3–4 omgångar med korta byten.`,
+  organisation:`Visa först ${f.shape} i helhet. Träna sedan med ${f.sport==='futsal'?'4 mot 4 på 24 × 16 m':'6 mot 6 på 40 × 30 m'} och använd extra spelare som avbytare. Positionsmarkeringarna i bilden visar lagets ursprungsstruktur, inte exakt spelarantal i varje smålagsspel.`,
+  steps:[`Visa startpositionerna för ${f.shape}; fråga var närmaste och bortre passningsalternativ finns.`,t.detail,'Spela i 60–90 sekunders omgångar. Stoppa bara vid en tydlig lärsituation.','Låt spelarna återstarta och hitta lösningen utan förutbestämt passningsmönster.'],
+  diagram:tacticalDiagram(f.lines,t.movement,f.shape),
+  say:`Visa ${f.shape} med rörelse, inte bara positioner. ${t.detail}`,
+  observe:'Avstånd, timing, orientering och beslut under verklig press.',
+  restart:'Ny boll från tränaren vid sidlinjen, med samma anfallsriktning.',
+  rotation:'Rotera roller mellan omgångarna så att flera spelare provar olika positioner.',
+  easier:'Låt laget ha en extra neutral spelare och större yta.',
+  harder:'Minska ytan, lägg till pressignal eller begränsa tid på bollen.'
+ }))
+}));
