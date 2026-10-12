@@ -20,6 +20,23 @@ const topics=[
  {name:'Överläge och fri spelare',detail:'Skapa 2 mot 1 på bollsidan och hitta tredje spelare när försvararen väljer. Spelarna avgör om de ska driva eller passa.',movement:'overload'},
  {name:'Spelintelligens och fria beslut',detail:'Tränaren ändrar en regel eller flyttar en port mitt i spelet. Laget måste upptäcka förändringen och anpassa sina positioner.',movement:'intelligence'}
 ];
+
+// Real match triggers: each exercise asks a concrete WHAT IF question, with two viable choices.
+// Original coach-designed scenarios aligned with Kindmark's staged learning framework.
+const scenarios=[
+ ['Motståndaren låser kanten','Vad gör vi när bollhållaren pressas mot sidlinjen?','Skapa bakåtstöd och diagonal utväg; om motståndaren överflyttar, vänd till bortre sida.'],
+ ['Pivot blir punktmarkerad','Vad gör vi när pivoten inte kan ta emot?','Pivot drar bort markören och tredje spelare attackerar frigjord yta; alternativt spela via motsatt kant.'],
+ ['Vi tappar bollen centralt','Vad gör vi de första sekunderna efter ett centralt bolltapp?','Närmaste spelare fördröjer, understöd täcker passningslinjen och sista linjen skyddar djupet.'],
+ ['Motståndaren försvarar lågt','Hur skapar vi ett avslut när mitten är stängd?','Locka över försvar till ena sidan, byt tempo och använd diagonal löpning bakom sista försvararen.'],
+ ['Övertalighet i omställning','Vad gör vi i tre mot två efter bollvinst?','Bollhållaren binder en försvarare, medspelarna ger bredd och djup; välj pass eller avslut efter försvararens beslut.'],
+ ['Undertalighet efter förlorad duell','Hur fördröjer vi två mot tre tills hjälp kommer?','Skydda centralt och mål, styr bollhållaren utåt, vänta på återhämtande spelare utan att kasta sig.'],
+ ['Hög press mot vår uppbyggnad','Hur tar vi oss förbi två aggressiva presspelare?','Målvakt eller bakre spelare skapar extra passningsvinkel; hitta tredje man eller spela över pressen när det är öppet.'],
+ ['Spelvändning efter överflyttning','Vad gör vi när fyra försvarare flyttar mot bollen?','Spela tillbaka och byt sida med fart; mottagare orienterar sig före passning och attackerar ytan.'],
+ ['Motståndaren byter markering','Vad gör vi när två försvarare byter vem de markerar?','Finta korslöpning, identifiera kommunikationsluckan och välj löpning bakom eller mötande stöd.'],
+ ['Vi leder med ett mål','Hur behåller vi initiativet utan att ta onödiga risker?','Skapa säkra trianglar, undvik centrala chanspassningar och pressa samlat när bollen förloras.'],
+ ['Vi ligger under sent','Hur ökar vi trycket utan att öppna hela planen?','Högre utgångsposition, snabb återerövring och en tydlig balansspelare bakom anfallet.'],
+ ['Inspark eller inkast under press','Hur startar vi om när första alternativet är stängt?','Två korta alternativ och en djup löpning; välj beroende på motståndarens pressvinkel.']
+];
 const points=lines=>{
  const out=[];
  lines.forEach((count,line)=>{
@@ -69,3 +86,36 @@ export const FORMATION_TACTICAL_SESSIONS=formations.map((f,i)=>({
   harder:'Minska ytan, lägg till pressignal eller begränsa tid på bollen.'
  }))
 }));
+
+export const SITUATIONAL_TACTICAL_SESSIONS=formations.flatMap((f,fi)=>
+ scenarios.map(([trigger,question,solution],si)=>{
+  const movement=topics[(si+fi)%topics.length].movement;
+  const isFutsal=f.sport==='futsal';
+  const block=(name,mins,detail,phase,stage)=>({
+    title:name,minutes:mins,timing:`${mins} min · ${stage}`,
+    organisation:isFutsal?'Halv futsalplan, 4v4 plus målvakter; byt roller ofta.':'Halv plan eller 45×35 m, 6v6 plus målvakter; formationen visas i helhet före delspel.',
+    steps:[`Matchhändelse: ${trigger}. ${question}`,detail,'Återstarta samma situation från olika positioner och med olika försvararval.','Byt roller och låt spelarna förklara varför de valde en viss lösning.'],
+    diagram:tacticalDiagram(f.lines,phase,f.shape),
+    say:question,observe:'Identifierar spelaren press, fri yta och medspelare före beslut? Kan laget återhämta sig när första lösningen misslyckas?',
+    restart:'Tränaren sätter in ny boll direkt i den utpekade matchsituationen.',
+    rotation:'Byt anfall, försvar och position varannan omgång.',
+    easier:'Börja utan motstånd i 60 sekunder, sedan passiv försvarare och extra tid på bollen.',
+    harder:'Full aktiv press, kortare beslutstid och en andra oväntad motståndarreaktion.'
+  });
+  return {
+    id:`${f.sport}-situation-${f.shape.replaceAll('-','')}-${String(si+1).padStart(2,'0')}`,
+    sport:f.sport,age:'14–16',status:'draft',version:1,
+    title:`${f.shape} · Situation ${si+1}: ${trigger}`,
+    minutes:45,players:isFutsal?10:14,
+    goal:`${question} ${solution}`,
+    equipment:'Bollar, västar, koner, två mål och målvakter om tillgängliga.',
+    principle:'Visa mönstret först, introducera motstånd, ge sedan spelaren flera möjliga beslut. Inget förutbestämt facit.',
+    ballPriority:'Kort instruktion, omedelbar återstart och många repetitioner med boll.',
+    blocks:[
+      block('1. Lär rörelsen',8,`Visa två möjliga lösningar: ${solution} Repetera rörelsen med låg press.`,movement,'utan aktiv press'),
+      block('2. Känn igen signalen',10,`Försvararen växlar mellan att stänga första och andra alternativet. Spelaren måste upptäcka vilken väg som öppnas.`,'intelligence','passiv till halvaktiv press'),
+      block('3. Välj under press',12,`Spela ut ${trigger.toLowerCase()} i riktad matchsekvens. Lösningen är inte bestämd: spelaren väljer efter motståndarens reaktion.`,'overload','aktivt motstånd'),
+      block('4. Anpassa i fritt spel',15,`Spela med mål och poäng. Tränaren startar om samma situation från nya ytor; laget får byta lösning och måste skydda sig vid bollförlust.`,'transition','fritt spel')
+    ]
+  };
+ }));
