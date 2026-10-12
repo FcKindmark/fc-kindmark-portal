@@ -97,10 +97,10 @@ export const SITUATIONAL_TACTICAL_SESSIONS=formations.flatMap((f,fi)=>
    ['Motståndaren backar och skyddar mitten','Växla spelriktning, locka ut en försvarare och attackera öppningen.'],
    ['Motståndaren bryter passningen och kontrar','Närmaste bromsar, andra täcker mitten och sista spelaren säkrar djupet.']
   ];
-  const block=(name,mins,detail,phase,stage)=>({
+  const block=(name,mins,detail,phase,stage,blockIndex)=>({
     title:name,minutes:mins,timing:`${mins} min · ${stage}`,
     organisation:isFutsal?'Halv futsalplan, 4v4 plus målvakter; byt roller ofta.':'Halv plan eller 45×35 m, 6v6 plus målvakter; formationen visas i helhet före delspel.',
-    steps:[`Matchhändelse: ${trigger}. ${question}`,detail,'Variation A: '+opponentVariations[(si+0)%4].join(' → '),'Variation B: '+opponentVariations[(si+1)%4].join(' → '),'Variation C: '+opponentVariations[(si+2)%4].join(' → '),'Byt roller. Spelaren måste upptäcka motståndarens reaktion innan valet görs.'],
+    steps:[`Matchhändelse: ${trigger}. ${question}`,detail,'Dagens planerade motståndarreaktion: '+opponentVariations[(si+blockIndex)%4].join(' → '),'Byt roller. Spelaren måste upptäcka motståndarens reaktion innan valet görs.'],
     diagram:tacticalDiagram(f.lines,phase,f.shape),
     say:question,observe:'Identifierar spelaren press, fri yta och medspelare före beslut? Kan laget återhämta sig när första lösningen misslyckas?',
     restart:'Tränaren sätter in ny boll direkt i den utpekade matchsituationen.',
@@ -118,10 +118,10 @@ export const SITUATIONAL_TACTICAL_SESSIONS=formations.flatMap((f,fi)=>
     principle:'Visa mönstret först, introducera motstånd, ge sedan spelaren flera möjliga beslut. Inget förutbestämt facit.',
     ballPriority:'Kort instruktion, omedelbar återstart och många repetitioner med boll.',
     blocks:[
-      block('1. Lär rörelsen',15,`Visa två möjliga lösningar: ${solution} Repetera rörelsen med låg press.`,movement,'utan aktiv press'),
-      block('2. Känn igen signalen',15,`Försvararen växlar mellan att stänga första och andra alternativet. Spelaren måste upptäcka vilken väg som öppnas.`,'intelligence','passiv till halvaktiv press'),
-      block('3. Välj under press',20,`Spela ut ${trigger.toLowerCase()} i riktad matchsekvens. Lösningen är inte bestämd: spelaren väljer efter motståndarens reaktion.`,'overload','aktivt motstånd'),
-      block('4. Anpassa i fritt spel',25,`Spela med mål och poäng. Tränaren startar om samma situation från nya ytor; laget får byta lösning och måste skydda sig vid bollförlust.`,'transition','fritt spel')
+      block('1. Lär rörelsen',15,`Visa två möjliga lösningar: ${solution} Repetera rörelsen med låg press.`,movement,'utan aktiv press',0),
+      block('2. Känn igen signalen',15,`Försvararen växlar mellan att stänga första och andra alternativet. Spelaren måste upptäcka vilken väg som öppnas.`,'intelligence','passiv till halvaktiv press',1),
+      block('3. Välj under press',20,`Spela ut ${trigger.toLowerCase()} i riktad matchsekvens. Lösningen är inte bestämd: spelaren väljer efter motståndarens reaktion.`,'overload','aktivt motstånd',2),
+      block('4. Anpassa i fritt spel',25,`Spela med mål och poäng. Tränaren startar om samma situation från nya ytor; laget får byta lösning och måste skydda sig vid bollförlust.`,'transition','fritt spel',3)
     ]
   };
  }));
