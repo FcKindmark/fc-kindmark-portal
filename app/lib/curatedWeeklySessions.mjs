@@ -1,3 +1,4 @@
+import {EXERCISE_LIBRARY} from './exerciseLibrary.mjs';
 // FC Kindmark curated weekly sessions. Each card is ONE complete 75-minute training.
 // Coaching drafts: diagrams show organisation, not a substitute for coach validation.
 const TOPICS=[
@@ -19,6 +20,24 @@ const AGES=[
  {age:'11–13',players:12,area:'20×25 m',activation:'Dynamisk bolluppvärmning, koordinationssteg och passning i rörelse.',rule:'Använd A–B–C–D med tydlig rotation och öppna kroppsställningar.',defenders:'En till två aktiva försvarare, korta repetitioner.',match:'4 mot 4 eller 5 mot 5 med målvakter där det passar.'},
  {age:'14–16',players:14,area:'25×35 m',activation:'Dynamisk aktivering, stegfrekvens, acceleration 5–10 m och längre passningar.',rule:'A–B–C–D med matchtempo, scanning, olika fötter och korrekt timing.',defenders:'Aktiva försvarare med pressignal och omställning vid bollvinst.',match:'5 mot 5 eller 6 mot 6 med målvakter, anpassat till sport.'}
 ];
+const EXERCISE_MATCH={
+ passing:['pass','spelbar','triangel','rondo'], 'first-touch':['touch','mottag','orienter','vänd'],
+ width:['bredd','spelvänd','kant'],cross:['inlägg','kant','avslut','inspel'],
+ 'third-man':['tredje','kombination','väggspel'],finishing:['avslut','skott','mål'],
+ press:['press','återerövr','jaga'],defence:['försvar','täck','markera'],
+ transition:['omställ','kontring','bollvinst'],possession:['bollinnehav','rondo','behåll'],
+ setpiece:['fast','hörna','frispark','igångsätt'],duels:['duell','1 mot 1','dribbl','fint']
+};
+function sourceExercises(topic,sport,ageIndex){
+ const terms=EXERCISE_MATCH[topic.id];
+ const ageType=ageIndex===0?'foundation':'development';
+ const eligible=EXERCISE_LIBRARY.filter(e=>(e.sport===sport||e.sport==='both')&&(e.framework===ageType||ageIndex===2&&e.framework==='preparation'));
+ const scored=eligible.map(e=>{
+  const hay=(e.title+' '+e.category+' '+e.steps.join(' ')+' '+e.observe).toLowerCase();
+  return {e,score:terms.reduce((n,t)=>n+(e.title.toLowerCase().includes(t)?5:hay.includes(t)?1:0),0)};
+ }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score);
+ return scored.slice(0,5).map(x=>x.e);
+}
 const PHASES=[['Aktivering och bollkänsla',10],['Grundteknik och första rörelsen',15],['Samma kombination mot mål eller målzon',15],['Samma situation med motståndare',15],['Riktad matchlik spelövning',15],['Nedvarvning och reflektion',5]];
 const VARIANTS=[
  ['Ingen press','Visa grundmönstret och kontrollera tajming'],
@@ -127,6 +146,7 @@ const FUTSAL_NOTES={
 function create(topic,ageSpec,ageIndex,sport){
  const isFutsal=sport==='futsal';
  const plan=COACHING[topic.id];
+ const matched=sourceExercises(topic,sport,ageIndex);
  const sportNote=isFutsal?(FUTSAL_NOTES[topic.id]||'I futsal: använd mindre yta, snabba riktningsbyten och spelbarhet via ala och pivot.'):'I fotboll: anpassa korridorernas bredd, löpningar och avstånd till planen.';
  const blocks=PHASES.map(([title,minutes],i)=>{
  const specific=[
@@ -143,6 +163,8 @@ function create(topic,ageSpec,ageIndex,sport){
  if(i===3)specific.splice(0,3,plan.defend,'Motståndaren kan välja flera lösningar; spelarna måste läsa situationen.','Efter bollvinst: snabb omställning åt andra hållet.');
  if(i===4)specific.splice(1,1,plan.game);
  if(i>=1&&i<=4)specific.push(sportNote);
+ const example=matched[i===0?0:i===1?1:i===2?2:i===3?3:4];
+ if(example&&i<5){specific.push('Övningsinspiration '+example.id+': '+example.title+'. '+example.steps[0]);}
  return {title:(i+1)+'. '+title,minutes,timing:minutes+' min',organisation:i===0?'Par och små grupper, bollar till alla.':i===5?'Samling på planen.':ageSpec.area+' som utgångspunkt; anpassa ytan till närvaro och '+(isFutsal?'hall':'plan')+'. '+(i===3?ageSpec.defenders:'Två grupper om truppen är stor.'),
  steps:specific,variations:i===3?VARIANTS.map(([name,response])=>({name,response})):[],
  say:i===0?'Rör dig med kontroll och orientera före pass.':i===5?'Vad lärde du dig av motståndaren?':'Läs situationen. '+topic.choice+'.',
@@ -156,6 +178,6 @@ function create(topic,ageSpec,ageIndex,sport){
  principle:'En röd tråd: aktivering → grundmönster → större situation → motståndare → spel → reflektion.',
  ballPriority:'Kort instruktion och hög aktivitet. Anpassa individuellt efter mognad, trygghet och erfarenhet.',
  coachPreparation:'Läs hela passet före veckan, rita upp A–B–C–D och kontrollera mål, yta, bollar, spelare och rotation.',
- blocks};
+ sourceExerciseIds:matched.map(e=>e.id),blocks};
 }
 export const CURATED_WEEKLY_SESSIONS=['football','futsal'].flatMap(sport=>AGES.flatMap((age,i)=>TOPICS.map(topic=>create(topic,age,i,sport))));
