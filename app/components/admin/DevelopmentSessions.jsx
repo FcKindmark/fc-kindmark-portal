@@ -91,7 +91,12 @@ export default function DevelopmentSessions() {
       <Card className="development-summary">
         <p className="development-eyebrow">{session.sport==='futsal'?'Futsal':'Fotboll'} · {session.age} år · {session.minutes} min · {session.players} spelare · Utkast v{session.version}</p>
         <h2 ref={sessionHeading} tabIndex={-1}>{session.title}</h2><p><strong>Utvecklingsmål:</strong> {session.goal}</p>
-        <p><strong>Förbered:</strong> {session.equipment}</p><p><strong>Tränarens fokus:</strong> {session.principle}</p>
+        <p><strong>Förbered:</strong> {session.equipment}</p>
+        {session.id.includes("-focused-") && <div className="development-weekly-prep" role="note" style={{padding:"12px",border:"1px solid #c9b77c",borderRadius:"10px",margin:"12px 0"}}>
+          <strong>Veckans tränarförberedelse · 75 minuter</strong>
+          <p>Före träningen: läs alla fem övningar i ordning, kontrollera antal spelare och målvakter, markera startytan och förbered bollar/västar/mål. Gå igenom de fem motståndarreaktionerna i varje övning. Varje övning tar 15 minuter: 3 min organisation, 2 min grundmönster, 5 min reaktioner och 5 min aktivt spel.</p>
+          <p>Under passet: observera först, skapa ett problem, låt spelarna lösa det och anpassa svårigheten. Ritningarna är schematiska och måste granskas före användning.</p>
+        </div>}<p><strong>Tränarens fokus:</strong> {session.principle}</p>
         <p className="development-ball-focus"><strong>Bolltid:</strong> {session.ballPriority}</p>
         {session.repeat && <p><strong>Utveckling över tid:</strong> {session.repeat}</p>}
         <p>Åldern hjälper dig att hitta passet. Anpassa till barnens erfarenhet, trygghet och dagsform. Avbryt vid smärta eller osäker miljö. Kontrollera yta, mål och underlag före start.</p>
