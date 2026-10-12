@@ -114,3 +114,37 @@ export const ATTACKING_PHASE_SESSIONS=['football','futsal'].flatMap(sport=>attac
   easier:'Större yta och passiv press.',harder:'Aktiv press och kortare beslutstid.'
  }))
 }))));
+
+
+const advancedThemes=[
+ ['Pressing','Styr motståndaren mot förutbestämd pressfälla','Motståndaren spelar förbi första pressen','Närmaste pressar, nästa täcker passningslinjen och tredje skyddar djupet.'],
+ ['Second Ball','Vinn ytan kring förväntad andraboll','Motståndaren vinner första luftduellen','En utmanar första boll, två läser nedslaget, balansspelare stoppar omställning.'],
+ ['Third-Man Attack','Frigör tredje spelare bakom motståndarens linje','Första mottagaren är hårt markerad','Spela till felvänd stödspelare som sätter tredje spelare i fart.'],
+ ['Target Man','Använd felvänd target som länk i anfallet','Mittback pressar target i ryggen','Target skyddar bollen och lägger av till understöd eller vänder när pressen släpper.'],
+ ['Second-Man Runs','Tajma understöd och djupledslöpning runt bollhållaren','Första spelaren drar på sig två försvarare','Andra spelaren attackerar ytan bakom eller erbjuder snett understöd.']
+];
+const advancedMinutes=[15,15,20,25];
+function advancedSketch(theme,lane,stage){
+ const x=theme===0?100:theme===1?170:theme===2?195:theme===3?240:270;
+ const y=45+lane*49,cap=(v,a,b)=>Math.max(a,Math.min(b,v));
+ const a=[x,y],b=[cap(x+48,30,385),cap(y-34,30,285)],c=[cap(x+94,30,385),cap(y+20,30,285)];
+ return {players:[[...a,'1','blue'],[...b,'2','blue'],[...c,'3','blue'],[cap(x+23,30,385),cap(y-17,30,285),'X','red'],[cap(x+75,30,385),cap(y+5,30,285),'Y','red']],balls:[[cap(x+18,30,390),y]],goals:true,paths:['M'+a[0]+' '+a[1]+'L'+b[0]+' '+b[1],'M'+b[0]+' '+b[1]+'L'+c[0]+' '+c[1],'M'+c[0]+' '+c[1]+'L'+cap(c[0]+20+stage*5,30,390)+' '+cap(c[1]-25,30,285)],kinds:['pass','pass','run'],caption:advancedThemes[theme][0]+' · '+attackingLanes[lane]+' · del '+(stage+1)+'. Tränarskiss för granskning.'};
+}
+export const ADVANCED_TACTICAL_SESSIONS=['football','futsal'].flatMap(sport=>advancedThemes.flatMap(([theme,aim,problem,solution],t)=>attackingLanes.map((lane,l)=>({
+ id:sport+'-advanced-'+t+'-'+l,sport,age:'14–16',status:'draft',version:1,
+ title:theme+' · '+lane,minutes:75,players:sport==='futsal'?10:14,
+ goal:aim+'. '+problem+'.',
+ equipment:'Bollar, koner, västar och mål.',
+ principle:'Komplett tränarlett pass: fyra fasta moment med ökande motstånd.',
+ ballPriority:'Flera bollar för snabb återstart.',
+ blocks:advancedMinutes.map((minutes,stage)=>({
+ title:['1. Grundmönster','2. Läs motståndarens reaktion','3. Beslut med aktivt motstånd','4. Matchspel och omställning'][stage],
+ minutes,timing:minutes+' min',
+ organisation:sport==='futsal'?'4 mot 4 med målvakter; fem markerade korridorer.':'6 mot 6 med målvakter; fem markerade korridorer.',
+ steps:['Starta i '+lane+'. Målet är: '+aim+'.','Motståndaren gör detta: '+problem+'.','Lösning som ska tränas: '+solution+'.',stage===0?'Repetera först med passivt motstånd.':stage===1?'Låt försvararna växla mellan att stänga inre och yttre pass.':stage===2?'Aktivt motstånd med mål och snabb omstart.':'Fritt spel med omstarter i startzonen och fokus på rätt beslut.','Vid bolltapp: skydda centralt och agera tillsammans.'],
+ diagram:advancedSketch(t,l,stage),say:'Läs motståndarens position innan du väljer.',
+ observe:'Avstånd, tajming, orientering, reaktion på brytning.',
+ restart:'Tränaren spelar in ny boll i startzonen.',rotation:'Byt roller varje omgång.',
+ easier:'Passiv press och mer utrymme.',harder:'Aktiv press och mindre utrymme.'
+ }))
+}))));
