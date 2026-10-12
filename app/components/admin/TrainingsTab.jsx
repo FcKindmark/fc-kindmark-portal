@@ -7,8 +7,12 @@ import { supabase } from "../../lib/supabaseClient";
 import { upcomingFirst, trainingPeriod, coachTrainingPeriod, daysBefore } from "../../lib/schedule";
 import { trainingReplySummary } from "../../lib/trainingReplies";
 import { useStockholmToday } from "../../lib/useStockholmToday";
+import dynamic from 'next/dynamic';
+const ExerciseLibrary=dynamic(()=>import('./ExerciseLibrary'),{loading:()=> <p role="status">Läser övningar…</p>});
+const DevelopmentSessions=dynamic(()=>import('./DevelopmentSessions'),{loading:()=> <p role="status">Läser kompletta pass…</p>});
 
-export default function TrainingsTab({ data, userId, onUpdate, canDelete=false, compactWeek=false }) {
+export default function TrainingsTab({ data, userId, onUpdate, canDelete=false, compactWeek=false, canManageExercises=false }) {
+  const [trainingView,setTrainingView]=useState('scheduled');
   const today = useStockholmToday();
   const [archiveFrom,setArchiveFrom]=useState("");
   const trainings = useMemo(() => upcomingFirst(data?.trainings || [], today), [data?.trainings, today]);
@@ -142,6 +146,8 @@ export default function TrainingsTab({ data, userId, onUpdate, canDelete=false, 
   }
   return (
     <>
+      {canManageExercises&&<div className="training-period-tabs" role="group" aria-label="Träningsinnehåll">{[['scheduled','Bokade träningar'],['exercises','Övningsbibliotek'],['sessions','Kompletta pass']].map(([value,label])=><Button key={value} variant={trainingView===value?'primary':'secondary'} aria-pressed={trainingView===value} onClick={()=>setTrainingView(value)}>{label}</Button>)}</div>}
+      {canManageExercises&&trainingView==='exercises'?<ExerciseLibrary canManage/>:canManageExercises&&trainingView==='sessions'?<DevelopmentSessions/>:<>
       <div style={{ marginBottom: "30px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h2 style={{ fontSize: "24px", fontWeight: "700", color: "var(--text-dark)" }}>Träningar</h2>
         <Button variant="primary" onClick={() => { resetForm(); setShowAdd(true); }}>+ Lägg till träning</Button>
@@ -275,6 +281,7 @@ export default function TrainingsTab({ data, userId, onUpdate, canDelete=false, 
           </div>
         </Card>
       )}
+      </>}
     </>
   );
 }

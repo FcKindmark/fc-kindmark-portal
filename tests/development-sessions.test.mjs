@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { DEVELOPMENT_AGES, DEVELOPMENT_SESSIONS } from '../app/lib/developmentSessions.mjs';
+import { DEVELOPMENT_AGES, DEVELOPMENT_SESSIONS as ALL_SESSIONS } from '../app/lib/developmentSessions.mjs';
+// Two existing Kindmark sessions were added after this suite's original 27-pass matrix.
+assert.equal(ALL_SESSIONS.length,29);
+assert.equal(new Set(ALL_SESSIONS.map(s=>s.id)).size,29);
+const DEVELOPMENT_SESSIONS=ALL_SESSIONS.filter(s=>!s.id.endsWith('-03'));
+for(const s of ALL_SESSIONS.filter(s=>s.id.endsWith('-03'))){
+  assert.equal(s.blocks.reduce((n,b)=>n+b.minutes,0),s.minutes);
+  assert.equal(s.blocks.length,5);
+}
 
 assert.deepEqual(DEVELOPMENT_AGES,['8–10','11–13','14–16']);
 assert.equal(DEVELOPMENT_SESSIONS.length,27);

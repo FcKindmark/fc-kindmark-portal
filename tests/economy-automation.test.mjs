@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { webcrypto } from 'node:crypto';
 if (!globalThis.crypto) Object.defineProperty(globalThis,"crypto",{value:webcrypto});
 const load=async path=>import('data:text/javascript;base64,'+Buffer.from(fs.readFileSync(path,'utf8')).toString('base64'));
@@ -12,7 +14,7 @@ const {makeBackup,verifyBackup,readStoredZip,zipStored}=await load('app/lib/econ
 const snapshot={documents:[{name:'kvitto.pdf',path:'test/kvitto.pdf'}],journal:[{id:'j'}],audit:[]};
 const bytes=await makeBackup(snapshot,async()=>new Blob(['Original evidence']));
 assert.equal((await verifyBackup(bytes)).documents,1);
-fs.writeFileSync('/tmp/kindmark-backup-test.zip',bytes);
+fs.writeFileSync(path.join(os.tmpdir(),'kindmark-backup-test.zip'),bytes);
 const files=readStoredZip(bytes);
 files['originals/test/kvitto.pdf']=new TextEncoder().encode('Modified evidence');
 await assert.rejects(()=>verifyBackup(zipStored(files)),/Kontrollsumman/);

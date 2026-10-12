@@ -5,7 +5,7 @@ let handler,config=null,user={id:'admin',app_metadata:{club_role:'admin'}},calls
 const db={auth:{getUser:async()=>({data:{user},error:null})},rpc:async(name,args)=>{calls.push({name,args});return {data:name==='club_mail_config'?config:name==='club_mail_save_config'?(config=args.config):name==='club_claim_mail'?jobs:null,error:null};}};
 const nodemailer={createTransport:opts=>({verify:async()=>{if(rejectVerify)throw Error('credential secret');},close:()=>{},sendMail:async data=>{sent.push(data);return {accepted:[data.to]};}})};
 const ctx=vm.createContext({createClient:()=>db,nodemailer,Deno:{env:{get:()=>''},serve:fn=>handler=fn},Response,Request,crypto:require('node:crypto').webcrypto,Set,JSON,Number,String,Error});
-vm.runInContext(ts.transpileModule(fs.readFileSync('supabase/functions/club-mail/index.ts','utf8').replace(/^import .*;\n/gm,''),{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText,ctx);
+vm.runInContext(ts.transpileModule(fs.readFileSync('supabase/functions/club-mail/index.ts','utf8').replace(/^import .*;\r?\n/gm,''),{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText,ctx);
 const headers={origin:'https://portal.fckindmark.se',authorization:'Bearer valid'};
 const send=(body,h=headers)=>handler(new Request('https://test',{method:'POST',headers:h,body:JSON.stringify(body)}));
 (async()=>{

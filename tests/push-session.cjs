@@ -5,7 +5,7 @@ const storage=new Map();let current=null,registers=0,subscribes=0,unsubscribes=0
 const manager={async getSubscription(){return current;},async subscribe(){subscribes++;current={endpoint:`https://web.push.apple.com/device-${subscribes}`,toJSON(){return {endpoint:this.endpoint,keys:{}};},async unsubscribe(){unsubscribes++;current=null;return true;}};return current;}};
 const registration={pushManager:manager,getNotifications:async()=>[]};
 const context={Uint8Array,atob,window:{localStorage:{getItem:key=>storage.get(key)||null,setItem:(key,value)=>storage.set(key,value)}},navigator:{serviceWorker:{register:async()=>{registers++;return registration;},ready:Promise.resolve(registration),getRegistration:async()=>registration}},supabase:{functions:{async invoke(name,{body}){actions.push(body.action);return failUnlink&&body.action==='unsubscribe'?{error:{}}:{data:{enabled:true}};}}}};
-const source=fs.readFileSync('app/lib/push.js','utf8').replace(/^import .*;\n/,'').replace(/export /g,'');
+const source=fs.readFileSync('app/lib/push.js','utf8').replace(/^import .*;\r?\n/,'').replace(/export /g,'');
 vm.runInNewContext(source+'\nthis.api={rememberDevicePush,shouldRestoreDevicePush,subscribeDevicePush,disableDevicePush};',context);
 const {api}=context;
 (async()=>{

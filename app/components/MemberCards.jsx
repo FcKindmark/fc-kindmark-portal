@@ -36,6 +36,7 @@ export default function MemberCards({ admin = false, initialShowAdd = false, ini
   function closeAdd(){setPendingCard(null);setShowAdd(false);onCloseAdd?.();}
   const [cards, setCards] = useState([]);
   const [search, setSearch] = useState("");
+  const [memberFilter,setMemberFilter]=useState(initialShowAdd&&initialMembershipType==='supporter'?'supporter':'member');
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
@@ -96,9 +97,10 @@ export default function MemberCards({ admin = false, initialShowAdd = false, ini
     setSaving(false);
   }
   const selected=cards.find(card=>card.id===selectedId);
-  const visible = cards.filter(c => `${c.name} ${c.membership_no || ""} ${c.member_number}`.toLocaleLowerCase("sv").includes(search.toLocaleLowerCase("sv")));
+  const visible = cards.filter(c => (!admin || (c.membership_type==='supporter'?'supporter':'member')===memberFilter) && `${c.name} ${c.membership_no || ""} ${c.member_number}`.toLocaleLowerCase("sv").includes(search.toLocaleLowerCase("sv")));
   return <section>
     <div className="page-heading"><h2>{admin ? "Medlemmar och medlemskort" : "Medlemskort"}</h2></div>
+    {admin&&<div className="button-group" role="group" aria-label="Visa medlemstyp">{[['member','Medlemmar'],['supporter','Stödmedlemmar']].map(([value,label])=><Button key={value} variant={memberFilter===value?'primary':'secondary'} aria-pressed={memberFilter===value} onClick={()=>{setMemberFilter(value);setSelectedId(null);}}>{label} ({cards.filter(c=>(c.membership_type==='supporter'?'supporter':'member')===value).length})</Button>)}</div>}
     {!admin && <p>Visa ditt aktiva medlemskort hos klubbens anslutna partners. Rabatt och användning följer respektive partners villkor. Ditt kort har ett kort medlemsnummer och en separat rabattkod.</p>}
     {admin && <><label htmlFor="member-card-search">Sök namn eller medlemsnummer</label><input id="member-card-search" value={search} onChange={e => setSearch(e.target.value)}/>{showAdd && <form onSubmit={addCard} className="member-card-add"><label htmlFor="new-member-name">Medlemmens namn</label><input id="new-member-name" disabled={Boolean(pendingCard)||saving} autoFocus required value={name} onChange={e => setName(e.target.value)}/><label htmlFor="new-member-email">E-post · välkomstmejl</label><input id="new-member-email" type="email" disabled={Boolean(accountId)} value={email} onChange={e=>setEmail(e.target.value)}/><label htmlFor="new-member-type">Medlemstyp</label><select id="new-member-type" disabled={Boolean(pendingCard)||saving} value={membershipType} onChange={e=>setMembershipType(e.target.value)}><option value="new">Ny medlem</option><option value="full">Medlem</option><option value="supporter">Stödmedlem · 150 SEK</option></select><label htmlFor="new-member-account">Koppla till registrerat konto</label><select id="new-member-account" disabled={Boolean(email)||Boolean(pendingCard)} value={accountId} onChange={e=>setAccountId(e.target.value)}><option value="">Koppla senare</option>{accounts.map(a=><option key={a.id} value={a.id}>{a.full_name || a.email} · {a.email}</option>)}</select><Button type="submit" variant="primary" disabled={saving}>Spara medlem</Button><Button variant="secondary" disabled={saving} onClick={closeAdd}>Avbryt</Button></form>}<p>{visible.length} medlemskort</p><div className="match-actions"><Button disabled={loading} onClick={()=>downloadMemberCodes(cards,true)}>Exportera aktiva koder till LEGEA (CSV)</Button><Button variant="secondary" disabled={loading} onClick={()=>downloadMemberCodes(cards,false)}>Exportera alla kort (CSV)</Button></div><p className="muted">Exporten innehåller medlemsnummer, namn, medlemstyp och status. Den omfattar alla kort, oavsett sökfilter. Ange e-post när du lägger till en medlem för att skicka välkomstmejl och koppla kontot automatiskt.</p></>}
     {notice && <p role="status">{notice}</p>}
