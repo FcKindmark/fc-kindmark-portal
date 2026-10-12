@@ -98,8 +98,36 @@ function diagram(topic,phase,ageIndex,sport){
  goals:phase>=2&&phase<=4,goalSide:'right',paths,kinds,
  caption:topic.title+' · '+PHASES[phase][0]+' · '+(sport==='futsal'?'futsal':'fotboll')+'. Tränarskiss; kontrollera avstånd och roller före användning.'};
 }
+
+// Theme-specific coaching progression. Each phase builds on the same game problem.
+const COACHING={
+ passing:{warm:'Parvis passning genom två portar: efter varje passning skapas en ny diagonal vinkel.',base:'Triangel A–B–C: B möter, C breddar, A tar ny position. Spela vidare till D när vinkeln öppnas.',finish:'Förflytta triangeln framåt och spela genom målport efter tredje passningen.',defend:'En försvarare skär av C; hitta understöd och byt riktning innan ni går framåt.',game:'4v4 med två breda målportar. Poäng när laget först skapar en ny passningsvinkel.'},
+ 'first-touch':{warm:'Passa i par med scanning över axeln före mottagning; första touch genom vald port.',base:'A spelar B; B tar emot med öppen kropp bort från pressriktningen och hittar C.',finish:'Samma mottagning följd av passning till D som avslutar mot mål.',defend:'Försvararen får välja pressaxel. B måste orientera sig och ta första touch mot fri yta.',game:'4v4: bonus om en första touch passerar en försvarslinje och följs av avslut.'},
+ width:{warm:'Två breda korridorer: driv inåt, passa utåt och byt sida utan att korsa köer.',base:'A–B–C på en sida lockar över försvar; D väntar brett på motsatt sida.',finish:'Spela tillbaka via A, vänd till D och attackera mål innan motståndarna hinner flytta.',defend:'Två försvarare överbelastar bollsidan; hitta bortre bredd med högst två mellanspel.',game:'4v4 med sidokorridorer. Bonus för mål efter kontrollerad spelvändning.'},
+ cross:{warm:'Koordinationssteg, acceleration 5 meter och passning till medspelare som rör sig på kanten.',base:'A spelar B, B hittar C centralt, C spelar D i ytterkorridor; A och C startar avslutslöpningar.',finish:'D tar med längs kanten och väljer lågt inspel eller inlägg; A går främre ytan och C bakre.',defend:'Ytterback pressar D och mittback skyddar mål. D kan väggspela med B eller spela snett bakåt.',game:'5v5 med ytterkorridorer: mål efter inspel ger bonus, men andra lösningar är tillåtna.'},
+ 'third-man':{warm:'Tre spelare i triangel: passa, möt, spela på ett tillslag och löp till fri kon.',base:'A spelar B som möter felvänd; B lägger tillbaka till C som spelar D bakom presslinjen.',finish:'D tar emot tredje-mans-passningen i fart och avslutar eller passar vidare till fri spelare.',defend:'En försvarare följer B, en annan skyddar D. Välj timing och använd C som fri spelare.',game:'4v4: bonus när en tredje spelare tar emot framåtriktad passning bakom press.'},
+ finishing:{warm:'Passning i par följt av acceleration och kontrollerat avslut mot små mål.',base:'A passar B, B väggspelar med C, D tajmar löpning in i skottkorridoren.',finish:'Samma väggspel, D får passning i fart och väljer placering med få tillslag.',defend:'Försvarare stänger skottlinjen; D måste välja skott, extra passning eller riktningsbyte.',game:'4v4 med målvakt: belöna skapade avslutslägen efter kombination, inte bara mål.'},
+ press:{warm:'Jaktlek 2v1: när bollhållaren tappar kontroll samordnar båda försvararna sin press.',base:'A styr bollhållaren utåt, B stänger passningen inåt, C täcker bakom och D balanserar.',finish:'Starta från målvakt eller målzon; vid dålig första touch pressar A och B tillsammans för bollvinst och avslut.',defend:'Anfallarna kan spela tillbaka eller vända sida. Försvararna avgör press eller kompakt återgång.',game:'4v4: bonus vid bollvinst efter gemensam pressignal; spela vidare direkt mot mål.'},
+ defence:{warm:'Spegelövning i par: försvarare bromsar, håller avstånd och styr angripare från centrum.',base:'A bromsar bollhållare; B ger sned täckning, C skyddar centrum, D säkrar bortre sidan.',finish:'Anfallare försöker nå målzon. Försvararna stänger centrum och vinner boll för pass till utgångsmål.',defend:'Anfallarna får väggspela och vända sida; försvararna växlar press och täckning utan att tappa djup.',game:'4v4: poäng för att styra ut mot sidlinje och vinna boll med organiserat understöd.'},
+ transition:{warm:'Två färger: vid tränarens signal vänd mot nytt mål och hitta första framåtpassningen.',base:'A vinner boll, B kommer nära som stöd, C löper framåt, D håller fri bredd.',finish:'Efter bollvinst: A–B–C till avslut, eller A direkt mot D om passningslinjen är öppen.',defend:'Återvändande försvarare blockerar första passet; avgör snabbt om kontring eller bollsäkring.',game:'4v4 med omställningsmål: direkt avslut efter bollvinst belönas, men tvinga inte riskpass.'},
+ possession:{warm:'Rondo 3v1 med byte av position efter passning och tydlig spelbarhet bakom press.',base:'A–B–C bildar triangel, D skapar stöd bakom. Behåll två passningsalternativ kring bollen.',finish:'Efter minst tre passningar hitta fri spelare i målzon på motsatt sida.',defend:'Två försvarare jagar. Bollhållare använder tredje man eller säkert återspel för att byta sida.',game:'4v4 med två zoner: poäng för att spela kontrollerat från en zon till den andra.'},
+ setpiece:{warm:'Korta igångsättningar i par: signal, första touch, återpass och rörelse mot fri yta.',base:'A startar kort till B, B spelar tillbaka, C löper i fri korridor och D bevakar andraboll.',finish:'Efter A–B–A väljer A pass till C eller direkt boll mot mål; D säkrar returen.',defend:'Försvararna stänger kort variant; välj längre lösning och håll balans vid bollförlust.',game:'Starta varje anfall med fast situation. Poäng för välorganiserad första och andra aktion.'},
+ duels:{warm:'Dribblingsportar: fint, riktningsbyte och acceleration efter att ha läst motspelarens position.',base:'A driver mot försvarare B, C ger överlapp och D säkrar bakom boll.',finish:'A utmanar B och väljer eget avslut eller passning till överlappande C.',defend:'B kan styra åt olika håll och en andra försvarare kommer in; avgör när passning slår dribbling.',game:'3v3: bonus när 1v1 skapar överläge och leder till passning eller avslut.'}
+};
+const FUTSAL_NOTES={
+ cross:'I futsal: använd spel mot bortre stolpen och lågt inspel längs golvet, inte höga inlägg.',
+ width:'I futsal: skapa bredd med ala-spelare och byt sida snabbt via fixo.',
+ press:'I futsal: pressa i par på signal vid sidlinjen; säkra centralt med fixo.',
+ defence:'I futsal: skydda centrala korridoren och markera löpningar mot bortre stolpen.',
+ transition:'I futsal: första passningen efter bollvinst går mot fri ala eller pivot; skydda ytan bakom.',
+ setpiece:'I futsal: arbeta med inkast med fot, hörna och snabb återgång till defensiv balans.',
+ finishing:'I futsal: korta avslut, tåskott när det är lämpligt och returer vid bortre stolpen.',
+ possession:'I futsal: rotation mellan fixo, alas och pivot utan att tappa defensiv balans.'
+};
 function create(topic,ageSpec,ageIndex,sport){
  const isFutsal=sport==='futsal';
+ const plan=COACHING[topic.id];
+ const sportNote=isFutsal?(FUTSAL_NOTES[topic.id]||'I futsal: använd mindre yta, snabba riktningsbyten och spelbarhet via ala och pivot.'):'I fotboll: anpassa korridorernas bredd, löpningar och avstånd till planen.';
  const blocks=PHASES.map(([title,minutes],i)=>{
  const specific=[
  [ageSpec.activation,'Lägg in en enkel bolluppgift kopplad till dagens tema: '+topic.action+'.','Avsluta med 2 minuter passning och rörelse i par.'],
@@ -109,13 +137,19 @@ function create(topic,ageSpec,ageIndex,sport){
  ['Spela '+ageSpec.match,'Behåll samma tema i spel: '+topic.game+'.','Belöna goda beslut även om spelarna väljer ett annat bättre alternativ.','Korta coachningsstopp, snabb omstart, byt lag/roller.'],
  ['Lugn gång och enkel rörlighet.','Fråga: Vad öppnade ytan? Vad gjorde vi när första lösningen stängdes?','Låt två spelare beskriva var sitt val från spelet.']
  ][i];
+ if(i===0)specific.splice(1,1,plan.warm);
+ if(i===1)specific.splice(0,1,plan.base);
+ if(i===2)specific.splice(0,3,plan.finish,'Behåll samma roller och startpositioner från föregående del.','Avsluta, hämta boll och rotera direkt.');
+ if(i===3)specific.splice(0,3,plan.defend,'Motståndaren kan välja flera lösningar; spelarna måste läsa situationen.','Efter bollvinst: snabb omställning åt andra hållet.');
+ if(i===4)specific.splice(1,1,plan.game);
+ if(i>=1&&i<=4)specific.push(sportNote);
  return {title:(i+1)+'. '+title,minutes,timing:minutes+' min',organisation:i===0?'Par och små grupper, bollar till alla.':i===5?'Samling på planen.':ageSpec.area+' som utgångspunkt; anpassa ytan till närvaro och '+(isFutsal?'hall':'plan')+'. '+(i===3?ageSpec.defenders:'Två grupper om truppen är stor.'),
  steps:specific,variations:i===3?VARIANTS.map(([name,response])=>({name,response})):[],
  say:i===0?'Rör dig med kontroll och orientera före pass.':i===5?'Vad lärde du dig av motståndaren?':'Läs situationen. '+topic.choice+'.',
  observe:i===0?'Aktivitet, bollkontakter och rörelsekvalitet.':i===5?'Kan spelarna förklara sina beslut?':'Timing, spelbarhet, orientering och beslut kopplade till '+topic.title+'.',
  restart:'Ny boll till A, kort instruktion och direkt omstart.',rotation:'Byt roller och sidor regelbundet.',easier:'Större yta, långsammare tempo och passiv press.',harder:'Mindre yta, aktiv press och tidsgräns.',diagram:diagram(topic,i,ageIndex,sport)};
  });
- return {id:sport+'-weekly-'+ageIndex+'-'+topic.id,sport,age:ageSpec.age,status:'draft',version:1,
+ return {id:sport+'-weekly-'+ageIndex+'-'+topic.id,sport,age:ageSpec.age,status:'coaching-review',version:2,
  title:topic.title+' · komplett 75-minuterspass',minutes:75,players:ageSpec.players,
  goal:'Utveckla förmågan att '+topic.action+' från grundrörelse till match.',
  equipment:'Bollar till alla, 12–16 koner, västar, små mål eller riktiga mål; koordinationsstege valfri.',
