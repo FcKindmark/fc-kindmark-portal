@@ -28,15 +28,75 @@ const VARIANTS=[
  ['Motståndaren bryter','Direkt försvarsomställning och ny start']
 ];
 function diagram(topic,phase,ageIndex,sport){
- const shift=ageIndex*5;
- const layouts={cross:[[75,230],[150,195],[225,170],[325,70]],press:[[110,115],[175,165],[250,215],[320,105]],defence:[[125,115],[185,160],[245,200],[310,235]],width:[[70,240],[120,120],[200,205],[330,80]],finishing:[[75,220],[155,165],[240,205],[335,135]],'first-touch':[[70,175],[165,175],[255,105],[330,215]],'third-man':[[65,230],[160,125],[135,225],[325,95]],transition:[[120,205],[185,235],[300,115],[320,250]],possession:[[85,220],[180,160],[275,220],[180,85]],setpiece:[[65,65],[120,95],[320,140],[275,220]],duels:[[80,200],[170,170],[230,100],[235,255]],passing:[[75,225],[155,180],[235,155],[325,105]]};
- const points=layouts[topic.id]||[[85,225],[155,170],[225,130],[310,95]];
- const base=points.map((p,i)=>[p[0],p[1],'ABCD'[i],'blue']);
- const players=phase===0?[[80,95,'1','blue'],[180,200,'2','blue'],[295,100,'3','blue']]:base.map(([x,y,n,c])=>[x+shift,y,n,c]);
- if(phase===3||phase===4)players.push([185,205,'X','red'],[270,155,'Y','red']);
- const paths=phase===0?['M80 95L110 115','M180 200L210 190']:phase===5?[]:['M'+(85+shift)+' 225L'+(155+shift)+' 170','M'+(155+shift)+' 170L'+(225+shift)+' 130','M'+(225+shift)+' 130L'+(310+shift)+' 95'];
- if(phase===2||phase===3)paths.push('M'+(310+shift)+' 95L370 155');
- return {players,balls:phase===5?[]:[[95+shift,225]],goals:phase===2||phase===3||phase===4,goalSide:'right',paths,kinds:paths.map((_,i)=>i===3?'run':'pass'),caption:topic.title+' · '+PHASES[phase][0]+' · organisationsskiss (ej skalenlig).'};
+ const layouts={
+ cross:[[75,230],[150,195],[225,170],[325,70]],
+ press:[[110,115],[175,165],[250,215],[320,105]],
+ defence:[[125,115],[185,160],[245,200],[310,235]],
+ width:[[70,240],[120,120],[200,205],[330,80]],
+ finishing:[[75,220],[155,165],[240,205],[335,135]],
+ 'first-touch':[[70,175],[165,175],[255,105],[330,215]],
+ 'third-man':[[65,230],[160,125],[135,225],[325,95]],
+ transition:[[120,205],[185,235],[300,115],[320,250]],
+ possession:[[85,220],[180,160],[275,220],[180,85]],
+ setpiece:[[65,65],[120,95],[320,140],[275,220]],
+ duels:[[80,200],[170,170],[230,100],[235,255]],
+ passing:[[75,225],[155,180],[235,155],[325,105]]
+ };
+ const routes={
+ cross:[[0,1],[1,2],[2,3]],press:[],defence:[],
+ width:[[0,1],[1,2],[2,0],[0,3]],
+ finishing:[[0,1],[1,2],[2,1],[1,3]],
+ 'first-touch':[[0,1],[1,2],[2,3]],
+ 'third-man':[[0,1],[1,2],[2,3]],
+ transition:[[0,1],[1,2]],
+ possession:[[0,1],[1,3],[3,2]],
+ setpiece:[[0,1],[1,2]],
+ duels:[[0,1],[1,2]],
+ passing:[[0,1],[1,2],[2,3]]
+ };
+ const points=layouts[topic.id],offset=ageIndex===2?4:0;
+ const at=i=>[points[i][0]+offset,points[i][1]];
+ const line=(a,b)=>'M'+a[0]+' '+a[1]+'L'+b[0]+' '+b[1];
+ let players=[],paths=[],kinds=[];
+ if(phase===0){
+  players=[[85,95,'1','blue'],[190,200,'2','blue'],[295,105,'3','blue']];
+  paths=[line([85,95],[125,135]),line([190,200],[230,170]),line([295,105],[325,140])];
+  kinds=['run','run','run'];
+ }else if(phase===5){
+  players=[[105,130,'A','blue'],[190,190,'B','blue'],[280,130,'C','blue']];
+  paths=[line([105,130],[145,145])];kinds=['run'];
+ }else{
+  players=points.map((p,i)=>[p[0]+offset,p[1],'ABCD'[i],'blue']);
+  const links=routes[topic.id];
+  const count=phase===1?Math.min(links.length,ageIndex===0?2:3):links.length;
+  for(const [a,b] of links.slice(0,count)){paths.push(line(at(a),at(b)));kinds.push('pass');}
+  if(phase>=2){
+   if(topic.id==='cross'){
+    paths.push(line(at(3),[375,155]),line(at(0),[335,165]),line(at(2),[355,220]));
+    kinds.push('pass','run','run');
+   }else if(topic.id==='press'||topic.id==='defence'){
+    paths.push(line(at(0),[95,150]),line(at(1),[155,205]),line(at(2),[235,240]));
+    kinds.push('run','run','run');
+   }else if(topic.id==='duels'){
+    paths.push(line(at(1),[220,160]),line(at(2),[310,115]));
+    kinds.push('dribble','run');
+   }else{
+    paths.push(line(at(3),[365,155]));kinds.push('run');
+   }
+  }
+  if(phase>=3){
+   const defenders=topic.id==='cross'?[[310,125,'X','red'],[350,195,'Y','red']]:
+    topic.id==='press'||topic.id==='defence'?[[85,135,'X','red'],[120,235,'Y','red']]:
+    [[190,205,'X','red'],[265,165,'Y','red']];
+   players.push(...defenders);
+  }
+  if(phase===4){
+   players.push([75,85,'E','blue'],[335,255,'F','blue'],[240,260,'Z','red']);
+  }
+ }
+ return {players,balls:phase===5?[]:[[phase===0?100:at(0)[0]+13,phase===0?95:at(0)[1]]],
+ goals:phase>=2&&phase<=4,goalSide:'right',paths,kinds,
+ caption:topic.title+' · '+PHASES[phase][0]+' · '+(sport==='futsal'?'futsal':'fotboll')+'. Tränarskiss; kontrollera avstånd och roller före användning.'};
 }
 function create(topic,ageSpec,ageIndex,sport){
  const isFutsal=sport==='futsal';
