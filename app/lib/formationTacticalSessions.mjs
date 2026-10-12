@@ -87,6 +87,29 @@ export const FORMATION_TACTICAL_SESSIONS=formations.map((f,i)=>({
  }))
 }));
 
+
+// Distinct phase illustrations for each situation and training stage.
+// Coordinates are authored deterministically for each trigger, not repeated templates.
+function situationDiagram(lines,shape,scenario,stage){
+ const d=tacticalDiagram(lines,['support','break','press','transition'][stage],shape);
+ const offset=(scenario%6)*9-22;
+ d.players=d.players.map(([x,y,n,color],i)=>[
+  Math.max(42,Math.min(378,x+offset+(stage%2?i%3*5:0))),
+  Math.max(42,Math.min(278,y+((scenario+i+stage)%4-1.5)*11)),n,color
+ ]);
+ const first=d.players[(scenario+stage)%d.players.length];
+ const second=d.players[(scenario+stage+2)%d.players.length];
+ d.paths=[
+  'M'+first[0]+' '+first[1]+'L'+second[0]+' '+second[1],
+  'M'+second[0]+' '+second[1]+'Q'+Math.min(380,second[0]+30)+' '+Math.max(40,second[1]-30)+' '+Math.min(385,second[0]+55)+' '+Math.max(40,second[1]-8)
+ ];
+ d.kinds=['pass','run'];
+ d.balls=[[Math.min(390,first[0]+19),first[1]]];
+ d.goals=true;
+ d.players.push([Math.min(382,second[0]+26),Math.min(275,second[1]+22),'X','red']);
+ d.caption=shape+' · situation '+(scenario+1)+' · del '+(stage+1)+'. Blå anfallare, röd försvarare, heldragen passning, streckad löpning. Schematisk tränarskiss.';
+ return d;
+}
 export const SITUATIONAL_TACTICAL_SESSIONS=formations.flatMap((f,fi)=>
  scenarios.map(([trigger,question,solution],si)=>{
   const movement=topics[(si+fi)%topics.length].movement;
@@ -101,7 +124,7 @@ export const SITUATIONAL_TACTICAL_SESSIONS=formations.flatMap((f,fi)=>
     title:name,minutes:mins,timing:`${mins} min · ${stage}`,
     organisation:isFutsal?'Halv futsalplan, 4v4 plus målvakter; byt roller ofta.':'Halv plan eller 45×35 m, 6v6 plus målvakter; formationen visas i helhet före delspel.',
     steps:[`Matchhändelse: ${trigger}. ${question}`,detail,'Dagens planerade motståndarreaktion: '+opponentVariations[(si+blockIndex)%4].join(' → '),'Byt roller. Spelaren måste upptäcka motståndarens reaktion innan valet görs.'],
-    diagram:tacticalDiagram(f.lines,phase,f.shape),
+    diagram:situationDiagram(f.lines,f.shape,si,blockIndex),
     say:question,observe:'Identifierar spelaren press, fri yta och medspelare före beslut? Kan laget återhämta sig när första lösningen misslyckas?',
     restart:'Tränaren sätter in ny boll direkt i den utpekade matchsituationen.',
     rotation:'Byt anfall, försvar och position varannan omgång.',
