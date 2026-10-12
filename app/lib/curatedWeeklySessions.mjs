@@ -90,12 +90,16 @@ function diagram(topic,phase,ageIndex,sport){
   const count=phase===1?Math.min(links.length,ageIndex===0?2:3):links.length;
   for(const [a,b] of links.slice(0,count)){paths.push(line(at(a),at(b)));kinds.push('pass');}
   if(phase>=2){
+   if(topic.id==='press'||topic.id==='defence'){
+    // Red attackers possess the ball; blue players press, cover and balance.
+    paths.push(line([95,145],[145,165]),line([170,185],[210,205]),line([245,215],[270,245]));
+    kinds.push('run','run','run');
+   }
    if(topic.id==='cross'){
     paths.push(line(at(3),[375,155]),line(at(0),[335,165]),line(at(2),[355,220]));
     kinds.push('pass','run','run');
    }else if(topic.id==='press'||topic.id==='defence'){
-    paths.push(line(at(0),[95,150]),line(at(1),[155,205]),line(at(2),[235,240]));
-    kinds.push('run','run','run');
+    // Press/cover runs already drawn above.
    }else if(topic.id==='duels'){
     paths.push(line(at(1),[220,160]),line(at(2),[310,115]));
     kinds.push('dribble','run');
@@ -112,8 +116,12 @@ function diagram(topic,phase,ageIndex,sport){
   if(phase===4){
    players.push([75,85,'E','blue'],[335,255,'F','blue'],[240,260,'Z','red']);
   }
+  if(topic.id==='press'||topic.id==='defence'){
+   players.push([75,155,'P','red']);
+   // A red ball carrier starts the defensive problem; teammates react to this cue.
+  }
  }
- return {players,balls:phase===5?[]:[[phase===0?100:at(0)[0]+13,phase===0?95:at(0)[1]]],
+ return {players,balls:phase===5?[]:[[phase===0?100:topic.id==='press'||topic.id==='defence'?88:at(0)[0]+13,phase===0?95:topic.id==='press'||topic.id==='defence'?155:at(0)[1]]],
  goals:phase>=2&&phase<=4,goalSide:'right',paths,kinds,
  caption:topic.title+' · '+PHASES[phase][0]+' · '+(sport==='futsal'?'futsal':'fotboll')+'. Tränarskiss; kontrollera avstånd och roller före användning.'};
 }
