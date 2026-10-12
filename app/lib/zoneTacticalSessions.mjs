@@ -72,3 +72,45 @@ export const ROLE_PROBLEM_SESSIONS=['football','futsal'].flatMap(sport=>zoneProb
   easier:'Passiv press och extra neutral spelare.',harder:'Pressignal och kortare tid för beslut.'
  }))
 })));
+
+
+const attackingPhases=[
+ ['Build-up Play','Bygg spel från målvakt och backlinje','Första presslinjen stänger korta alternativ','Skapa överläge bakom första presslinjen'],
+ ['Positional Play','Behåll struktur och hitta spelare mellan linjerna','Motståndaren flyttar kompakt och stänger mitten','Locka över, skapa tredje man och byt spelriktning'],
+ ['Hold-up Ball Play','Ta emot felvänd, skydda boll och koppla in stöd','Försvararen pressar i ryggen och understöd skärs av','Skydda boll, tajma understöd och frigör tredje spelare'],
+ ['Attack & Finishing','Skapa avslut från sista tredjedelen','Backlinjen skyddar boxen och blockerar inspel','Skapa instick, cutback eller avslut på bortre yta']
+];
+const attackingLanes=['vänster kant','vänster halvyta','centrum','höger halvyta','höger kant'];
+function phaseDrawing(lane,phase,step){
+ const x=phase===0?65:phase===1?145:phase===2?205:260;
+ const y=45+lane*50,clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+ const x2=clamp(x+45+step*6,30,385),y2=clamp(y-35,30,285);
+ return {players:[[x,y,'B','blue'],[clamp(x-45,30,385),clamp(y+27,30,285),'S','blue'],[x2,y2,'3','blue'],[clamp(x+80,30,385),clamp(y+35,30,285),'4','blue'],[clamp(x+25,30,385),clamp(y-12,30,285),'X','red'],[clamp(x+75,30,385),clamp(y+10,30,285),'Y','red']],
+ balls:[[clamp(x+18,30,395),y]],goals:true,
+ paths:['M'+x+' '+y+'L'+x2+' '+y2,'M'+clamp(x+80,30,385)+' '+clamp(y+35,30,285)+'L'+clamp(x+95+step*8,30,395)+' '+clamp(y+5,30,285)],
+ kinds:['pass','run'],caption:attackingPhases[phase][0]+' · '+attackingLanes[lane]+' · övning '+(step+1)+'. Schematisk bild för tränargranskning.'};
+}
+export const ATTACKING_PHASE_SESSIONS=['football','futsal'].flatMap(sport=>attackingPhases.flatMap(([phase,objective,opposition,response],p)=>attackingLanes.map((lane,l)=>({
+ id:sport+'-phase-'+p+'-'+l,sport,age:'14–16',status:'draft',version:1,
+ title:phase+' · '+lane,minutes:75,players:sport==='futsal'?10:14,
+ goal:objective+' via '+lane+'. '+response+'.',
+ equipment:'Bollar, koner, västar, zonmarkeringar och två mål.',
+ principle:'Färdigt pass, fyra övningar i fast ordning. Spelarna läser motståndaren och väljer mellan två lösningar.',
+ ballPriority:'Direkt omstart efter varje avslut eller bolltapp.',
+ blocks:[15,15,20,25].map((minutes,step)=>({
+  title:['1. Grundrörelse och stöd','2. Känn igen motståndarens val','3. Spela igenom aktiv press','4. Matchspel med avslut'][step],
+  minutes,timing:minutes+' min',
+  organisation:sport==='futsal'?'4 mot 4 plus målvakter, markera fem korridorer.':'6 mot 6 plus målvakter, markera fem korridorer.',
+  steps:['Startläge: boll i '+lane+'. Fokus: '+objective+'.',
+   'Försvararnas uppgift: '+opposition+'.',
+   'Lösning A: '+response+'.',
+   'Lösning B: om första vägen stängs, använd understöd bakom bollen och byt spelriktning.',
+   step===0?'Börja utan aktiv press och repetera rörelser.':step===1?'Försvararna växlar mellan att stänga insidan och utsidan.':step===2?'Spela aktivt mot mål med tidsbegränsning.':'Fritt spel, men tränaren återstartar från dagens zon och poängsätter rätt beslut.',
+   'Efter bolltapp: närmaste fördröjer och balansspelaren skyddar mitten.'],
+  diagram:phaseDrawing(l,p,step),say:'Var är den fria spelaren när motståndaren flyttar?',
+  observe:'Scanning, stödvinkel, timing, beslut och avslutskvalitet.',
+  restart:'Tränaren lägger in ny boll i '+lane+'.',
+  rotation:'Byt anfall och försvar varannan omgång.',
+  easier:'Större yta och passiv press.',harder:'Aktiv press och kortare beslutstid.'
+ }))
+}))));
