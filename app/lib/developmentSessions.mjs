@@ -2,6 +2,7 @@
 // Age bands are navigation groups, not uniform physical or technical standards.
 import { buildAdditionalSessions } from './developmentSessionExpansion.mjs';
 import { KINDMARK_EXTRA_SESSIONS } from './kindmarkExtraSessions.mjs';
+import { FORMATION_TACTICAL_SESSIONS } from './formationTacticalSessions.mjs';
 export const DEVELOPMENT_AGES = ['8–10', '11–13', '14–16'];
 const block = (title, minutes, organisation, timing, steps, restart, rotation, say, observe, easier, harder, diagram) => ({title,minutes,organisation,timing,steps,restart,rotation,say,observe,easier,harder,diagram});
 const personal = {players:[[80,80,'1','blue'],[210,75,'2','blue'],[130,175,'3','blue'],[305,150,'4','blue']],paths:['M90 85Q140 110 180 80','M145 175Q185 220 220 195'],caption:'En del av gruppen visas. Alla har en egen boll; pilar visar möjliga rörelser.'};
@@ -71,7 +72,7 @@ block('Reflektion och nedvarvning',5,'Alla vid sidan. Samtalet gäller handlinga
 'Avsluta utan strafflöpning eller offentlig kritik.','Alla får komma till tals; en individuell uppföljning kan tas separat.','Vad hjälpte oss att spela vidare — och vad gjorde vi när bollen försvann?','Förståelse, ansvar och spelarens egen upplevelse.','Utgå från en tydlig händelse i senaste spelomgången.','Be spelaren beskriva både sitt val och ett annat möjligt alternativ.',reflection)
 ]}
 ];
-DEVELOPMENT_SESSIONS.push(...buildAdditionalSessions(DEVELOPMENT_SESSIONS),...KINDMARK_EXTRA_SESSIONS);
+DEVELOPMENT_SESSIONS.push(...buildAdditionalSessions(DEVELOPMENT_SESSIONS),...KINDMARK_EXTRA_SESSIONS,...FORMATION_TACTICAL_SESSIONS);
 // The 11–13 navigation band includes children in the foundation phase.
 // Give the original receiving session the same ball-rich individual opening.
 DEVELOPMENT_SESSIONS[1].blocks[0] = {...DEVELOPMENT_SESSIONS.find(s=>s.age==='11–13' && s.id.includes('duel-02')).blocks[0]};
