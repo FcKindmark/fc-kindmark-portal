@@ -23,10 +23,11 @@ import AttendanceTab from "./AttendanceTab";
 import PlayerRecords from "../PlayerRecords";
 import AddMemberChoice from "./AddMemberChoice";
 import InterestApplications from "./InterestApplications";
-const DevelopmentSessions = dynamic(() => import("./DevelopmentSessions"), { loading: () => <p role="status">Läser träningsprogram…</p> });
+const TrainingPrograms = dynamic(() => import("./TrainingPrograms"), { loading: () => <p role="status">Läser träningsprogram…</p> });
 
 export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }) {
   const [memberAdd,setMemberAdd]=useState(null);
+  const [pendingPlan,setPendingPlan]=useState(null);
   const [showMemberChoice,setShowMemberChoice]=useState(false);
   function chooseMember(kind){
     setShowMemberChoice(false);
@@ -127,7 +128,7 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
     {loading ? <p role="status">Läser in…</p> : <>
     {activeTab === "overview" && <OverviewTab data={data} onNavigate={setActiveTab} coach={profile?.role === "coach"}/>}
     {activeTab === "applications" && profile?.role !== "coach" && <InterestApplications teams={data.teams} onPlayers={()=>setActiveTab("players")}/>}
-    {activeTab === "programs" && profile?.role === "admin" && <DevelopmentSessions/>}
+    {activeTab === "programs" && profile?.role === "admin" && <TrainingPrograms data={data} onAddToTraining={selection=>{setPendingPlan(selection);setActiveTab('trainings');}}/>}
     {activeTab === "calls" && <CoachKallelser/>}
     {activeTab === "news" && <ClubNews admin/>}
     {activeTab === "membership" && <MemberCards key={memberAdd?.key || "members"} admin initialShowAdd={Boolean(memberAdd)} initialMembershipType={memberAdd?.kind} onCloseAdd={()=>setMemberAdd(null)} onUpdate={loadData}/>}
@@ -137,7 +138,7 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
     {activeTab === "development" && <PlayerRecords players={data.players} kind="development" canDelete={profile?.role !== "coach"}/>}
     {activeTab === "players" && <PlayersTab key={memberAdd?.key || "players"} data={data} initialShowAdd={memberAdd?.kind === "player"} onCloseAdd={()=>setMemberAdd(null)} onUpdate={()=>loadData(true)} readOnly={profile?.role === "coach"}/>}
     {activeTab === "teams" && <TeamsTab data={data} onUpdate={loadData}/>}
-    {activeTab === "trainings" && <TrainingsTab userId={user.id} data={data} compactWeek={profile?.role === "coach"} onUpdate={loadData} canDelete={profile?.role !== "coach"} canManageExercises={profile?.role === "admin"}/>}
+    {activeTab === "trainings" && <TrainingsTab userId={user.id} data={data} compactWeek={profile?.role === "coach"} onUpdate={loadData} canDelete={profile?.role !== "coach"} canManageExercises={profile?.role === "admin"} pendingPlan={pendingPlan} onPlanAdded={()=>setPendingPlan(null)}/>}
     {activeTab === "matches" && <MatchesTab userId={user.id} data={data} onUpdate={loadData} canDelete={profile?.role !== "coach"}/>}
     {activeTab === "payments" && <PaymentsTab data={data} onUpdate={loadData}/>}
     {activeTab === "economy" && profile?.role !== "coach" && <EconomyTab userId={user.id} payments={data.payments} players={data.players} members={data.memberCards} onPaymentsChanged={refreshPayments}/>}

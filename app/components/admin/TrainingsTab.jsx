@@ -8,11 +8,9 @@ import { upcomingFirst, trainingPeriod, coachTrainingPeriod, daysBefore } from "
 import { trainingReplySummary } from "../../lib/trainingReplies";
 import { useStockholmToday } from "../../lib/useStockholmToday";
 import dynamic from 'next/dynamic';
-const ExerciseLibrary=dynamic(()=>import('./ExerciseLibrary'),{loading:()=> <p role="status">Läser övningar…</p>});
-const DevelopmentSessions=dynamic(()=>import('./DevelopmentSessions'),{loading:()=> <p role="status">Läser kompletta pass…</p>});
+const TrainingExercisePlan=dynamic(()=>import('./TrainingExercisePlan'),{loading:()=> <p role="status">Läser träningsplan…</p>});
 
-export default function TrainingsTab({ data, userId, onUpdate, canDelete=false, compactWeek=false, canManageExercises=false }) {
-  const [trainingView,setTrainingView]=useState('scheduled');
+export default function TrainingsTab({ data, userId, onUpdate, canDelete=false, compactWeek=false, canManageExercises=false, pendingPlan=null, onPlanAdded }) {
   const today = useStockholmToday();
   const [archiveFrom,setArchiveFrom]=useState("");
   const trainings = useMemo(() => upcomingFirst(data?.trainings || [], today), [data?.trainings, today]);
@@ -23,6 +21,7 @@ export default function TrainingsTab({ data, userId, onUpdate, canDelete=false, 
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
+  useEffect(()=>{if(pendingPlan){setExpandedId(pendingPlan.trainingId);const t=data?.trainings?.find(t=>t.id===pendingPlan.trainingId);if(t)setShowPast(t.date<today);}},[pendingPlan,data?.trainings,today]);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [endTime, setEndTime] = useState("");
@@ -146,8 +145,6 @@ export default function TrainingsTab({ data, userId, onUpdate, canDelete=false, 
   }
   return (
     <>
-      {canManageExercises&&<div className="training-period-tabs" role="group" aria-label="Träningsinnehåll">{[['scheduled','Bokade träningar'],['exercises','Övningsbibliotek'],['sessions','Kompletta pass']].map(([value,label])=><Button key={value} variant={trainingView===value?'primary':'secondary'} aria-pressed={trainingView===value} onClick={()=>setTrainingView(value)}>{label}</Button>)}</div>}
-      {canManageExercises&&trainingView==='exercises'?<ExerciseLibrary canManage/>:canManageExercises&&trainingView==='sessions'?<DevelopmentSessions/>:<>
       <div style={{ marginBottom: "30px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h2 style={{ fontSize: "24px", fontWeight: "700", color: "var(--text-dark)" }}>Träningar</h2>
         <Button variant="primary" onClick={() => { resetForm(); setShowAdd(true); }}>+ Lägg till träning</Button>
@@ -227,6 +224,7 @@ export default function TrainingsTab({ data, userId, onUpdate, canDelete=false, 
                       </div>:<p className="muted">Kallelse ej skickad</p>}
                     </div>
                     <div className="training-card-actions">
+                      <Button variant="secondary" aria-expanded={expandedId===t.id} onClick={()=>setExpandedId(expandedId===t.id?null:t.id)}>Träningsplan</Button>
                       <Button disabled={loading} onClick={()=>openCall(t)}>Kallelse</Button>
                       <Button variant="secondary" onClick={() => startEdit(t)}>Redigera</Button>
                       <Button variant="danger" onClick={() => deleteTraining(t.id)} disabled={loading}>Ta bort</Button>
@@ -236,6 +234,7 @@ export default function TrainingsTab({ data, userId, onUpdate, canDelete=false, 
                   {expandedId === t.id && (
                     <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #ddd" }}>
                       {t.calls_sent_at&&<CoachEventReplies kind="training" eventId={t.id} userId={userId} revision={t.calls_sent_at}/> }
+                      <TrainingExercisePlan trainingId={t.id} canManage={canManageExercises} addExerciseId={pendingPlan?.trainingId===t.id?pendingPlan.exerciseId:null} onAdded={onPlanAdded}/>
                       <h4 style={{ color: "var(--text-dark)", marginBottom: "12px", fontSize: "14px", fontWeight: "600" }}>Deltagare ({teamPlayers.length}):</h4>
                       {!t.calls_sent_at&&<p className="muted">Inga spelare är kallade ännu.</p>}
                       <div style={{ display: "grid", gap: "8px" }}>
@@ -281,7 +280,6 @@ export default function TrainingsTab({ data, userId, onUpdate, canDelete=false, 
           </div>
         </Card>
       )}
-      </>}
     </>
   );
 }

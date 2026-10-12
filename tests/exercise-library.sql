@@ -1,7 +1,7 @@
 -- Run against the deployed schema. Every change is rolled back.
 begin;
 do $$ begin
-  if (select count(*) from public.club_exercise_state)<>100 then raise exception 'Expected 100 exercise states'; end if;
+  if (select count(*) from public.club_exercise_state)<>200 then raise exception 'Expected 200 exercise states'; end if;
   if has_table_privilege('anon','public.club_exercise_state','select') then raise exception 'Anonymous read grant'; end if;
   if has_table_privilege('authenticated','public.club_exercise_state','delete') then raise exception 'Physical deletion grant'; end if;
 end $$;

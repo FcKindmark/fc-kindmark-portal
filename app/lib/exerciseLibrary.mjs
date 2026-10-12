@@ -1,4 +1,5 @@
 // Original FC Kindmark practices. Sources support principles, not copied drill text.
+import {FEDERATION_SOURCES,EXPANSION_GROUPS} from './exerciseExpansion.mjs';
 export const EXERCISE_SOURCES = {
   ball: {title:'FIFA · Dribbling and awareness',url:'https://www.fifatrainingcentre.com/en/practice/grassroots/8-to-12/dribbling-and-awareness.php',supports:'Bollkontroll, blick och val av fri yta.'},
   games: {title:'FIFA · Technical activation and small-sided games',url:'https://www.fifatrainingcentre.com/en/practice/grassroots/8-to-12/technical-activation-and-small-sided-games.php',supports:'Tekniskt lärande som överförs till smålagsspel.'},
@@ -9,7 +10,8 @@ export const EXERCISE_SOURCES = {
   transition: {title:'The FA · How to coach transition',url:'https://www.thefa.com/bootroom/resources/coaching/how-to-coach-transition',supports:'Spelsituationer som tränar omställningens beslut.'},
   press: {title:'FIFA · Preparing and executing counter-pressing',url:'https://www.fifatrainingcentre.com/en/practice/elite-sessions/transition-to-defending/preparing-and-executing-counter-pressing.php',supports:'Press eller skydd av passningsvägar efter bollförlust.'},
   unit: {title:'FIFA · Defending as a unit',url:'https://www.fifatrainingcentre.com/en/practice/elite-sessions/out-of-possession/defending-as-a-unit.php',supports:'Gemensamma avstånd, press och täckning.'},
-  keeper: {title:'The FA · Incorporating the goalkeeper into your practices',url:'https://community.thefa.com/coaching/b/insights-analysis-blogs/posts/in-safe-hands-incorporating-the-goalkeeper-into-your-practices',supports:'Målvakten ingår i spelet och får varierade beslut.'}
+  keeper: {title:'The FA · Incorporating the goalkeeper into your practices',url:'https://community.thefa.com/coaching/b/insights-analysis-blogs/posts/in-safe-hands-incorporating-the-goalkeeper-into-your-practices',supports:'Målvakten ingår i spelet och får varierade beslut.'},
+  ...FEDERATION_SOURCES
 };
 export const FRAMEWORK_REFERENCES = {
   foundation:{section:'Phase 1 – Foundation Phase → Technical Development / Tactical Development; Game Intelligence → Early Phase (6–12)',phase:'6–12',alignment:'Bolltrygghet, rörelse och enkla rumsval före tempo och press. Ingen rollfixering eller resultatutvärdering.',adaptation:'Korta block; börja lugnt, ge alla bollkontakt och byt roller. Bedöm mod och beslut, inte vinnare.'},
@@ -167,6 +169,21 @@ exercises[16].diagram.balls=['A','C'];
 exercises[28].diagram.balls=['A','C'];
 for(const n of [86,98]) exercises[n-1].timing='15 min: 1 min visa, 4 × 2 min scenario, 3 × 1 min paus, 3 min reflektion och lugn återstart.';
 exercises[99].timing='15 min: 1 min visa, 3 × 3 min scenario, 2 × 2 min paus, 1 min reflektion.';
+for(const group of EXPANSION_GROUPS) add(group.sport,group.framework,group.category,group.source,group.rows);
+for(let n=101;n<=200;n++){
+  const e=exercises[n-1];e.collection='Federationsurval · FC Kindmark';
+  e.clubFocus=e.observe+' Bedöm valet och intentionen; ge lugn återkoppling, rotera roller och anpassa press efter utvecklingsberedskap.';
+  if(e.framework==='development')e.easier='Behåll uppgiften men börja med passiv opposition och mer yta. Lägg till fart, aktiv press och komplexitet först när tekniken fungerar.';
+}
+for(const n of [101,103,108,110])exercises[n-1].diagram.balls=['A','B'];
+for(const n of [171,178,188,191,197,200])exercises[n-1].diagram.ball=n===200?'GK1':'GK';
+for(const n of [195,196,199])exercises[n-1].timing='15 min: 1 min visa, 4 × 2 min scenario, 3 × 1 min paus, 3 min reflektion och lugn återstart.';
+exercises[199].timing='15 min: 1 min visa, 3 × 3 min spel, 2 × 2 min paus, 1 min reflektion.';
+// These publications have a more specific relationship to the chosen focus.
+for(const n of [104,109])exercises[n-1].source='figcBase';
+for(const n of [134,135,139])exercises[n-1].source='rfefGame';
+for(const n of [157,158,159,160])exercises[n-1].source='fffAlign';
+for(const n of [193,194,198,200])exercises[n-1].source='figcTransition';
 export const EXERCISE_LIBRARY=Object.freeze(exercises);
 export function filterExercises({sport='all',phase='all',category='all',query='',archived=false,states=[]}={}){
   const removed=new Set(states.filter(s=>s.archived_at).map(s=>s.exercise_id));
