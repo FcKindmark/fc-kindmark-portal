@@ -91,10 +91,16 @@ export const SITUATIONAL_TACTICAL_SESSIONS=formations.flatMap((f,fi)=>
  scenarios.map(([trigger,question,solution],si)=>{
   const movement=topics[(si+fi)%topics.length].movement;
   const isFutsal=f.sport==='futsal';
+  const opponentVariations=[
+   ['Motståndaren stänger första passningen','Flytta stödet, använd tredje spelare och sök motsatt korridor.'],
+   ['Motståndaren kliver aggressivt på bollhållaren','Spela bakom pressen eller skydda bollen tills understöd finns.'],
+   ['Motståndaren backar och skyddar mitten','Växla spelriktning, locka ut en försvarare och attackera öppningen.'],
+   ['Motståndaren bryter passningen och kontrar','Närmaste bromsar, andra täcker mitten och sista spelaren säkrar djupet.']
+  ];
   const block=(name,mins,detail,phase,stage)=>({
     title:name,minutes:mins,timing:`${mins} min · ${stage}`,
     organisation:isFutsal?'Halv futsalplan, 4v4 plus målvakter; byt roller ofta.':'Halv plan eller 45×35 m, 6v6 plus målvakter; formationen visas i helhet före delspel.',
-    steps:[`Matchhändelse: ${trigger}. ${question}`,detail,'Återstarta samma situation från olika positioner och med olika försvararval.','Byt roller och låt spelarna förklara varför de valde en viss lösning.'],
+    steps:[`Matchhändelse: ${trigger}. ${question}`,detail,'Variation A: '+opponentVariations[(si+0)%4].join(' → '),'Variation B: '+opponentVariations[(si+1)%4].join(' → '),'Variation C: '+opponentVariations[(si+2)%4].join(' → '),'Byt roller. Spelaren måste upptäcka motståndarens reaktion innan valet görs.'],
     diagram:tacticalDiagram(f.lines,phase,f.shape),
     say:question,observe:'Identifierar spelaren press, fri yta och medspelare före beslut? Kan laget återhämta sig när första lösningen misslyckas?',
     restart:'Tränaren sätter in ny boll direkt i den utpekade matchsituationen.',
