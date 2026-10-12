@@ -106,16 +106,16 @@ export const SITUATIONAL_TACTICAL_SESSIONS=formations.flatMap((f,fi)=>
     id:`${f.sport}-situation-${f.shape.replaceAll('-','')}-${String(si+1).padStart(2,'0')}`,
     sport:f.sport,age:'14–16',status:'draft',version:1,
     title:`${f.shape} · Situation ${si+1}: ${trigger}`,
-    minutes:45,players:isFutsal?10:14,
+    minutes:75,players:isFutsal?10:14,
     goal:`${question} ${solution}`,
     equipment:'Bollar, västar, koner, två mål och målvakter om tillgängliga.',
     principle:'Visa mönstret först, introducera motstånd, ge sedan spelaren flera möjliga beslut. Inget förutbestämt facit.',
     ballPriority:'Kort instruktion, omedelbar återstart och många repetitioner med boll.',
     blocks:[
-      block('1. Lär rörelsen',8,`Visa två möjliga lösningar: ${solution} Repetera rörelsen med låg press.`,movement,'utan aktiv press'),
-      block('2. Känn igen signalen',10,`Försvararen växlar mellan att stänga första och andra alternativet. Spelaren måste upptäcka vilken väg som öppnas.`,'intelligence','passiv till halvaktiv press'),
-      block('3. Välj under press',12,`Spela ut ${trigger.toLowerCase()} i riktad matchsekvens. Lösningen är inte bestämd: spelaren väljer efter motståndarens reaktion.`,'overload','aktivt motstånd'),
-      block('4. Anpassa i fritt spel',15,`Spela med mål och poäng. Tränaren startar om samma situation från nya ytor; laget får byta lösning och måste skydda sig vid bollförlust.`,'transition','fritt spel')
+      block('1. Lär rörelsen',15,`Visa två möjliga lösningar: ${solution} Repetera rörelsen med låg press.`,movement,'utan aktiv press'),
+      block('2. Känn igen signalen',15,`Försvararen växlar mellan att stänga första och andra alternativet. Spelaren måste upptäcka vilken väg som öppnas.`,'intelligence','passiv till halvaktiv press'),
+      block('3. Välj under press',20,`Spela ut ${trigger.toLowerCase()} i riktad matchsekvens. Lösningen är inte bestämd: spelaren väljer efter motståndarens reaktion.`,'overload','aktivt motstånd'),
+      block('4. Anpassa i fritt spel',25,`Spela med mål och poäng. Tränaren startar om samma situation från nya ytor; laget får byta lösning och måste skydda sig vid bollförlust.`,'transition','fritt spel')
     ]
   };
  }));
