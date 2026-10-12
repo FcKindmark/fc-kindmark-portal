@@ -1,9 +1,9 @@
 // Formation-based training: coach-review drafts, not fixed match instructions.
 // Football formations are interpreted as ten outfield players plus goalkeeper.
 const formations=[
- {sport:'futsal',shape:'2-2',age:'11–13',lines:[2,2],focus:'parvis understöd och diagonalspel'},
+ {sport:'futsal',shape:'2-2',age:'14–16',lines:[2,2],focus:'parvis understöd och diagonalspel'},
  {sport:'futsal',shape:'3-1',age:'14–16',lines:[3,1],focus:'pivotspel, tredje spelare och press mot pivot'},
- {sport:'futsal',shape:'1-2-1',age:'11–13',lines:[1,2,1],focus:'diamantens passningsvinklar och rotationer'},
+ {sport:'futsal',shape:'1-2-1',age:'14–16',lines:[1,2,1],focus:'diamantens passningsvinklar och rotationer'},
  {sport:'futsal',shape:'2-1-1',age:'14–16',lines:[2,1,1],focus:'stödspel bakom pivot och centralt överläge'},
  {sport:'football',shape:'3-4-3',age:'14–16',lines:[3,4,3],focus:'bredd med wingbacks och press i fronttrea'},
  {sport:'football',shape:'3-2-3-2',age:'14–16',lines:[3,2,3,2],focus:'centrala trianglar och samarbete mellan två forwards'},
@@ -38,6 +38,7 @@ function tacticalDiagram(lines,phase,shape){
  return {players,paths:paths[phase],kinds:phase==='press'?['run','run']:phase==='rotate'?['pass','run']:['pass','pass'],caption:`${shape}: ${topics.find(t=>t.movement===phase).name}. Blå = laget i formation, röd = motståndare.`};
 }
 const minutes=[12,15,15,15,18];
+// Full formation instruction belongs to the development phase, not the foundation phase.
 export const FORMATION_TACTICAL_SESSIONS=formations.map((f,i)=>({
  id:`${f.sport}-formation-${f.shape.replaceAll('-','')}-kindmark`,
  sport:f.sport,age:f.age,status:'draft',version:1,
