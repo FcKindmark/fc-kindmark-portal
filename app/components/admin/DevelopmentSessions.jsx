@@ -58,9 +58,10 @@ export default function DevelopmentSessions() {
   const [sport,setSport] = useState("futsal");
   const [age,setAge] = useState("8–10");
   const [selectedId,setSelectedId] = useState(null);
+  const [library,setLibrary] = useState("development");
   const sessionHeading = useRef(null);
   const catalogHeading = useRef(null);
-  const sessions = DEVELOPMENT_SESSIONS.filter(s=>s.sport===sport && s.age===age);
+  const sessions = DEVELOPMENT_SESSIONS.filter(s=>s.sport===sport && (library==="tactics" ? s.id.includes("-formation-") : s.age===age && !s.id.includes("-formation-")));
   const session = sessions.find(s=>s.id===selectedId);
   function chooseSport(value){setSport(value);setSelectedId(null);}
   function chooseAge(value){setAge(value);setSelectedId(null);}
@@ -75,13 +76,13 @@ export default function DevelopmentSessions() {
   return <section className="development-program" aria-label="Träningsprogram">
     <div className="page-heading"><div><h1>Träningsprogram</h1><p>FC Kindmark · kompletta utvecklingspass</p></div></div>
     <p className="development-draft" role="note"><strong>Adminförhandsvisning · {DEVELOPMENT_SESSIONS.length} kompletta pass</strong> Utkast för granskning, inte publicerade för tränarna och inte bokade träningar. Innehållet måste godkännas av klubben innan användning. Välj ett helt pass; övningarna blandas inte fritt.</p>
-    <div className="development-filters">
+    <div className="development-filters"><div role="group" aria-label="Bibliotek"><Button variant={library==="development"?"primary":"secondary"} aria-pressed={library==="development"} onClick={()=>{setLibrary("development");setSelectedId(null);}}>Utvecklingspass</Button><Button variant={library==="tactics"?"primary":"secondary"} aria-pressed={library==="tactics"} onClick={()=>{setLibrary("tactics");setSelectedId(null);}}>Taktikbibliotek · formationer</Button></div>
       <div role="group" aria-label="Idrott">{[["futsal","Futsal"],["football","Fotboll"]].map(([value,label])=><Button key={value} variant={sport===value?"primary":"secondary"} aria-pressed={sport===value} onClick={()=>chooseSport(value)}>{label}</Button>)}</div>
-      <div role="group" aria-label="Åldersgrupp">{DEVELOPMENT_AGES.map(value=><Button key={value} variant={age===value?"primary":"secondary"} aria-pressed={age===value} onClick={()=>chooseAge(value)}>{value} år</Button>)}</div>
+      {library==="development" && <div role="group" aria-label="Åldersgrupp">{DEVELOPMENT_AGES.map(value=><Button key={value} variant={age===value?"primary":"secondary"} aria-pressed={age===value} onClick={()=>chooseAge(value)}>{value} år</Button>)}</div>}
     </div>
     {!session ? <>
-      <h2 ref={catalogHeading} tabIndex={-1}>{sport==='futsal'?'Futsal':'Fotboll'} · {age} år · {sessions.length} pass</h2>
-      <p>Välj namnet på ett pass för att öppna hela sessionen med alla övningar och instruktioner.</p>
+      <h2 ref={catalogHeading} tabIndex={-1}>{sport==='futsal'?'Futsal':'Fotboll'} · {library==="tactics"?"Taktikbibliotek":`${age} år`} · {sessions.length} pass</h2>
+      {library==="tactics" && <p><strong>FC Kindmark-metoden:</strong> Formationer är lärmiljöer, inte mönster att memorera. Träna scanning, egna beslut, rörelse utan boll, press och omställning med varierade motståndare. Systemträning är avsedd för utvecklingsfasen från 13 år; yngre barn prioriterar boll, rörelse och enkla val. Bilderna är schematiska utkast för tränargranskning.</p>}<p>Välj namnet på ett pass för att öppna hela sessionen med alla övningar och instruktioner.</p>
       <div className="development-catalog" role="group" aria-label="Välj ett komplett pass">{sessions.map((s,i)=><button type="button" key={s.id} onClick={()=>setSelectedId(s.id)}><strong>{s.title}</strong><span>Pass {i+1} · {s.minutes} min · {s.players} spelare · Öppna hela passet →</span></button>)}</div>
       {!sessions.length && <Card><p>Inga pass finns i den här gruppen ännu.</p></Card>}
     </> : <>
