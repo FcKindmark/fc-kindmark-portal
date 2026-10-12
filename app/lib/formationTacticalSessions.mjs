@@ -14,7 +14,11 @@ const topics=[
  {name:'Spela förbi första press',detail:'Lura press åt ena sidan och hitta fri spelare bakom första försvarslinjen. Vänd om framåtvägen är stängd.',movement:'break'},
  {name:'Rotation och tredje spelare',detail:'Passa, flytta och skapa ny passningsvinkel. Tredje spelare tajmar löpning i ledig korridor.',movement:'rotate'},
  {name:'Press och understöd',detail:'Närmaste spelare pressar på signal. Nästa spelare täcker centralt, övriga skyddar bortre ytan.',movement:'press'},
- {name:'Omställning efter bollvinst',detail:'Vid bollvinst sök första säkra framåtpassningen. En spelare ger djup, en säkrar bakom bollen.',movement:'transition'}
+ {name:'Omställning efter bollvinst',detail:'Vid bollvinst sök första säkra framåtpassningen. En spelare ger djup, en säkrar bakom bollen.',movement:'transition'},
+ {name:'Speluppbyggnad under hög press',detail:'Locka första presspelaren, skapa stödvinkel bakom och hitta fri spelare i nästa linje. Spela tillbaka om centralt alternativ är stängt.',movement:'build'},
+ {name:'Motpress efter bollförlust',detail:'Närmaste spelare bromsar bollhållaren. Två medspelare stänger passningsvägar och resten skyddar ytan bakom.',movement:'counterpress'},
+ {name:'Överläge och fri spelare',detail:'Skapa 2 mot 1 på bollsidan och hitta tredje spelare när försvararen väljer. Spelarna avgör om de ska driva eller passa.',movement:'overload'},
+ {name:'Spelintelligens och fria beslut',detail:'Tränaren ändrar en regel eller flyttar en port mitt i spelet. Laget måste upptäcka förändringen och anpassa sina positioner.',movement:'intelligence'}
 ];
 const points=lines=>{
  const out=[];
@@ -32,12 +36,16 @@ function tacticalDiagram(lines,phase,shape){
   break:[`M${a[0]+12} ${a[1]}L${b[0]-12} ${b[1]}`,`M${b[0]+12} ${b[1]}L${c[0]-12} ${c[1]}`],
   rotate:[`M${a[0]+10} ${a[1]}L${b[0]-10} ${b[1]}`,`M${b[0]} ${b[1]+15}Q${b[0]+20} ${b[1]+35} ${b[0]+45} ${b[1]+20}`],
   press:[`M${b[0]} ${b[1]}L${Math.min(385,b[0]+50)} ${b[1]-25}`,`M${a[0]} ${a[1]}L${Math.min(385,a[0]+50)} ${a[1]+15}`],
-  transition:[`M${a[0]+12} ${a[1]}L${b[0]-12} ${b[1]}`,`M${b[0]+12} ${b[1]}L${c[0]-12} ${c[1]}`]
+  transition:[`M${a[0]+12} ${a[1]}L${b[0]-12} ${b[1]}`,`M${b[0]+12} ${b[1]}L${c[0]-12} ${c[1]}`],
+  build:[`M${a[0]+12} ${a[1]}L${b[0]-12} ${b[1]}`,`M${b[0]+12} ${b[1]}L${c[0]-12} ${c[1]}`],
+  counterpress:[`M${a[0]} ${a[1]}L${Math.min(380,a[0]+65)} ${a[1]-25}`,`M${b[0]} ${b[1]}L${Math.min(380,b[0]+45)} ${b[1]+20}`],
+  overload:[`M${a[0]+12} ${a[1]}L${b[0]-12} ${b[1]}`,`M${b[0]+12} ${b[1]}L${c[0]-12} ${c[1]}`],
+  intelligence:[`M${a[0]+12} ${a[1]}L${b[0]-12} ${b[1]}`,`M${b[0]} ${b[1]+12}Q${b[0]+35} ${b[1]+45} ${b[0]+65} ${b[1]+25}`]
  };
- if(phase==='press')players.push([385,130,'X','red']);
- return {players,paths:paths[phase],kinds:phase==='press'?['run','run']:phase==='rotate'?['pass','run']:['pass','pass'],caption:`${shape}: ${topics.find(t=>t.movement===phase).name}. Blå = laget i formation, röd = motståndare.`};
+ if(phase==='press'||phase==='counterpress'||phase==='overload'||phase==='build')players.push([385,130,'X','red']);
+ return {players,paths:paths[phase],kinds:['press','counterpress'].includes(phase)?['run','run']:['rotate','intelligence'].includes(phase)?['pass','run']:['pass','pass'],caption:`${shape}: ${topics.find(t=>t.movement===phase).name}. Blå = laget i formation, röd = motståndare.`};
 }
-const minutes=[12,15,15,15,18];
+const minutes=[12,15,15,15,18,15,15,15,15];
 // Full formation instruction belongs to the development phase, not the foundation phase.
 export const FORMATION_TACTICAL_SESSIONS=formations.map((f,i)=>({
  id:`${f.sport}-formation-${f.shape.replaceAll('-','')}-kindmark`,
