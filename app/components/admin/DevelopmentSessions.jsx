@@ -61,7 +61,7 @@ export default function DevelopmentSessions() {
   const [library,setLibrary] = useState("development");
   const sessionHeading = useRef(null);
   const catalogHeading = useRef(null);
-  const sessions = DEVELOPMENT_SESSIONS.filter(s=>s.sport===sport && (library==="tactics" ? s.id.includes("-formation-") : s.age===age && !s.id.includes("-formation-")));
+  const sessions = DEVELOPMENT_SESSIONS.filter(s=>s.sport===sport && (library==="tactics" ? (s.id.includes("-formation-") || s.id.includes("-situation-")) : s.age===age && !s.id.includes("-formation-") && !s.id.includes("-situation-")));
   const session = sessions.find(s=>s.id===selectedId);
   function chooseSport(value){setSport(value);setSelectedId(null);}
   function chooseAge(value){setAge(value);setSelectedId(null);}
