@@ -29,7 +29,9 @@ const VARIANTS=[
 ];
 function diagram(topic,phase,ageIndex,sport){
  const shift=ageIndex*5;
- const base=[[85,225,'A','blue'],[155,170,'B','blue'],[225,130,'C','blue'],[310,95,'D','blue']];
+ const layouts={cross:[[75,230],[150,195],[225,170],[325,70]],press:[[110,115],[175,165],[250,215],[320,105]],defence:[[125,115],[185,160],[245,200],[310,235]],width:[[70,240],[120,120],[200,205],[330,80]],finishing:[[75,220],[155,165],[240,205],[335,135]]};
+ const points=layouts[topic.id]||[[85,225],[155,170],[225,130],[310,95]];
+ const base=points.map((p,i)=>[p[0],p[1],'ABCD'[i],'blue']);
  const players=phase===0?[[80,95,'1','blue'],[180,200,'2','blue'],[295,100,'3','blue']]:base.map(([x,y,n,c])=>[x+shift,y,n,c]);
  if(phase===3||phase===4)players.push([185,205,'X','red'],[270,155,'Y','red']);
  const paths=phase===0?['M80 95L110 115','M180 200L210 190']:phase===5?[]:['M'+(85+shift)+' 225L'+(155+shift)+' 170','M'+(155+shift)+' 170L'+(225+shift)+' 130','M'+(225+shift)+' 130L'+(310+shift)+' 95'];
