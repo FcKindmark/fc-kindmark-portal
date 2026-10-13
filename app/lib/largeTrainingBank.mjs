@@ -1,3 +1,4 @@
+import { trainingIllustration } from './trainingIllustrations.mjs';
 // Kindmark: 25 learning themes × 4 game problems × 3 age bands × 2 sports.
 // These are progressive session variants, not 600 unrelated drill inventions.
 // Framework: under 13 no fixed systems, isolated conditioning or role specialization.
@@ -43,25 +44,6 @@ const formationRoles={
  '2–2':'Bakre två på olika höjd och främre två med diagonal kontakt. När en går fram håller en annan skydd bakom boll.',
  '4–0':'Rörlig understödslinje: när en lämnar sin yta fyller annan en spelbar vinkel. Introducera först när spelarna förstår fri yta och inte springer ett memorerat varv.'
 };
-function picture(topic,problem,phase,sport){
- const form=problem.format;
- const setups={
- '3v3':[[75,70,'1','blue'],[100,245,'2','blue'],[170,145,'3','blue'],[285,70,'4','red'],[300,245,'5','red'],[240,180,'6','red']],
- '3v1':[[70,160,'A','blue'],[245,70,'B','blue'],[245,250,'C','blue'],[220,160,'D','red']],
- '3v2+1':[[75,160,'A','blue'],[170,65,'B','blue'],[170,255,'C','blue'],[255,110,'X','red'],[255,210,'Y','red'],[375,160,'M','gold']],
- '2v2+2':[[90,90,'A','blue'],[120,230,'B','blue'],[285,90,'X','red'],[285,230,'Y','red'],[205,40,'N1','gold'],[205,280,'N2','gold']],
- '4v4+4':[[100,70,'1','blue'],[100,250,'2','blue'],[150,120,'3','blue'],[150,205,'4','blue'],[275,70,'5','red'],[275,250,'6','red'],[250,120,'7','red'],[250,205,'8','red'],[40,160,'N1','gold'],[380,160,'N2','gold'],[210,40,'N3','gold'],[210,280,'N4','gold']]
- };
- if(phase===0)return {players:[[100,90,'A','blue'],[290,215,'B','blue']],paths:['M118 100L270 200','M95 110Q70 205 125 235'],kinds:['pass','run'],balls:[[122,104]],caption:'Ett par visas; sex par arbetar samtidigt i egna ytor. Passa och hitta en ny vinkel. Ingen fast ordning.'};
- if(phase===5)return {players:[[120,110,'1','blue'],[285,110,'2','blue'],[120,220,'3','blue'],[285,220,'4','blue'],[205,165,'T','gold']],paths:[],caption:'Hela gruppen samlas; bilden visar några spelare och tränaren. Reflektera över ett konkret beslut.'};
- if(phase>=3){const tactical=phase===3;return {players:[[75,70,'1','blue'],[100,245,'2','blue'],[170,145,'3','blue'],[285,70,'4','red'],[300,245,'5','red'],[240,180,'6','red']],paths:['M93 83L152 134',topic[0]==='loss'||topic[0]==='defence'?'M238 180L85 180':'M182 140L370 100'],kinds:['pass','pass'],balls:[[94,95]],sidePorts:true,zones:topic[0]==='middle'||topic[0]==='vertical'||topic[0]==='depth'?3:undefined,caption:`En av två 3 mot 3-planer visas. ${tactical?'En tematisk bonus tillämpas.':'Fritt spel utan bonus.'} Pilar är möjliga val, inte en bestämd följd.`};}
- let players=setups[form].map(p=>[...p]);
- const topicIndex=themes.indexOf(topic), shift=(topicIndex%3-1)*12;
- players=players.map(([x,y,n,c])=>[x,Math.max(40,Math.min(280,y+shift)),n,c]);
- let paths=topic[0]==='press'||topic[0]==='defence'?['M220 140L100 155','M250 220L185 185']:topic[0]==='cross'||topic[0]==='side'?['M90 155L160 65','M175 70Q290 45 360 130']:topic[0]==='third'||topic[0]==='second'?['M90 155L170 70','M180 82L270 235']:['M90 145L160 80','M170 88L290 160'];
- const pressure=topic[0]==='press'||topic[0]==='defence';
- return {players,paths,kinds:pressure?['run','run']:['pass','pass'],balls:[[92,174]],targetZone:form==='3v2+1',sidePorts:form!=='3v2+1',zones:['middle','vertical','depth','balance'].includes(topic[0])?3:undefined,caption:`En av ${problem.count} ytor visas: ${form}. ${topic[2]} — ${problem.name}. Bilden visar start och möjliga handlingar; följ textens rollbyten och mål.`};
-}
 function build(topic,problem,a,sport,v){
  const [key,category,name,goal,cue,task]=topic,young=a<2,foundation=a===0;
  const conditioning=category==='conditioning';
@@ -77,7 +59,7 @@ function build(topic,problem,a,sport,v){
  const physicalDose=key==='acceleration'?'4–6 accelerationer 5–10 m per spelare, minst 45–60 sek före nästa snabba försök. Resten av blocket är lugn bollteknik och vila.':key==='direction'?'4 korta reaktiva försök 10–15 sek per spelare med minst 45 sek vila mellan försök. Resten lugn kontroll och passning.':key==='coordination'?'3 omgångar med 3 min kontrollerad bollrörelse och 2 min vila/återkoppling; sista 3 min för lugn teknik och nästa organisation.':'4 × 2 min spel med 1 min vila efter varje; sista 6 min för demonstration, vatten och lugn teknik.';
  const active=young?'6 × 2 min spel + 6 × 1 min byte/vatten = 18 min.':'3 × 5 min spel + 3 × 1 min byte/vatten = 18 min.';
  const gameDose=conditioning&&!young?'3 × 3 min spel + 3 × 2 min återhämtning = 15 min.':young?'5 × 2 min spel + 5 × 1 min vatten/byte = 15 min.':'3 × 4 min spel + 3 × 1 min vatten/byte = 15 min.';
- const block=(title,minutes,organisation,steps,timing,phase,extras={})=>({title,minutes,organisation,steps,timing,diagram:picture(topic,p,phase,sport),restart:p.transition,rotation:`Byt alla roller i pausen efter en omgång, en position vidare i ${p.per}-spelargruppen. Ingen står i lång kö.`,say:cue,observe:p.observation,easier:'Öka ytan eller ge en neutral spelare. Behåll bara ett lärproblem och fria bollkontakter.',harder:'Ändra bara en sak: motståndets startavstånd, ytan eller stödet. Ingen tvingad passningssekvens.',...extras});
+ const block=(title,minutes,organisation,steps,timing,phase,extras={})=>({title,minutes,organisation,steps,timing,diagram:trainingIllustration(topic,p,phase,sport,a),restart:p.transition,rotation:`Byt alla roller i pausen efter en omgång, en position vidare i ${p.per}-spelargruppen. Ingen står i lång kö.`,say:cue,observe:p.observation,easier:'Öka ytan eller ge en neutral spelare. Behåll bara ett lärproblem och fria bollkontakter.',harder:'Ändra bara en sak: motståndets startavstånd, ytan eller stödet. Ingen tvingad passningssekvens.',...extras});
  const mainSteps=[`Lärproblemet är: ${task}.`,p.action,p.transition,young?'En kort fråga efter omgången: Vad var fritt? Barnen får välja passning eller driva boll.':'Välj lösning efter press och understöd. Tränaren frågar i pausen och ger inte färdiga svar under varje aktion.'];
  if(key==='press'||key==='loss'||key==='defence')mainSteps.push('Observera särskilt laget utan boll: närmaste fördröjer, nästa täcker. Poängen bedöms inte bara efter bollvinster.');
  if(key==='cross')mainSteps.push(sport==='futsal'?'Låga inspel och passning snett inåt bakåt; inga luftinlägg.':'Låga inspel och cutback; inga upprepade nickövningar i denna session.');

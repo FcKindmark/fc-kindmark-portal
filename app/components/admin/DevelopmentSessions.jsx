@@ -11,18 +11,21 @@ function Illustration({part,sport}){
  return <figure className="development-diagram" style={{margin:0}}>
   <svg viewBox="0 0 420 320" role="img" aria-labelledby={id+"-title"} style={{width:"100%",maxWidth:600}}>
    <title id={id+"-title"}>{d.caption}</title>
-   <defs><marker id={id+"-arrow"} markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0L7 3.5L0 7Z" fill="#344e5e"/></marker></defs>
+   <defs><marker id={id+"-arrow"} markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0L7 3.5L0 7Z" fill="#344e5e"/></marker><marker id={`${id}-run-arrow`} markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0L7 3.5L0 7Z" fill="#21628b"/></marker></defs>
    <rect x="20" y="20" width="380" height="280" rx="8" fill={sport==="futsal"?"#e7f0f6":"#edf5e9"} stroke="#8fa9a0" strokeWidth="2"/>
    <path d="M210 20V300" stroke="#b4c9c3" strokeDasharray="5 5"/>
    {d.zones&&Array.from({length:d.zones-1},(_,i)=><path key={"zone"+i} d={`M${20+380*(i+1)/d.zones} 20V300`} stroke="#8fa9a0" strokeDasharray="5 5"/>)}
    {d.targetZone&&<rect x="360" y="20" width="40" height="280" fill="#d9ba54" opacity=".3"/>}
    {d.sidePorts&&[20,400].flatMap(x=>[65,225].map(y=><path key={x+"-"+y} d={`M${x} ${y}v40`} stroke="#a47a15" strokeWidth="6"/>))}
    {d.goals&&<path d="M400 125H415V195H400" fill="none" stroke="#344e5e" strokeWidth="3"/>}
-   {d.paths.map((p,i)=><path key={i} d={p} fill="none" stroke="#344e5e" strokeWidth="2.5" strokeDasharray={d.kinds?.[i]==="run"?"7 6":d.kinds?.[i]==="dribble"?"2 5":undefined} markerEnd={`url(#${id}-arrow)`}/>)}
+   {d.paths.map((p,i)=><path key={i} d={p} fill="none" stroke={d.kinds?.[i]==="run"?"#21628b":"#344e5e"} strokeWidth="2.5" strokeDasharray={d.kinds?.[i]==="run"?"7 6":d.kinds?.[i]==="dribble"?"2 5":undefined} markerEnd={`url(#${id}-${d.kinds?.[i]==="run"?"run-arrow":"arrow"})`}/>)}
+   {d.destinations?.map(([x,y,label],i)=><g key={"destination"+i}><circle cx={x} cy={y} r="16" fill="none" stroke="#21628b" strokeWidth="2" strokeDasharray="4 3"/><text x={x} y={y+4} textAnchor="middle" fontSize="11" fill="#21628b">{label}′</text></g>)}
+   {d.pathLabels?.map(([x,y,n],i)=><g key={"step"+i}><circle cx={x} cy={y} r="10" fill="#fff" stroke="#555"/><text x={x} y={y+4} textAnchor="middle" fontSize="11" fontWeight="700">{n}</text></g>)}
    {d.players.map(([x,y,label,color],i)=><g key={i}><circle cx={x} cy={y} r="17" fill={C[color]||C.gold}/><text x={x} y={y+5} textAnchor="middle" fontSize="13" fontWeight="700" fill="white">{label}</text></g>)}
    {d.balls?.map(([x,y],i)=><circle key={i} cx={x} cy={y} r="6" fill="#fff" stroke="#222" strokeWidth="2"/>)}
   </svg>
-  <figcaption>{d.caption} Heldragen pil = passning, streckad = löpning, prickad = driva boll.</figcaption>
+  <figcaption>{d.caption} Heldragen pil = passning · Blå streckad pil = löpning utan boll · Prickad pil = driva boll · Tom ring = tänkt slutplats.</figcaption>
+  {d.actions?.length>0&&<ol aria-label="Illustrationens rörelser">{d.actions.map((action,i)=><li key={i}>{action.replace(/^\d+\. /,"")}</li>)}</ol>}
  </figure>;
 }
 export default function DevelopmentSessions(){
