@@ -2,7 +2,7 @@
 import { useId, useState } from "react";
 import { CURATED_WEEKLY_SESSIONS } from "../../lib/curatedWeeklySessions.mjs";
 import { LARGE_TRAINING_BANK, TRAINING_CATEGORY_LABELS } from "../../lib/largeTrainingBank.mjs";
-const ALL_SESSIONS = [...CURATED_WEEKLY_SESSIONS, ...LARGE_TRAINING_BANK];
+const ALL_SESSIONS = [...LARGE_TRAINING_BANK, ...CURATED_WEEKLY_SESSIONS];
 
 const C={blue:"#21628b",red:"#b73242",gold:"#8a6618"};
 function Illustration({part,sport}){
@@ -38,8 +38,9 @@ export default function DevelopmentSessions(){
  const sessions=groupSessions.filter(s=>(!category||s.category===category)&&(!formation||s.formation===formation)&&[s.title,s.goal,s.formationNote||""].join(" ").toLocaleLowerCase("sv").includes(query.toLocaleLowerCase("sv")));
  const visibleSessions=sessions.slice(page*24,(page+1)*24);
  const selected=sessions.find(s=>s.id===selectedId);
- const chooseSport=v=>{setSport(v);setSelectedId(null);setFormation("");setPage(0);};
- const chooseAge=v=>{setAge(v);setSelectedId(null);setFormation("");setPage(0);};
+ const resetFilters=()=>{setSelectedId(null);setFormation("");setCategory("");setQuery("");setPage(0);};
+ const chooseSport=v=>{setSport(v);resetFilters();};
+ const chooseAge=v=>{setAge(v);resetFilters();};
  let elapsed=0;
  return <section className="development-program" aria-label="Kompletta träningspass">
   <div className="page-heading"><div><h1>FC Kindmark · Träningsbibliotek</h1><p>600 nya scenariovarianter · 100 per idrott och åldersgrupp · hela pass från start till slut.</p></div></div>
@@ -53,8 +54,8 @@ export default function DevelopmentSessions(){
    <label>Kategori<select value={category} onChange={e=>{setCategory(e.target.value);setPage(0);}} style={{display:"block",padding:10}}><option value="">Alla kategorier</option>{Object.entries(TRAINING_CATEGORY_LABELS).map(([v,label])=><option key={v} value={v}>{label}</option>)}</select></label>
    {formations.length>0&&<label>Formation som referens<select value={formation} onChange={e=>{setFormation(e.target.value);setPage(0);}} style={{display:"block",padding:10}}><option value="">Alla</option>{formations.map(v=><option key={v}>{v}</option>)}</select></label>}
   </div>}
-  {!selected?<><h2>{sessions.length} kompletta 75-minuterspass · {groupSessions.length} i gruppen</h2><p>25 teman × 4 spelproblem ger 100 nya scenariovarianter per grupp. Tidigare 12 pass finns kvar. Ålder och sport är anpassningar; alla varianter behöver tränarens granskning före användning.</p><div className="development-catalog" role="group" aria-label="Välj träningspass">
-   {visibleSessions.map(s=><button key={s.id} type="button" onClick={()=>setSelectedId(s.id)}><strong>{s.title}</strong><span>{s.category?TRAINING_CATEGORY_LABELS[s.category]:"Tidigare tema"} · 75 minuter · 6 delar · illustrationer →</span></button>)}
+  {!selected?<><h2 aria-live="polite">{sport==="football"?"Fotboll":"Futsal"} · {age} år · {sessions.length} kompletta 75-minuterspass · {groupSessions.length} i gruppen</h2><p>25 teman × 4 spelproblem ger 100 nya scenariovarianter per grupp. Tidigare 12 pass finns kvar. Samma lärtema kan finnas i flera grupper, men yta, motstånd, tempo och instruktioner är anpassade. Grupp och organisation visas på varje kort.</p><div key={sport+"-"+age+"-"+category+"-"+formation} className="development-catalog" role="group" aria-label={`Välj träningspass: ${sport==="football"?"Fotboll":"Futsal"} ${age} år`}>
+   {visibleSessions.map(s=><button key={s.id} type="button" onClick={()=>setSelectedId(s.id)}><strong>{s.sport==="football"?"Fotboll":"Futsal"} · {s.age} år · {s.title}</strong><span>{s.category?TRAINING_CATEGORY_LABELS[s.category]:"Tidigare tema"} · 75 minuter · {s.blocks[2].organisation} · Öppna →</span></button>)}
   </div>{!sessions.length&&<p>Inga pass matchar filtren. Ändra tema eller kategori.</p>}
    {sessions.length>24&&<nav aria-label="Bibliotekets sidor" style={{display:"flex",alignItems:"center",gap:12,marginTop:18}}><button disabled={page===0} onClick={()=>setPage(p=>p-1)}>← Föregående</button><span>Sida {page+1} / {Math.ceil(sessions.length/24)}</span><button disabled={(page+1)*24>=sessions.length} onClick={()=>setPage(p=>p+1)}>Nästa →</button></nav>}
   </>:<>
