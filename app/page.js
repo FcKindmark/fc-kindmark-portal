@@ -11,6 +11,7 @@ import LoginScreen from "./components/LoginScreen";
 import AdminDashboard from "./components/admin/AdminDashboard";
 import ParentDashboard from "./components/parent/ParentDashboard";
 import SupporterDashboard from "./components/SupporterDashboard";
+import PlayerDashboard from "./components/PlayerDashboard";
 
 
 
@@ -21,6 +22,7 @@ export default function App() {
   const [profileError,setProfileError]=useState("");
   const [profileAttempt,setProfileAttempt]=useState(0);
   const [supporter, setSupporter] = useState(null);
+  const [ownMember,setOwnMember]=useState(false);
   const [hasChildren,setHasChildren]=useState(false);
   const [profile, setProfile] = useState(null);
   const [recovering, setRecovering] = useState(false);
@@ -33,7 +35,7 @@ export default function App() {
     if (["recovery", "invite"].some(key => new URLSearchParams(window.location.search).get(key) === "1")) setRecovering(true);
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (_event === "PASSWORD_RECOVERY") setRecovering(true);
-      if (_event === "SIGNED_OUT") { setRecovering(false); setSupporter(null); setPortalMode(null); }
+      if (_event === "SIGNED_OUT") { setRecovering(false); setSupporter(null); setOwnMember(false); setPortalMode(null); }
       const next = session?.user || null;
       const nextIdentity = sessionIdentity(next);
       if (identity.current !== nextIdentity) {
@@ -68,13 +70,13 @@ export default function App() {
     setProfileReady(false);setProfileError("");
     if(!user)return;
     Promise.all([
-      supabase.from("club_member_cards").select("id").eq("user_id",user.id).eq("membership_type","supporter").limit(1),
+      supabase.from("club_member_cards").select("id,membership_type").eq("user_id",user.id),
       supabase.from("profiles").select("*").eq("id",user.id).single(),
       supabase.from("club_player_access").select("player_id").eq("user_id",user.id).limit(1)
     ]).then(([membership,profileResult,links])=>{
       if(!active)return;
       if(profileResult.error||membership.error||links.error){setProfileError(profileResult.error?.message||membership.error?.message||links.error.message);return;}
-      setHasChildren(Boolean(links.data?.length));setSupporter(Boolean(membership.data?.length));setProfile(profileResult.data);setProfileReady(true);
+      setHasChildren(Boolean(links.data?.length));setSupporter(Boolean(membership.data?.some(card=>card.membership_type==="supporter")));setOwnMember(Boolean(membership.data?.some(card=>card.membership_type!=="supporter")));setProfile(profileResult.data);setProfileReady(true);
     }).catch(error=>{if(active)setProfileError(error.message);});
     return ()=>{active=false;};
   }, [user?.id,user?.app_metadata?.club_role,profileAttempt]);
@@ -114,8 +116,10 @@ export default function App() {
   const isAdmin = ["admin", "coach"].includes(role);
 
   if (!isAdmin && supporter === null) return <p role="status">Läser medlemskap…</p>;
+  if(role==="player")return <PlayerDashboard key={user.id+"-player"} user={user} profile={profile} onLogout={logout}/>;
   if(notificationRoute && (role==="admin" || supporter&&!hasChildren))return <ParentDashboard key={user.id} user={user} profile={{...profile,role:"parent"}} onLogout={logout} staffRole={role} onBackToStaff={()=>{const url=new URL(window.location.href);for(const key of ["push","family","event","activity","message"])url.searchParams.delete(key);window.history.replaceState(window.history.state,"",url);setNotificationRoute(false);}}/>;
-  if (!isAdmin && supporter && !hasChildren) return <SupporterDashboard key={user.id} user={user} onLogout={logout}/>;
+  if (!isAdmin && role!=="player" && supporter && !hasChildren) return <SupporterDashboard key={user.id+"-supporter"} user={user} onLogout={logout}/>;
+  if (!isAdmin && role!=="player" && ownMember && !hasChildren) return <SupporterDashboard key={user.id+"-member"} memberOnly user={user} onLogout={logout}/>;
   if(role==="coach"&&!portalMode)return <PortalChoice onSelect={choosePortal} onLogout={logout}/>;
   return isAdmin && portalMode!=="parent" ? (
     <AdminDashboard key={user.id} user={user} profile={{...profile, role}} onLogout={logout} onOpenFamily={role==="coach"?()=>choosePortal("parent"):undefined} />
@@ -123,3 +127,4 @@ export default function App() {
     <ParentDashboard key={user.id} user={user} profile={{...profile, role: role==="player"?"player":"parent"}} onLogout={logout} onBackToStaff={role==="coach"?()=>choosePortal("coach"):undefined} staffRole={role} />
   );
 }
+

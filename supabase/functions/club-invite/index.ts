@@ -22,12 +22,20 @@ Deno.serve(async (req: Request) => {
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length>254 || !["parent","player","member"].includes(kind)) return reply(400,{error:"Ange en giltig e-postadress och kontotyp."});
     if(kind !== "member" && !body.player_id) return reply(400,{error:"Välj spelare."});
     if(body.player_id) {
-      const {data,error}=await caller.from("players").select("id").eq("id",body.player_id).single();
+      const {data,error}=await caller.from("players").select("id,birth_year,mother_email,father_email").eq("id",body.player_id).single();
       if(error || !data) return reply(404,{error:"Spelaren finns inte."});
+      if(kind==="player"&&(data.birth_year==null||data.birth_year<1900||data.birth_year>2012))return reply(400,{error:"Eget spelarkonto gäller spelare födda 2012 eller tidigare."});
+      if(kind==="player"&&[data.mother_email,data.father_email].some(value=>value?.trim().toLowerCase()===email))return reply(400,{error:"Använd spelarens egen e-postadress, inte förälderns."});
     }
     if(body.card_id) {
       const {data,error}=await caller.from("club_member_cards").select("id").eq("id",body.card_id).single();
       if(error || !data) return reply(404,{error:"Medlemskortet finns inte."});
+    }
+    if(kind==="player"){
+      const pattern=email.replace(/[\\%_]/g,"\\$&");
+      const guardianChecks=await Promise.all(["mother_email","father_email"].map(field=>service.from("players").select("id").ilike(field,pattern).limit(1)));
+      if(guardianChecks.some(check=>check.error))throw new Error("Föräldrakopplingen kunde inte kontrolleras.");
+      if(guardianChecks.some(check=>check.data?.length))return reply(400,{error:"Adressen används som föräldrakonto. Använd spelarens egen e-postadress."});
     }
     const {data:profile,error:lookupError}=await service.from("profiles").select("id,role").ilike("email",email.replace(/[\\%_]/g, "\\$&")).maybeSingle();
     if(lookupError) throw lookupError;
@@ -64,3 +72,4 @@ Deno.serve(async (req: Request) => {
     return reply(400,{error:"Kontot eller kopplingen kunde inte slutföras. Kontrollera e-postadressen och försök igen. Om mejlet redan skickats kan kontot kopplas utan en ny inbjudan."});
   }
 });
+

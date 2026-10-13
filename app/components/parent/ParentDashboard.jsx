@@ -21,7 +21,8 @@ import PaymentsView from "./PaymentsView";
 import MessagesView from "./MessagesView";
 
 export default function ParentDashboard({ user, profile, onLogout, onBackToStaff, staffRole }) {
-  const [activeTab, setActiveTab] = usePortalView("family", ["overview","calendar","membership","news","children","equipment","development","trainings","matches","calls","payments","messages"], "overview", user.id);
+  const isPlayer=profile?.role==="player";
+  const [activeTab, setActiveTab] = usePortalView("family", ["overview","calendar","membership","news",isPlayer?"profile":"children","equipment","development","trainings","matches","calls","payments","messages"], "overview", user.id);
   const [data, setData] = useState({
     players: [],
     trainings: [],
@@ -92,7 +93,7 @@ export default function ParentDashboard({ user, profile, onLogout, onBackToStaff
 
 
 
-  const mine = data.players.filter(p => access.some(a => a.player_id === String(p.id)) || [p.mother_email?.toLowerCase(),p.father_email?.toLowerCase()].includes(user.email?.toLowerCase()));
+  const mine = data.players.filter(p => access.some(a => a.player_id === String(p.id)) || (!isPlayer&&[p.mother_email?.toLowerCase(),p.father_email?.toLowerCase()].includes(user.email?.toLowerCase())));
   const teamIds = new Set(mine.map(p => p.team_id).filter(Boolean));
   const invitations=[...familyInvitations(data,mine),...(data.coachInvitations||[])];
   const notificationState=familyNotifications(data,invitations,today);
@@ -101,16 +102,16 @@ export default function ParentDashboard({ user, profile, onLogout, onBackToStaff
     { id: "calendar", label: "Kalender" },
     { id: "calls", label: "Kallelser", count:notificationState.pendingCount },
     { id: "membership", label: "Medlemskort" },
-    { id: "news", label: "Klubbinformation" },
+    { id: "news", label: isPlayer?"Information":"Klubbinformation" },
     { id: "equipment", label: "Utrustning" },
     { id: "development", label: "Utveckling" },
-    { id: "children", label: profile?.role === "player" ? "Min profil" : "Barn", img: "/icons/mascot-head.png" },
+    { id: isPlayer?"profile":"children", label: isPlayer?"Min profil":"Barn", img: "/icons/mascot-head.png" },
     { id: "trainings", label: "Träningar", icon: "📅" },
     { id: "matches", label: "Matcher", icon: "⚽" },
     { id: "payments", label: "Betalningar", icon: "💳" },
     { id: "messages", label: "Meddelanden", count:notificationState.unreadCount, icon: "💬" },
   ];
-  const memberData = {...data, teams:data.teams.filter(t=>teamIds.has(t.id)), trainings:data.trainings.filter(t=>teamIds.has(t.team_id)), matches:data.matches.filter(m=>teamIds.has(m.team_id))};
+  const memberData = {...data, players:mine, teams:data.teams.filter(t=>teamIds.has(t.id)), trainings:data.trainings.filter(t=>teamIds.has(t.team_id)), matches:data.matches.filter(m=>teamIds.has(m.team_id))};
   return <ClubShell notifications={notificationState.notifications} onOpenNotification={openNotification} tabs={tabs} active={activeTab} onChange={navigate} user={user} role={profile?.role === "player" ? "Spelare" : "Förälder"} onLogout={onLogout}>
     <div className="page-heading"><p>{profile?.role==="player"?"Spelarportal · Min profil":"Föräldraportal · Mina barn"}</p><div className="button-group"><Button variant="secondary" disabled={loading} onClick={loadData}>Uppdatera</Button>{onBackToStaff&&<Button onClick={onBackToStaff}>{staffRole==="admin"?"Till administratörsportalen":staffRole==="coach"?"Till tränarportalen":"Till min portal"}</Button>}</div></div>
     {error && <p className="error-banner" role="alert">{error}<button onClick={loadData}>Försök igen</button></p>}
@@ -119,10 +120,10 @@ export default function ParentDashboard({ user, profile, onLogout, onBackToStaff
     {activeTab === "news" && <ClubNews/>}
     {activeTab === "membership" && <MemberCards/>}
     {activeTab === "calendar" && <EventSchedule data={memberData} member onNavigate={navigate}/>}
-    {activeTab === "children" && <ChildrenView self={profile?.role==="player"} data={data} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)}/>}
-    {activeTab === "trainings" && <TrainingsView self={profile?.role==="player"} data={data} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)} onRefresh={loadData}/>}
+    {activeTab === (isPlayer?"profile":"children") && <ChildrenView self={isPlayer} data={memberData} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)}/>}
+    {activeTab === "trainings" && <TrainingsView self={isPlayer} data={memberData} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)} onRefresh={loadData}/>}
     {activeTab === "calls"&&<KallelserView invitations={invitations} today={today} target={target} onShowAll={()=>navigate("calls")} onRefresh={loadData}/>}
-    {activeTab === "matches" && <MatchesView self={profile?.role==="player"} data={data} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)} onRefresh={loadData}/>}
+    {activeTab === "matches" && <MatchesView self={isPlayer} data={memberData} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)} onRefresh={loadData}/>}
     {activeTab === "payments" && <PaymentsView self={profile?.role==="player"} data={data} ownMemberIds={data.ownMemberIds} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)}/>}
     {activeTab === "messages" && <MessagesView targetId={target?.messageId} onRead={readMessage} onOpenCall={t=>navigate("calls",{kind:t.event_kind,eventId:t.event_id})} data={data} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)} onRefresh={loadData}/>}
     {activeTab === "equipment" && <PlayerRecords players={mine} kind="equipment" readOnly/>}
@@ -130,3 +131,4 @@ export default function ParentDashboard({ user, profile, onLogout, onBackToStaff
     </>}
   </ClubShell>;
 }
+

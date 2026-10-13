@@ -131,7 +131,7 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
     {activeTab === "programs" && profile?.role === "admin" && <TrainingPrograms data={data} onAddToTraining={selection=>{setPendingPlan(selection);setActiveTab('trainings');}}/>}
     {activeTab === "calls" && <CoachKallelser/>}
     {activeTab === "news" && <ClubNews admin/>}
-    {activeTab === "membership" && <MemberCards key={memberAdd?.key || "members"} admin initialShowAdd={Boolean(memberAdd)} initialMembershipType={memberAdd?.kind} onCloseAdd={()=>setMemberAdd(null)} onUpdate={loadData}/>}
+    {activeTab === "membership" && <MemberCards key={memberAdd?.key || "members"} admin adminData={data} onAddPlayer={()=>chooseMember("player")} initialShowAdd={Boolean(memberAdd)} initialMembershipType={memberAdd?.kind} onCloseAdd={()=>setMemberAdd(null)} onUpdate={loadData}/>}
     {activeTab === "calendar" && <EventSchedule data={data} onNavigate={setActiveTab}/>}
     {activeTab === "attendance" && <AttendanceTab data={data} compactWeek={profile?.role === "coach"} canDelete={profile?.role !== "coach"} canExport={profile?.role !== "coach"}/>}
     {activeTab === "equipment" && <PlayerRecords players={data.players} kind="equipment" canDelete={profile?.role !== "coach"}/>}
@@ -147,3 +147,4 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
     </>}
   </ClubShell>;
 }
+

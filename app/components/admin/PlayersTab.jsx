@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Card, Input, Button, Empty } from "../UI";
 import { supabase } from "../../lib/supabaseClient";
 import {inviteAccount} from "../../lib/invitations";
+import {canHavePlayerAccount} from "../../lib/memberProfiles.mjs";
 
 export default function PlayersTab({ data, onUpdate, readOnly = false, initialShowAdd = false, onCloseAdd }) {
   const players = data?.players || [];
@@ -29,6 +30,8 @@ export default function PlayersTab({ data, onUpdate, readOnly = false, initialSh
   const [teamId, setTeamId] = useState("");
   const [motherEmail, setMotherEmail] = useState("");
   const [fatherEmail, setFatherEmail] = useState("");
+  const [playerEmail,setPlayerEmail]=useState("");
+  const [invitePlayer,setInvitePlayer]=useState(false);
   const [notice,setNotice]=useState("");
   const [loading, setLoading] = useState(false);
 
@@ -42,6 +45,7 @@ export default function PlayersTab({ data, onUpdate, readOnly = false, initialSh
     setTeamId("");
     setMotherEmail("");
     setFatherEmail("");
+    setPlayerEmail("");setInvitePlayer(false);
     setShowAdd(false);
     onCloseAdd?.();
   }
@@ -56,6 +60,9 @@ export default function PlayersTab({ data, onUpdate, readOnly = false, initialSh
       alert("Ange ett giltigt födelseår");
       return;
     }
+    const ownEmail=playerEmail.trim().toLowerCase();
+    if(invitePlayer&&(!canHavePlayerAccount({birth_year:birthYear})||!ownEmail)){alert("Eget spelarkonto kräver eget mejl och födelseår 2012 eller tidigare.");return;}
+    if(invitePlayer&&[motherEmail,fatherEmail].some(email=>email.trim().toLowerCase()===ownEmail)){alert("Använd spelarens egen e-post, inte förälderns.");return;}
     setLoading(true);setNotice("");
     try {
       const playerData = {
@@ -67,17 +74,19 @@ export default function PlayersTab({ data, onUpdate, readOnly = false, initialSh
         team_id: teamId || null,
         mother_email: motherEmail.trim() || null,
         father_email: fatherEmail.trim() || null,
+        email: ownEmail || null,
       };
 
       const result=await supabase.from("players").insert({...playerData,membership_category:membershipCategory}).select("id").single();
       if(result.error)throw result.error;
       const newEmails=[...new Set([motherEmail,fatherEmail].map(e=>e.trim().toLowerCase()).filter(Boolean))];
       const failures=[];
+      if(invitePlayer){try{await inviteAccount({email:ownEmail,kind:"player",player_id:result.data.id,name:name.trim()});}catch(error){failures.push(`Spelarkonto: ${error.message}`);}}
       for(const email of newEmails) {
         try {await inviteAccount({email,kind:"parent",player_id:result.data.id});}
         catch(error){failures.push(`${email}: ${error.message}`);}
       }
-      setNotice(failures.length?`Spelaren är sparad. Kontrollera välkomstmejlet: ${failures.join(" ")}`:newEmails.length?"Spelaren är sparad och föräldrakontona är inbjudna eller kopplade.":"Spelaren är sparad.");
+      setNotice(failures.length?`Spelaren är sparad. Kontrollera välkomstmejlet: ${failures.join(" ")}`:invitePlayer?"Spelaren är sparad och eget spelarkonto är inbjudet eller kopplat. Eventuella föräldrakopplingar behålls separat.":newEmails.length?"Spelaren är sparad och föräldrakontona är inbjudna eller kopplade.":"Spelaren är sparad.");
       resetForm();
       onUpdate();
     } catch (err) {
@@ -133,14 +142,14 @@ export default function PlayersTab({ data, onUpdate, readOnly = false, initialSh
               </div>
               <div>
                 <label htmlFor="player-birth-year">Födelseår</label>
-                <Input id="player-birth-year" type="number" min="1900" max={new Date().getFullYear()} value={birthYear} onChange={e => setBirthYear(e.target.value)} />
+                <Input id="player-birth-year" type="number" min="1900" max={new Date().getFullYear()} value={birthYear} onChange={e => {setBirthYear(e.target.value);if(!canHavePlayerAccount({birth_year:e.target.value}))setInvitePlayer(false);}} />
               </div>
               <div>
                 <label htmlFor="player-gender">Pojke / flicka</label>
                 <select id="player-gender" value={gender} onChange={e => setGender(e.target.value)}><option value="">Ej angivet</option><option value="boy">Pojke</option><option value="girl">Flicka</option></select>
               </div>
               <div>
-                <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "var(--text-dark)" }}>Mammas e-post</label>
+                <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "var(--text-dark)" }}>Mammas e-post · separat föräldrakonto</label>
                 <Input type="email" placeholder="mamma@email.com" value={motherEmail} onChange={(e) => setMotherEmail(e.target.value)} />
               </div>
               <div>
@@ -148,6 +157,7 @@ export default function PlayersTab({ data, onUpdate, readOnly = false, initialSh
                 <Input type="email" placeholder="pappa@email.com" value={fatherEmail} onChange={(e) => setFatherEmail(e.target.value)} />
               </div>
             </div>
+            {canHavePlayerAccount({birth_year:birthYear})&&<div className="form-grid"><label className="field">Spelarens egen e-post<Input type="email" value={playerEmail} onChange={e=>setPlayerEmail(e.target.value)} placeholder="spelarens@email.com"/></label><label><input type="checkbox" checked={invitePlayer} onChange={e=>setInvitePlayer(e.target.checked)}/> Bjud in eget spelarkonto · född 2012 eller tidigare</label></div>}
             <div style={{ display: "flex", gap: "10px" }}>
               <Button variant="primary" onClick={savePlayer} disabled={loading} style={{ flex: 1 }}>{loading ? "Sparar..." : "Lägg till spelare"}</Button>
               <Button variant="secondary" onClick={resetForm} style={{ flex: 1 }}>Avbryt</Button>
@@ -178,3 +188,4 @@ export default function PlayersTab({ data, onUpdate, readOnly = false, initialSh
     </>
   );
 }
+
