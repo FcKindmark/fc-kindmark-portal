@@ -14,6 +14,7 @@ import {useStockholmToday} from "../../lib/useStockholmToday";
 import {memberEventInfo} from "../../lib/schedule";
 import MemberOverview from "./MemberOverview";
 import PlayerRecords from "../PlayerRecords";
+import PlayerTeam from "../PlayerTeam";
 import ChildrenView from "./ChildrenView";
 import TrainingsView from "./TrainingsView";
 import MatchesView from "./MatchesView";
@@ -22,7 +23,7 @@ import MessagesView from "./MessagesView";
 
 export default function ParentDashboard({ user, profile, onLogout, onBackToStaff, staffRole }) {
   const isPlayer=profile?.role==="player";
-  const [activeTab, setActiveTab] = usePortalView("family", ["overview","calendar","membership","news",isPlayer?"profile":"children","equipment","development","trainings","matches","calls","payments","messages"], "overview", user.id);
+  const [activeTab, setActiveTab] = usePortalView("family", ["overview",...(isPlayer?["team"]:[]),"calendar","membership","news",isPlayer?"profile":"children","equipment","development","trainings","matches","calls","payments","messages"], "overview", user.id);
   const [data, setData] = useState({
     players: [],
     trainings: [],
@@ -99,6 +100,7 @@ export default function ParentDashboard({ user, profile, onLogout, onBackToStaff
   const notificationState=familyNotifications(data,invitations,today);
   const tabs = [
     { id: "overview", label: "Hem" },
+    ...(isPlayer?[{id:"team",label:"Mitt lag"}]:[]),
     { id: "calendar", label: "Kalender" },
     { id: "calls", label: "Kallelser", count:notificationState.pendingCount },
     { id: "membership", label: "Medlemskort" },
@@ -117,6 +119,7 @@ export default function ParentDashboard({ user, profile, onLogout, onBackToStaff
     {error && <p className="error-banner" role="alert">{error}<button onClick={loadData}>Försök igen</button></p>}
     {loading ? <p role="status">Läser in…</p> : <>
     {activeTab === "overview" && <MemberOverview self={profile?.role==="player"} data={memberData} players={mine} onNavigate={navigate}/>}
+    {isPlayer&&activeTab === "team"&&<PlayerTeam/>}
     {activeTab === "news" && <ClubNews/>}
     {activeTab === "membership" && <MemberCards/>}
     {activeTab === "calendar" && <EventSchedule data={memberData} member onNavigate={navigate}/>}

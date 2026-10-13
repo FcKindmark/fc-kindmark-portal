@@ -5,12 +5,12 @@ for(const year of [1900,2000,2010,2011,2012,'2012'])assert.equal(canHavePlayerAc
 for(const year of [1899,2013,2026,null,undefined,'',2012.5,'bad'])assert.equal(canHavePlayerAccount({birth_year:year}),false);
 const cards=[{player_id:'p1',membership_type:'member'},{membership_type:'member'},{membership_type:'supporter'}];
 assert.deepEqual(cards.map(memberProfileKind),['player','member','supporter']);
-assert.equal(cards.filter(c=>memberMatchesProfileFilter(c,'all')).length,2);
+assert.equal(cards.filter(c=>memberMatchesProfileFilter(c,'all')).length,3);
 for(const filter of ['player','member','supporter'])assert.equal(cards.filter(c=>memberMatchesProfileFilter(c,filter)).length,1);
 const accounts=[{id:'player',role:'parent',email:'player@example.test'},{id:'mother',role:'parent',email:'Mother@Example.test'},{id:'coach',role:'coach',email:'coach@example.test'},{id:'admin',role:'admin',email:'admin@example.test'}];
 assert.deepEqual(ownPlayerAccounts(accounts,{mother_email:' mother@example.test ',father_email:null}).map(a=>a.id),['player']);
 const members=readFileSync(new URL('../app/components/MemberCards.jsx',import.meta.url),'utf8');
-assert.match(members,/Endast medlem/);assert.match(members,/onOpenPlayer/);assert.match(members,/canHavePlayerAccount\(player\)\?<PlayerAccount/);
+assert.match(members,/mode="membership"/);assert.match(members,/<option value="player">Spelare/);
 const page=readFileSync(new URL('../app/page.js',import.meta.url),'utf8');
 assert.match(page,/profile\?\.role === "player" \? "player"/);
 assert.match(page,/role!=="player" && ownMember && !hasChildren/);
@@ -19,6 +19,12 @@ const dashboard=readFileSync(new URL('../app/components/parent/ParentDashboard.j
 assert.match(dashboard,/isPlayer\?"profile":"children"/);
 for(const label of ['Information','Utveckling','Kalender','Matcher','Träningar','Utrustning','Min profil'])assert.ok(dashboard.includes(label));
 assert.match(dashboard,/players:mine/);
+assert.match(dashboard,/isPlayer&&activeTab === "team"&&<PlayerTeam/);
+const ownProfile=readFileSync(new URL('../app/components/PlayerProfile.jsx',import.meta.url),'utf8');
+assert.match(ownProfile,/<PlayerMeasurements playerId=\{player.id\} readOnly/);
+const teamSQL=readFileSync(new URL('../database/player-team-roster.sql',import.meta.url),'utf8');
+assert.match(teamSQL,/a.user_id=\(select auth.uid\(\)\)/);assert.match(teamSQL,/own.team_id=p.team_id/);
+assert.ok(!teamSQL.includes('mother_email'));assert.ok(!teamSQL.includes('select p.*'));
 const edge=readFileSync(new URL('../supabase/functions/club-invite/index.ts',import.meta.url),'utf8');
 assert.ok(edge.indexOf('data.birth_year>2012')<edge.indexOf('inviteUserByEmail'));
 assert.ok(edge.indexOf('guardianChecks.some(check=>check.data?.length)')<edge.indexOf('inviteUserByEmail'));

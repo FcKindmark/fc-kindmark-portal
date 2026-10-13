@@ -4,7 +4,7 @@ import {supabase} from "../../lib/supabaseClient";
 import InviteAccountForm from "./InviteAccountForm";
 import {Button} from "../UI";
 import {canHavePlayerAccount,ownPlayerAccounts} from "../../lib/memberProfiles.mjs";
-export default function PlayerAccount({player,accounts,onUpdate,onClose}) {
+export default function PlayerAccount({player,accounts,onUpdate,onClose,simple=false}) {
  const [links,setLinks]=useState([]),[account,setAccount]=useState(""),[busy,setBusy]=useState(false),[error,setError]=useState("");
  async function load(){const r=await supabase.from("club_player_access").select("user_id").eq("player_id",player.id);if(r.error)setError(r.error.message);else setLinks(r.data||[]);}
  useEffect(()=>{load();},[player.id]);
@@ -16,7 +16,7 @@ export default function PlayerAccount({player,accounts,onUpdate,onClose}) {
  const linked=accounts.filter(a=>a.role==="player"&&links.some(l=>l.user_id===a.id));
  const eligible=canHavePlayerAccount(player);
  if(!eligible)return <section className="player-actions-panel"><h3>Spelarkonto · {player.name}</h3><p>Eget spelarkonto gäller spelare födda 2012 eller tidigare. Ange födelseår i spelarprofilen först om det saknas. För yngre spelare används föräldrakontot.</p><Button variant="secondary" onClick={onClose}>Stäng</Button></section>;
- return <section className="player-actions-panel"><div className="page-heading"><h3>Spelarkonto · {player.name}</h3><Button disabled={busy} variant="secondary" onClick={onClose}>Stäng</Button></div>
+ return <section className="player-actions-panel"><div className="page-heading"><h3>Bjud in spelare · {player.name}</h3>{!simple&&<Button disabled={busy} variant="secondary" onClick={onClose}>Stäng</Button>}</div>
  <p>Spelare född {player.birth_year} · eget spelarkonto. Bjud in med spelarens egen e-postadress, inte en förälders. Spelaren ser sin profil, kalender, kallelser och medlemskort. Föräldrakopplingarna finns kvar separat.</p>
  {error&&<p role="alert" className="error-banner">{error}</p>}
  <InviteAccountForm key={player.email||"player"} kind="player" playerId={player.id} name={player.name} initialEmail={player.email||""} onSaved={async()=>{await load();await onUpdate();}}/>

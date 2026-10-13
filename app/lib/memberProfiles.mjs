@@ -9,7 +9,7 @@ export function memberProfileKind(card) {
 }
 export function memberMatchesProfileFilter(card, filter) {
   const kind = memberProfileKind(card);
-  return filter === 'all' ? kind !== 'supporter' : kind === filter;
+  return filter === 'all' || kind === filter;
 }
 export function ownPlayerAccounts(accounts, player) {
   const guardians = new Set([player?.mother_email, player?.father_email].filter(Boolean).map(email => email.trim().toLowerCase()));

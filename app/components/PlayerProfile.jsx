@@ -3,6 +3,8 @@ import {useEffect,useRef,useState} from "react";
 import {supabase} from "../lib/supabaseClient";
 import {Button} from "./UI";
 import PersonAvatar from "./PersonAvatar";
+import PlayerMeasurements from "./PlayerMeasurements";
+import PlayerRecords from "./PlayerRecords";
 const sizes=['104','110','116','122','128','134','140','146','152','158','164','170','176','XXS','XS','S','M','L','XL','XXL','3XL'];
 export default function PlayerProfile({player,onClose,readOnly=false}){
  const dialog=useRef(null);
@@ -26,6 +28,10 @@ export default function PlayerProfile({player,onClose,readOnly=false}){
     <label className="field">Telegram-användarnamn (valfritt)<input maxLength={33} value={telegram} onChange={e=>setTelegram(e.target.value)} placeholder="@användarnamn" pattern="@?[A-Za-z][A-Za-z0-9_]{4,31}"/></label>
     {!readOnly&&<Button type="submit" disabled={busy}>{busy?'Sparar…':'Spara spelarprofil'}</Button>}
   </fieldset></form>}
+  <PlayerMeasurements playerId={player.id} readOnly/>
+  <PlayerRecords players={[player]} playerId={player.id} kind="development" compact readOnly/>
+  <PlayerRecords players={[player]} playerId={player.id} kind="equipment" compact readOnly/>
   {error&&<p role="alert" className="error-banner">{error}</p>}{notice&&<p role="status" className="economy-notice">{notice}</p>}
  </dialog>;
 }
+

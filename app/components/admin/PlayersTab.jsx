@@ -7,7 +7,7 @@ import { supabase } from "../../lib/supabaseClient";
 import {inviteAccount} from "../../lib/invitations";
 import {canHavePlayerAccount} from "../../lib/memberProfiles.mjs";
 
-export default function PlayersTab({ data, onUpdate, readOnly = false, initialShowAdd = false, onCloseAdd }) {
+export default function PlayersTab({ data, onUpdate, readOnly = false, onAddPlayer, onOpenMember }) {
   const players = data?.players || [];
   const teams = data?.teams || [];
   const [profilePlayer,setProfilePlayer]=useState(null);
@@ -20,84 +20,10 @@ export default function PlayersTab({ data, onUpdate, readOnly = false, initialSh
     (!genderFilter || p.gender === genderFilter) &&
     (!teamFilter || (teamFilter === "unassigned" ? !p.team_id : p.team_id === teamFilter))
   ).sort((a, b) => (a.birth_year || 9999) - (b.birth_year || 9999) || a.name.localeCompare(b.name, "sv"));
-  const [membershipCategory,setMembershipCategory]=useState("new");
-  const [birthYear, setBirthYear] = useState("");
-  const [gender, setGender] = useState("");
-  const [showAdd, setShowAdd] = useState(initialShowAdd && !readOnly);
-  const [name, setName] = useState("");
-  const [position, setPosition] = useState("Forward");
-  const [number, setNumber] = useState("");
-  const [teamId, setTeamId] = useState("");
-  const [motherEmail, setMotherEmail] = useState("");
-  const [fatherEmail, setFatherEmail] = useState("");
-  const [playerEmail,setPlayerEmail]=useState("");
-  const [invitePlayer,setInvitePlayer]=useState(false);
-  const [notice,setNotice]=useState("");
-  const [loading, setLoading] = useState(false);
-
-  function resetForm() {
-    setMembershipCategory("new");
-    setName("");
-    setPosition("Forward");
-    setNumber("");
-    setBirthYear("");
-    setGender("");
-    setTeamId("");
-    setMotherEmail("");
-    setFatherEmail("");
-    setPlayerEmail("");setInvitePlayer(false);
-    setShowAdd(false);
-    onCloseAdd?.();
-  }
-
-  async function savePlayer() {
-    if (!name.trim()) {
-      alert("Fyll i spelarens namn");
-      return;
-    }
-
-    if (birthYear && (!Number.isInteger(Number(birthYear)) || Number(birthYear) < 1900 || Number(birthYear) > new Date().getFullYear())) {
-      alert("Ange ett giltigt födelseår");
-      return;
-    }
-    const ownEmail=playerEmail.trim().toLowerCase();
-    if(invitePlayer&&(!canHavePlayerAccount({birth_year:birthYear})||!ownEmail)){alert("Eget spelarkonto kräver eget mejl och födelseår 2012 eller tidigare.");return;}
-    if(invitePlayer&&[motherEmail,fatherEmail].some(email=>email.trim().toLowerCase()===ownEmail)){alert("Använd spelarens egen e-post, inte förälderns.");return;}
-    setLoading(true);setNotice("");
-    try {
-      const playerData = {
-        name: name.trim(),
-        position,
-        birth_year: birthYear ? Number(birthYear) : null,
-        gender: gender || null,
-        number: number === "" ? null : parseInt(number, 10),
-        team_id: teamId || null,
-        mother_email: motherEmail.trim() || null,
-        father_email: fatherEmail.trim() || null,
-        email: ownEmail || null,
-      };
-
-      const result=await supabase.from("players").insert({...playerData,membership_category:membershipCategory}).select("id").single();
-      if(result.error)throw result.error;
-      const newEmails=[...new Set([motherEmail,fatherEmail].map(e=>e.trim().toLowerCase()).filter(Boolean))];
-      const failures=[];
-      if(invitePlayer){try{await inviteAccount({email:ownEmail,kind:"player",player_id:result.data.id,name:name.trim()});}catch(error){failures.push(`Spelarkonto: ${error.message}`);}}
-      for(const email of newEmails) {
-        try {await inviteAccount({email,kind:"parent",player_id:result.data.id});}
-        catch(error){failures.push(`${email}: ${error.message}`);}
-      }
-      setNotice(failures.length?`Spelaren är sparad. Kontrollera välkomstmejlet: ${failures.join(" ")}`:invitePlayer?"Spelaren är sparad och eget spelarkonto är inbjudet eller kopplat. Eventuella föräldrakopplingar behålls separat.":newEmails.length?"Spelaren är sparad och föräldrakontona är inbjudna eller kopplade.":"Spelaren är sparad.");
-      resetForm();
-      onUpdate();
-    } catch (err) {
-      alert("Fel: " + err.message);
-    }
-    setLoading(false);
-  }
-
   return (
     <>
       <div style={{ marginBottom: "30px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        {!readOnly&&onAddPlayer&&<Button onClick={onAddPlayer}>Ny spelare → Medlemmar</Button>}
         <h2 style={{ fontSize: "24px", fontWeight: "700", color: "var(--text-dark)" }}>Spelare</h2>
       </div>
 
@@ -107,65 +33,6 @@ export default function PlayersTab({ data, onUpdate, readOnly = false, initialSh
         <select aria-label="Filtrera lag" value={teamFilter} onChange={e => setTeamFilter(e.target.value)}><option value="">Alla lag</option><option value="unassigned">Ej lagfördelade</option>{teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select>
         <span>{filteredPlayers.length} spelare</span>
       </div>
-      {notice && <p role="status">{notice}</p>}
-      {showAdd && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0, 0, 0, 0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, backdropFilter: "blur(4px)" }} onClick={(e) => { if (e.target === e.currentTarget) resetForm(); }}>
-          <Card style={{ maxWidth: "900px", width: "95%" }}>
-            <h3 style={{ marginBottom: "20px", color: "var(--text-dark)" }}>Lägg till ny spelare</h3>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
-              {<label className="field">Medlemskategori<select value={membershipCategory} onChange={e=>setMembershipCategory(e.target.value)}><option value="new">Ny medlem</option><option value="full">Medlem</option></select></label>}
-              <div>
-                <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "var(--text-dark)" }}>Namn</label>
-                <Input placeholder="Spelarens namn" value={name} onChange={(e) => setName(e.target.value)} />
-              </div>
-              <div>
-                <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "var(--text-dark)" }}>Tröjnummer</label>
-                <Input type="number" placeholder="7" value={number} onChange={(e) => setNumber(e.target.value)} />
-              </div>
-              <div>
-                <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "var(--text-dark)" }}>Position</label>
-                <select value={position} onChange={(e) => setPosition(e.target.value)} style={{ padding: "12px 16px", borderRadius: "8px", border: "2px solid var(--border-color)", fontSize: "15px", width: "100%", color: "var(--text-dark)", background: "var(--white)", cursor: "pointer" }}>
-                  <option>Forward</option>
-                  <option>Midfielder</option>
-                  <option>Defender</option>
-                  <option>Goalkeeper</option>
-                </select>
-              </div>
-              <div>
-                <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "var(--text-dark)" }}>Lag</label>
-                <select value={teamId} onChange={(e) => setTeamId(e.target.value)} style={{ padding: "12px 16px", borderRadius: "8px", border: "2px solid var(--border-color)", fontSize: "15px", width: "100%", color: "var(--text-dark)", background: "var(--white)", cursor: "pointer" }}>
-                  <option value="">Välj lag...</option>
-                  {teams.map((team) => (
-                    <option key={team.id} value={team.id}>{team.name} ({team.age_group})</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="player-birth-year">Födelseår</label>
-                <Input id="player-birth-year" type="number" min="1900" max={new Date().getFullYear()} value={birthYear} onChange={e => {setBirthYear(e.target.value);if(!canHavePlayerAccount({birth_year:e.target.value}))setInvitePlayer(false);}} />
-              </div>
-              <div>
-                <label htmlFor="player-gender">Pojke / flicka</label>
-                <select id="player-gender" value={gender} onChange={e => setGender(e.target.value)}><option value="">Ej angivet</option><option value="boy">Pojke</option><option value="girl">Flicka</option></select>
-              </div>
-              <div>
-                <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "var(--text-dark)" }}>Mammas e-post · separat föräldrakonto</label>
-                <Input type="email" placeholder="mamma@email.com" value={motherEmail} onChange={(e) => setMotherEmail(e.target.value)} />
-              </div>
-              <div>
-                <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "var(--text-dark)" }}>Pappas e-post</label>
-                <Input type="email" placeholder="pappa@email.com" value={fatherEmail} onChange={(e) => setFatherEmail(e.target.value)} />
-              </div>
-            </div>
-            {canHavePlayerAccount({birth_year:birthYear})&&<div className="form-grid"><label className="field">Spelarens egen e-post<Input type="email" value={playerEmail} onChange={e=>setPlayerEmail(e.target.value)} placeholder="spelarens@email.com"/></label><label><input type="checkbox" checked={invitePlayer} onChange={e=>setInvitePlayer(e.target.checked)}/> Bjud in eget spelarkonto · född 2012 eller tidigare</label></div>}
-            <div style={{ display: "flex", gap: "10px" }}>
-              <Button variant="primary" onClick={savePlayer} disabled={loading} style={{ flex: 1 }}>{loading ? "Sparar..." : "Lägg till spelare"}</Button>
-              <Button variant="secondary" onClick={resetForm} style={{ flex: 1 }}>Avbryt</Button>
-            </div>
-          </Card>
-        </div>
-      )}
-
       {filteredPlayers.length === 0 ? (
         <Empty message="Inga spelare än" />
       ) : (
@@ -184,7 +51,7 @@ export default function PlayersTab({ data, onUpdate, readOnly = false, initialSh
           </div>
         </Card>
       )}
-      {profilePlayer&&players.some(player=>player.id===profilePlayer)&&<AdminPlayerProfile key={profilePlayer} player={players.find(player=>player.id===profilePlayer)} teams={teams} accounts={data.profiles||[]} readOnly={readOnly} onUpdate={onUpdate} onClose={()=>setProfilePlayer(null)}/>}
+      {profilePlayer&&players.some(player=>player.id===profilePlayer)&&<AdminPlayerProfile key={profilePlayer} player={players.find(player=>player.id===profilePlayer)} teams={teams} accounts={data.profiles||[]} onOpenMember={readOnly?undefined:onOpenMember} readOnly={readOnly} onUpdate={onUpdate} onClose={()=>setProfilePlayer(null)}/>}
     </>
   );
 }
