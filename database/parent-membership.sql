@@ -3,7 +3,8 @@ returns uuid language plpgsql security invoker set search_path='' as $$
 declare account public.profiles%rowtype; card public.club_member_cards%rowtype;
 begin
  if (select auth.uid()) is null or not public.is_admin() then raise insufficient_privilege using message='Endast administratörer kan koppla föräldrar.'; end if;
- select * into account from public.profiles where id=target for update;
+ perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(target::text,0));
+ select * into account from public.profiles where id=target;
  if not found then raise exception 'Välj ett registrerat föräldrakonto.'; end if;
  if account.role='player' then raise exception 'Spelarkonton kan inte kopplas som föräldrar. Använd ett separat föräldrakonto.'; end if;
  if not exists(select 1 from public.players where id=child) then raise exception 'Barnet finns inte.'; end if;
