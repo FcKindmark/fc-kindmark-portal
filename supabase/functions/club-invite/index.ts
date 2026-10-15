@@ -27,9 +27,12 @@ Deno.serve(async (req: Request) => {
       if(kind==="player"&&(data.birth_year==null||data.birth_year<1900||data.birth_year>2012))return reply(400,{error:"Eget spelarkonto gäller spelare födda 2012 eller tidigare."});
       if(kind==="player"&&[data.mother_email,data.father_email].some(value=>value?.trim().toLowerCase()===email))return reply(400,{error:"Använd spelarens egen e-postadress, inte förälderns."});
     }
+    let parentCardUser:string|null=null;
     if(body.card_id) {
-      const {data,error}=await caller.from("club_member_cards").select("id").eq("id",body.card_id).single();
+      const {data,error}=await caller.from("club_member_cards").select("id,player_id,user_id").eq("id",body.card_id).single();
       if(error || !data) return reply(404,{error:"Medlemskortet finns inte."});
+      if(kind==="parent"&&data.player_id)return reply(400,{error:"Välj förälderns eget medlemskort, inte barnets."});
+      parentCardUser=data.user_id;
     }
     if(kind==="player"){
       const pattern=email.replace(/[\\%_]/g,"\\$&");
@@ -39,6 +42,8 @@ Deno.serve(async (req: Request) => {
     }
     const {data:profile,error:lookupError}=await service.from("profiles").select("id,role").ilike("email",email.replace(/[\\%_]/g, "\\$&")).maybeSingle();
     if(lookupError) throw lookupError;
+    if(kind==="parent"&&profile?.role==="player")return reply(409,{error:"Använd ett separat föräldrakonto, inte spelarens konto."});
+    if(kind==="parent"&&parentCardUser&&parentCardUser!==profile?.id)return reply(409,{error:"Medlemskortet tillhör ett annat konto."});
     let userId=profile?.id;
     let sent=false;
     if(userId && kind==="player" && ["admin","coach"].includes(profile.role)) return reply(409,{error:"Använd ett separat spelarkonto."});
@@ -58,11 +63,14 @@ Deno.serve(async (req: Request) => {
     if(kind==="player") {
       const {error}=await caller.rpc("club_link_player_account",{target:userId,player:body.player_id,enabled:true});
       if(error) throw error;
+    } else if(kind==="parent") {
+      const {error}=await caller.rpc("club_link_parent_member",{target:userId,child:body.player_id,member_card_id:body.card_id||null});
+      if(error) throw error;
     } else if(body.player_id) {
       const {error}=await caller.from("club_player_access").upsert({user_id:userId,player_id:body.player_id},{onConflict:"user_id,player_id",ignoreDuplicates:true});
       if(error) throw error;
     }
-    if(body.card_id) {
+    if(body.card_id&&kind!=="parent") {
       const {data,error}=await caller.from("club_member_cards").update({user_id:userId}).eq("id",body.card_id).select("id");
       if(error || !data?.length) throw error || new Error("Medlemskortet kunde inte kopplas.");
     }

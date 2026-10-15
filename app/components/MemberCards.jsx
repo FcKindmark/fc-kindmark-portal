@@ -7,6 +7,7 @@ import {inviteAccount} from "../lib/invitations";
 import InviteAccountForm from "./admin/InviteAccountForm";
 import PlayerAccount from "./admin/PlayerAccount";
 import AdminPlayerProfile from "./admin/AdminPlayerProfile";
+import MemberParentAccess from "./admin/MemberParentAccess";
 import {canHavePlayerAccount,memberProfileKind,memberMatchesProfileFilter} from "../lib/memberProfiles.mjs";
 import { downloadMemberCodes } from "../lib/memberExport";
 
@@ -38,7 +39,7 @@ export default function MemberCards({ admin = false, adminData, onAddPlayer, ini
 
   const roster=adminData?.players||[];
   const [showAdd,setShowAdd]=useState(initialShowAdd);
-  function closeAdd(){setPendingCard(null);setShowAdd(false);onCloseAdd?.();}
+  function closeAdd(){setPendingCard(null);setParentChild("");setShowAdd(false);onCloseAdd?.();}
   const [cards, setCards] = useState([]);
   const [search, setSearch] = useState("");
   const [memberFilter,setMemberFilter]=useState(initialShowAdd&&initialMembershipType==='supporter'?'supporter':'all');
@@ -49,6 +50,7 @@ export default function MemberCards({ admin = false, adminData, onAddPlayer, ini
   const [email,setEmail]=useState("");
   const [birthYear,setBirthYear]=useState("");
   const [pendingPlayer,setPendingPlayer]=useState(null);
+  const [parentChild,setParentChild]=useState("");
   const [pendingCard,setPendingCard]=useState(null);
   const [notice,setNotice]=useState("");
   const [accountId, setAccountId] = useState("");
@@ -66,6 +68,7 @@ export default function MemberCards({ admin = false, adminData, onAddPlayer, ini
   async function addCard(event) {
     event.preventDefault();
     if (!name.trim()) return;
+    if(membershipType!=="player"&&parentChild&&!email.trim()&&!accountId){setError("Ange förälderns e-post eller välj ett registrerat konto.");return;}
     setSaving(true);
     setError("");setNotice("");
     let cardId=pendingCard;
@@ -81,10 +84,11 @@ export default function MemberCards({ admin = false, adminData, onAddPlayer, ini
         cardId=result.data.id;setPendingCard(cardId);
       }
       if(email.trim()){
-        const invited=await inviteAccount({email,kind:"member",card_id:cardId,name:name.trim(),resend:true});
+        const invited=await inviteAccount({email,kind:parentChild?"parent":"member",player_id:parentChild||undefined,card_id:cardId,name:name.trim(),resend:true});
         setNotice(invited.message);
       }
-      setPendingCard(null);setName("");setEmail("");setAccountId("");closeAdd();await load();if(onUpdate)await onUpdate();
+      if(parentChild&&accountId){const r=await supabase.rpc("club_link_parent_member",{target:accountId,child:parentChild,member_card_id:cardId});if(r.error)throw r.error;}
+      setParentChild("");setPendingCard(null);setName("");setEmail("");setAccountId("");closeAdd();await load();if(onUpdate)await onUpdate();
     }catch(error){await load();setError(cardId?`Medlemskortet är sparat, men kontot kunde inte kopplas: ${error.message}`:error.message);}
     setSaving(false);
   }
@@ -113,23 +117,23 @@ export default function MemberCards({ admin = false, adminData, onAddPlayer, ini
   const visible = cards.filter(c => (!admin || memberMatchesProfileFilter(c,memberFilter)) && `${c.name} ${c.membership_no || ""} ${c.member_number}`.toLocaleLowerCase("sv").includes(search.toLocaleLowerCase("sv")));
   return <section>
     <div className="page-heading"><h2>{admin ? "Medlemmar och medlemskort" : "Medlemskort"}</h2></div>
-    {admin&&<><div className="button-group" role="group" aria-label="Visa medlemsprofil">{[['all','Alla medlemmar'],['player','Spelare'],['member','Endast medlem'],['supporter','Stödmedlemmar']].map(([value,label])=><Button key={value} variant={memberFilter===value?'primary':'secondary'} aria-pressed={memberFilter===value} onClick={()=>{setMemberFilter(value);setSelectedId(null);}}>{label} ({cards.filter(c=>memberMatchesProfileFilter(c,value)).length})</Button>)}</div><p className="muted">Spelare är också medlemmar. Spelarprofil och egen inloggning hanteras via spelarens medlemskort. Eget spelarkonto: född 2012 eller tidigare.</p><div className="button-group"><Button onClick={()=>{setMembershipType("new");setShowAdd(true);}}>+ Lägg till medlem</Button></div></>}
+    {admin&&<><div className="button-group" role="group" aria-label="Visa medlemsprofil">{[['all','Alla medlemmar'],['player','Spelare'],['member','Medlem'],['supporter','Stödmedlemmar']].map(([value,label])=><Button key={value} variant={memberFilter===value?'primary':'secondary'} aria-pressed={memberFilter===value} onClick={()=>{setMemberFilter(value);setSelectedId(null);}}>{label} ({cards.filter(c=>memberMatchesProfileFilter(c,value)).length})</Button>)}</div><p className="muted">Spelare är också medlemmar. Spelarprofil och egen inloggning hanteras via spelarens medlemskort. Eget spelarkonto: född 2012 eller tidigare.</p><div className="button-group"><Button onClick={()=>{setMembershipType("new");setShowAdd(true);}}>+ Lägg till medlem</Button></div></>}
     {!admin && <p>Visa ditt aktiva medlemskort hos klubbens anslutna partners. Rabatt och användning följer respektive partners villkor. Ditt kort har ett kort medlemsnummer och en separat rabattkod.</p>}
-    {admin && <><label htmlFor="member-card-search">Sök namn eller medlemsnummer</label><input id="member-card-search" value={search} onChange={e => setSearch(e.target.value)}/>{showAdd && <form onSubmit={addCard} className="member-card-add"><label htmlFor="new-member-name">Medlemmens namn</label><input id="new-member-name" disabled={Boolean(pendingCard)||saving} autoFocus required value={name} onChange={e => setName(e.target.value)}/><label htmlFor="new-member-email">E-post · för spelare används egen adress</label><input id="new-member-email" type="email" disabled={membershipType!=="player"&&Boolean(accountId)} value={email} onChange={e=>setEmail(e.target.value)}/><label htmlFor="new-member-type">Medlemstyp</label><select id="new-member-type" disabled={Boolean(pendingCard)||saving} value={membershipType} onChange={e=>setMembershipType(e.target.value)}><option value="new">Medlem</option><option value="supporter">Stödmedlem · 150 SEK</option><option value="player">Spelare</option></select>{membershipType==="player"&&<label className="field">Födelseår<input type="number" min="1900" max={new Date().getFullYear()} value={birthYear} onChange={e=>setBirthYear(e.target.value)}/></label>}{membershipType!=="player"&&<><label htmlFor="new-member-account">Koppla till registrerat konto</label><select id="new-member-account" disabled={Boolean(email)||Boolean(pendingCard)} value={accountId} onChange={e=>setAccountId(e.target.value)}><option value="">Koppla senare</option>{accounts.map(a=><option key={a.id} value={a.id}>{a.full_name || a.email} · {a.email}</option>)}</select></>}<Button type="submit" variant="primary" disabled={saving}>Spara medlem</Button><Button variant="secondary" disabled={saving} onClick={closeAdd}>Avbryt</Button></form>}<p>{visible.length} medlemskort</p><div className="match-actions"><Button disabled={loading} onClick={()=>downloadMemberCodes(cards,true)}>Exportera aktiva koder till LEGEA (CSV)</Button><Button variant="secondary" disabled={loading} onClick={()=>downloadMemberCodes(cards,false)}>Exportera alla kort (CSV)</Button></div><p className="muted">Exporten innehåller medlemsnummer, namn, medlemstyp och status. Den omfattar alla kort, oavsett sökfilter. Ange e-post när du lägger till en medlem för att skicka välkomstmejl och koppla kontot automatiskt.</p></>}
+    {admin && <><label htmlFor="member-card-search">Sök namn eller medlemsnummer</label><input id="member-card-search" value={search} onChange={e => setSearch(e.target.value)}/>{showAdd && <form onSubmit={addCard} className="member-card-add"><label htmlFor="new-member-name">Medlemmens namn</label><input id="new-member-name" disabled={Boolean(pendingCard)||saving} autoFocus required value={name} onChange={e => setName(e.target.value)}/><label htmlFor="new-member-email">E-post · för spelare används egen adress</label><input id="new-member-email" type="email" disabled={membershipType!=="player"&&Boolean(accountId)} value={email} onChange={e=>setEmail(e.target.value)}/><label htmlFor="new-member-type">Medlemstyp</label><select id="new-member-type" disabled={Boolean(pendingCard)||saving} value={membershipType} onChange={e=>setMembershipType(e.target.value)}><option value="new">Medlem</option><option value="supporter">Stödmedlem · 150 SEK</option><option value="player">Spelare</option></select>{membershipType==="player"&&<label className="field">Födelseår<input type="number" min="1900" max={new Date().getFullYear()} value={birthYear} onChange={e=>setBirthYear(e.target.value)}/></label>}{membershipType!=="player"&&<><label htmlFor="new-member-account">Koppla till registrerat konto</label><select id="new-member-account" disabled={Boolean(email)||Boolean(pendingCard)} value={accountId} onChange={e=>setAccountId(e.target.value)}><option value="">Koppla senare</option>{accounts.filter(a=>a.role!=="player").map(a=><option key={a.id} value={a.id}>{a.full_name || a.email} · {a.email}</option>)}</select><label className="field">Förälder till (valfritt)<select disabled={saving} value={parentChild} onChange={e=>setParentChild(e.target.value)}><option value="">Inget barn kopplat</option>{roster.map(p=><option key={p.id} value={p.id}>{p.name}{p.birth_year?` · ${p.birth_year}`:""}</option>)}</select></label></>}<Button type="submit" variant="primary" disabled={saving}>Spara medlem</Button><Button variant="secondary" disabled={saving} onClick={closeAdd}>Avbryt</Button></form>}<p>{visible.length} medlemskort</p><div className="match-actions"><Button disabled={loading} onClick={()=>downloadMemberCodes(cards,true)}>Exportera aktiva koder till LEGEA (CSV)</Button><Button variant="secondary" disabled={loading} onClick={()=>downloadMemberCodes(cards,false)}>Exportera alla kort (CSV)</Button></div><p className="muted">Exporten innehåller medlemsnummer, namn, medlemstyp och status. Den omfattar alla kort, oavsett sökfilter. Ange e-post när du lägger till en medlem för att skicka välkomstmejl och koppla kontot automatiskt.</p></>}
     {notice && <p role="status">{notice}</p>}
     {error && <p className="error-banner" role="alert">{error}<button onClick={load}>Försök igen</button></p>}
     {loading ? <p role="status">Läser medlemskort…</p> : visible.length ? admin ? <div className="member-admin-list">{visible.map(card=><article className="member-admin-row" key={card.id}>
-      <div className="member-admin-identity"><strong className="person-name"><PersonAvatar playerId={card.player_id} profileId={card.user_id} name={card.name}/>{card.name}</strong><span className="muted">{memberProfileKind(card)==="player"?"Spelare · Medlem":memberProfileKind(card)==="supporter"?"Stödmedlem":"Endast medlem"} · {card.status==="active"?"Aktiv":"Inaktiv"}</span></div>
+      <div className="member-admin-identity"><strong className="person-name"><PersonAvatar playerId={card.player_id} profileId={card.user_id} name={card.name}/>{card.name}</strong><span className="muted">{memberProfileKind(card)==="player"?"Spelare · Medlem":memberProfileKind(card)==="supporter"?"Stödmedlem":"Medlem"} · {card.status==="active"?"Aktiv":"Inaktiv"}</span></div>
       <div className="member-admin-code"><span>Medlemsnummer</span><strong>{card.membership_no||"—"}</strong></div>
       <div className="member-admin-code"><span>Rabattkod</span><strong>{card.member_number}</strong></div>
       <Button variant="secondary" aria-label={`Hantera ${card.name}`} onClick={()=>setSelectedId(card.id)}>Hantera</Button>
     </article>)}</div> : <div className="member-cards-grid">{visible.map(card=><MemberCard key={card.id} card={card}/>)}</div> : <Empty message="Inga medlemskort att visa"/>}
-    {admin&&selected&&(selected.player_id&&roster.find(p=>p.id===selected.player_id)?<AdminPlayerProfile key={selected.id} mode="membership" memberCard={selected} player={roster.find(p=>p.id===selected.player_id)} teams={adminData?.teams||[]} accounts={adminData?.profiles||accounts} onClose={()=>setSelectedId(null)} onUpdate={async()=>{await load();await onUpdate?.();}} memberActions={<div className="button-group"><Button variant="secondary" disabled={saving} onClick={()=>toggle(selected)}>{selected.status==="active"?"Inaktivera kort":"Aktivera kort"}</Button></div>}/>:<MemberDetails key={selected.id} card={selected} accounts={adminData?.profiles||accounts} saving={saving} error={error} onClose={()=>setSelectedId(null)} onChange={changeCard} onToggle={toggle} onDelete={deleteCard} onReload={async()=>{await load();await onUpdate?.();}}/>)}
+    {admin&&selected&&(selected.player_id&&roster.find(p=>p.id===selected.player_id)?<AdminPlayerProfile key={selected.id} mode="membership" memberCard={selected} player={roster.find(p=>p.id===selected.player_id)} teams={adminData?.teams||[]} accounts={adminData?.profiles||accounts} onClose={()=>setSelectedId(null)} onUpdate={async()=>{await load();await onUpdate?.();}} memberActions={<div className="button-group"><Button variant="secondary" disabled={saving} onClick={()=>toggle(selected)}>{selected.status==="active"?"Inaktivera kort":"Aktivera kort"}</Button></div>}/>:<MemberDetails key={selected.id} card={selected} players={roster} accounts={adminData?.profiles||accounts} saving={saving} error={error} onClose={()=>setSelectedId(null)} onChange={changeCard} onToggle={toggle} onDelete={deleteCard} onReload={async()=>{await load();await onUpdate?.();}}/>)}
 
   </section>;
 }
 
-function MemberDetails({card,player,accounts,saving,error,onClose,onOpenPlayer,onChange,onToggle,onDelete,onReload}) {
+function MemberDetails({card,player,players,accounts,saving,error,onClose,onOpenPlayer,onChange,onToggle,onDelete,onReload}) {
   const dialog=useRef(null);
   useEffect(()=>{dialog.current?.showModal();},[]);
   return <dialog ref={dialog} className="member-details-dialog" onCancel={onClose} aria-labelledby="member-details-title">
@@ -138,6 +142,7 @@ function MemberDetails({card,player,accounts,saving,error,onClose,onOpenPlayer,o
     <div className="member-details-fields"><label className="field">Medlemstyp<select disabled={saving} value={card.membership_type||"member"} onChange={e=>onChange(card,{membership_type:e.target.value})}><option value="member">Medlem</option><option value="supporter">Stödmedlem</option></select></label>
     {!card.player_id&&<label className="field">Personligt medlemskonto<select disabled={saving} value={card.user_id||""} onChange={e=>onChange(card,{user_id:e.target.value||null})}><option value="">Ej kopplat</option>{accounts.map(account=><option key={account.id} value={account.id}>{account.full_name||account.email} · {account.email}</option>)}</select></label>}</div>
     {card.player_id?<section><h3>Spelare · Medlemsprofil</h3>{player?<><p>{player.name} · Född {player.birth_year||"ej angivet"}</p><Button variant="secondary" onClick={onOpenPlayer}>Öppna spelarprofil</Button>{canHavePlayerAccount(player)?<PlayerAccount key={player.id} player={player} accounts={accounts} onClose={onClose} onUpdate={onReload}/>:<p>Spelaren har en spelarprofil. Eget spelarkonto gäller född 2012 eller tidigare; yngre spelare använder föräldraåtkomst via spelarprofilen.</p>}</>:<p>Spelarprofilen kunde inte läsas. Stäng och uppdatera medlemslistan innan konto kopplas.</p>}</section>:<details className="member-invite-details" open={!card.user_id}><summary>{card.user_id?"Bjud in eller byt medlemskonto":"Bjud in med e-post"}</summary><InviteAccountForm kind="member" cardId={card.id} name={card.name} onSaved={onReload}/></details>}
+    {!card.player_id&&<MemberParentAccess card={card} players={players} accounts={accounts} onSaved={onReload}/>}
     <div className="button-group"><Button variant="secondary" disabled={saving} onClick={()=>onToggle(card)}>{card.status==="active"?"Inaktivera kort":"Aktivera kort"}</Button><Button variant="danger" disabled={saving} onClick={()=>onDelete(card)}>Ta bort kort</Button></div>
   </dialog>;
 }

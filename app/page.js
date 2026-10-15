@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "./lib/supabaseClient";
+import {hasFamilyAccess} from "./lib/familyAccess.mjs";
 import {sessionIdentity} from "./lib/sessionIdentity";
 import {portalModeKey,validPortalMode} from "./lib/portalMode";
 import {disableDevicePush} from "./lib/push";
@@ -72,11 +73,12 @@ export default function App() {
     Promise.all([
       supabase.from("club_member_cards").select("id,membership_type").eq("user_id",user.id),
       supabase.from("profiles").select("*").eq("id",user.id).single(),
-      supabase.from("club_player_access").select("player_id").eq("user_id",user.id).limit(1)
-    ]).then(([membership,profileResult,links])=>{
+      supabase.from("club_player_access").select("player_id").eq("user_id",user.id).limit(1),
+      supabase.from("players").select("id,mother_email,father_email")
+    ]).then(([membership,profileResult,links,children])=>{
       if(!active)return;
-      if(profileResult.error||membership.error||links.error){setProfileError(profileResult.error?.message||membership.error?.message||links.error.message);return;}
-      setHasChildren(Boolean(links.data?.length));setSupporter(Boolean(membership.data?.some(card=>card.membership_type==="supporter")));setOwnMember(Boolean(membership.data?.some(card=>card.membership_type!=="supporter")));setProfile(profileResult.data);setProfileReady(true);
+      if(profileResult.error||membership.error||links.error||children.error){setProfileError(profileResult.error?.message||membership.error?.message||links.error?.message||children.error.message);return;}
+      setHasChildren(hasFamilyAccess(links.data,children.data,user.email));setSupporter(Boolean(membership.data?.some(card=>card.membership_type==="supporter")));setOwnMember(Boolean(membership.data?.some(card=>card.membership_type!=="supporter")));setProfile(profileResult.data);setProfileReady(true);
     }).catch(error=>{if(active)setProfileError(error.message);});
     return ()=>{active=false;};
   }, [user?.id,user?.app_metadata?.club_role,profileAttempt]);

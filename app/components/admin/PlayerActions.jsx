@@ -10,8 +10,8 @@ export default function PlayerActions({player,teams,accounts,mode,onClose,onUpda
   useEffect(()=>{if(mode==="parent")loadLinks();},[player.id,mode]);
   async function addParent(e){
     e.preventDefault();if(!account)return;setBusy(true);setError("");
-    const r=await supabase.from("club_player_access").insert({player_id:player.id,user_id:account}).select("user_id");
-    if(r.error || !r.data?.length)setError(r.error?.code==="23505" ? "Kontot är redan kopplat till spelaren." : r.error?.message || "Föräldern kunde inte kopplas.");else{setAccount("");await loadLinks();}
+    const r=await supabase.rpc("club_link_parent_member",{target:account,child:player.id});
+    if(r.error || !r.data)setError(r.error?.code==="23505" ? "Kontot är redan kopplat till spelaren." : r.error?.message || "Föräldern kunde inte kopplas.");else{setAccount("");await loadLinks();await onUpdate?.();}
     setBusy(false);
   }
   async function removeParent(link){
@@ -31,3 +31,4 @@ export default function PlayerActions({player,teams,accounts,mode,onClose,onUpda
     {!links.filter(l=>accounts.find(a=>a.id===l.user_id)?.role!=="player").length && <p className="muted">Inga föräldrakonton kopplade.</p>}{links.filter(l=>accounts.find(a=>a.id===l.user_id)?.role!=="player").map(l=>{const a=accounts.find(a=>a.id===l.user_id);return <div className="attendance-row" key={l.user_id}><span>{a?.full_name || a?.email || "Registrerat konto"}{a?.full_name && a?.email ? ` · ${a.email}` : ""}</span><Button disabled={busy} variant="danger" onClick={()=>removeParent(l)}>Ta bort koppling</Button></div>;})}
   </> : <form onSubmit={saveTeam} className="match-edit-form"><label htmlFor={`player-team-${player.id}`}>Lag</label><select id={`player-team-${player.id}`} required value={team} onChange={e=>setTeam(e.target.value)}><option value="">Välj lag</option>{teams.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select><Button type="submit" disabled={busy || !team}>Spara lag</Button></form>}</section>;
 }
+
