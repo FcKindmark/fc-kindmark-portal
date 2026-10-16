@@ -383,3 +383,14 @@ body{background:var(--beige)}h1,h2,h3{font-weight:700}.club-sidebar{width:248px;
 .members-hub #member-card-search{display:block;box-sizing:border-box;width:100%;min-height:50px;padding:12px 16px;border:1px solid #bac2ce;border-radius:12px;background:#fff;color:#202631;font-size:16px;box-shadow:0 1px 3px #18233408}
 .members-hub #member-card-search::placeholder{color:#697383;opacity:1}
 .members-hub #member-card-search:focus{border-color:#a88019;outline:3px solid #d5b44930;outline-offset:1px}
+
+.modern-match-card{position:relative}
+.modern-match-card>.page-heading{padding-right:96px}
+.match-card-tools{position:absolute;top:14px;right:14px;display:flex;gap:6px}
+.match-card-tools .club-button{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;min-height:40px;padding:0;border-radius:50%;background:#f6f7f9;border:1px solid #e5e8ed;color:#596271}
+.match-card-tools .club-button:last-child{color:#b52d3b}
+.match-expand-toggle,.match-collapse-toggle{font:inherit;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:14px 0;background:transparent;border:0;border-top:1px solid #e5e8ed;color:#765a0c;font-weight:600;text-align:left}
+.match-expand-toggle svg{transition:transform .2s}
+.match-collapse-toggle{justify-content:center;margin-top:20px}
+.match-edit-form{scroll-margin-top:90px}
+@media(max-width:600px){.modern-match-card>.page-heading{padding-right:0;padding-top:42px}.match-card-tools{top:12px;right:12px}}
