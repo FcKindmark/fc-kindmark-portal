@@ -394,3 +394,11 @@ body{background:var(--beige)}h1,h2,h3{font-weight:700}.club-sidebar{width:248px;
 .match-collapse-toggle{justify-content:center;margin-top:20px}
 .match-edit-form{scroll-margin-top:90px}
 @media(max-width:600px){.modern-match-card>.page-heading{padding-right:0;padding-top:42px}.match-card-tools{top:12px;right:12px}}
+
+.payment-record-card .payment-settings{margin:0 0 14px}
+.payment-settings>summary{display:flex;align-items:center;justify-content:center;gap:7px;list-style:none;cursor:pointer;width:max-content;margin-left:auto;padding:9px 12px;border:1px solid #e5e8ed;background:#f7f8fa;border-radius:10px;color:#596271;font-size:14px;font-weight:600;min-height:42px}
+.payment-settings>summary::-webkit-details-marker{display:none}
+.payment-settings[open]>summary{background:#fff8e5;border-color:#d4b44b;color:#73570b}
+.payment-settings>.button-group{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px;margin-top:10px;border:1px solid #e5e8ed;border-radius:12px;background:#f8f9fb}
+.payment-settings .club-button{font-size:14px;padding:10px;min-height:44px}
+@media(max-width:450px){.payment-settings>.button-group{grid-template-columns:1fr}}
