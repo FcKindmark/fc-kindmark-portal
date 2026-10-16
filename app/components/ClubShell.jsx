@@ -20,6 +20,30 @@ export default function ClubShell({ tabs, active, onChange, user, role, onLogout
   },[user.id]);
   useEffect(()=>{loadProfile();window.addEventListener("focus",loadProfile);return()=>window.removeEventListener("focus",loadProfile);},[loadProfile]);
   async function openProfile(){setExpanded(false);if(!account)await loadProfile();setShowProfile(true);}
+
+  useEffect(()=>{
+    let locked=false,scrollY=0,bodyStyles=null,rootOverflow="";
+    const keys=["position","top","left","right","width","overflow"];
+    function unlock(){
+      if(!locked)return;
+      keys.forEach(key=>{document.body.style[key]=bodyStyles[key];});
+      document.documentElement.style.overflow=rootOverflow;
+      locked=false;window.scrollTo({top:scrollY,left:0,behavior:"instant"});
+    }
+    function sync(){
+      const open=Boolean(document.querySelector('dialog[open],.club-modal,.mobile-more'));
+      if(open&&!locked){
+        scrollY=window.scrollY;bodyStyles=Object.fromEntries(keys.map(key=>[key,document.body.style[key]]));
+        rootOverflow=document.documentElement.style.overflow;
+        Object.assign(document.body.style,{position:"fixed",top:`-${scrollY}px`,left:"0",right:"0",width:"100%",overflow:"hidden"});
+        document.documentElement.style.overflow="hidden";locked=true;
+      }else if(!open)unlock();
+    }
+    const observer=new MutationObserver(sync);
+    observer.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["open","class"]});
+    sync();return()=>{observer.disconnect();unlock();};
+  },[]);
+
   const primary = (role === "Stödmedlem" ? ["overview","matches","news","membership"] : (tabs.some(t=>t.id==="calls")?["overview","calendar","calls","matches","children","messages"]:["overview", "calendar", "matches", "children", "players", "messages"])).map(id => tabs.find(t => t.id === id)).filter(Boolean);
   function navigate(id) { onChange(id); setExpanded(false); }
   useEffect(()=>{window.scrollTo({top:0,left:0,behavior:"instant"});},[active]);

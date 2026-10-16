@@ -409,3 +409,9 @@ body{background:var(--beige)}h1,h2,h3{font-weight:700}.club-sidebar{width:248px;
 .payment-status-tabs .club-button{flex:1;min-height:48px;padding:12px 8px;display:flex;align-items:center;justify-content:center;gap:8px}
 .payment-status-tabs span{font-size:13px;border-radius:20px;background:#0000000d;padding:2px 7px}
 @media(max-width:450px){.payment-status-tabs .club-button{font-size:15px;gap:5px}}
+
+/* Keep touch scrolling inside the active overlay, including iOS. */
+dialog[open]{position:fixed;inset:0;margin:auto;max-height:calc(100dvh - 32px);overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+.club-modal{overflow:hidden;overscroll-behavior:none;height:100dvh;box-sizing:border-box}
+.club-modal>.club-card{max-height:calc(100dvh - 40px);overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+.mobile-more{overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
