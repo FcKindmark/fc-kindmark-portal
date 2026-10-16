@@ -9,7 +9,6 @@ import PlayersTab from "./PlayersTab";
 import TeamsTab from "./TeamsTab";
 import TrainingsTab from "./TrainingsTab";
 import MatchesTab from "./MatchesTab";
-import PaymentsTab from "./PaymentsTab";
 import EconomyTab from "./EconomyTab";
 import MessagesTab from "./MessagesTab";
 import UsersTab from "./UsersTab";
@@ -119,8 +118,8 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
     { id: "users", label: "Användare", icon: "👥" },
   ];
 
-  const allowedTabs = profile?.role === "coach" ? tabs.filter(t => ["overview","calendar","calls","players","trainings","matches","attendance","development"].includes(t.id)) : tabs.filter(t=>t.id!=="players");
-  return <ClubShell tabs={allowedTabs} active={activeTab} onChange={tab=>{setMemberAdd(null);setActiveTab(tab);}} user={user} role={profile?.role === "coach" ? "Tränare" : "Admin"} onLogout={onLogout}>
+  const allowedTabs = profile?.role === "coach" ? tabs.filter(t => ["overview","calendar","calls","players","trainings","matches","attendance","development"].includes(t.id)) : tabs.filter(t=>!["players","payments"].includes(t.id));
+  return <ClubShell tabs={allowedTabs} active={activeTab==="payments"?"economy":activeTab} onChange={tab=>{setMemberAdd(null);setActiveTab(tab);}} user={user} role={profile?.role === "coach" ? "Tränare" : "Admin"} onLogout={onLogout}>
     {onOpenFamily&&<div className="page-heading"><p>Du är i {profile?.role === "coach" ? "tränarportalen" : "administratörsportalen"}.</p><Button variant="secondary" onClick={onOpenFamily}>Föräldraportal · Mina barn</Button></div>}
     {activeTab === "overview" && profile?.role !== "coach" && <div className="page-heading"><Button onClick={()=>chooseMember("new")}>+ Lägg till medlem</Button></div>}
     {error && <p className="error-banner" role="alert">{error}<button onClick={loadData}>Försök igen</button></p>}
@@ -139,8 +138,7 @@ export default function AdminDashboard({ user, profile, onLogout, onOpenFamily }
     {activeTab === "teams" && <TeamsTab data={data} onUpdate={loadData}/>}
     {activeTab === "trainings" && <TrainingsTab userId={user.id} data={data} compactWeek={profile?.role === "coach"} onUpdate={loadData} canDelete={profile?.role !== "coach"} canManageExercises={profile?.role === "admin"} pendingPlan={pendingPlan} onPlanAdded={()=>setPendingPlan(null)}/>}
     {activeTab === "matches" && <MatchesTab userId={user.id} data={data} onUpdate={loadData} canDelete={profile?.role !== "coach"}/>}
-    {activeTab === "payments" && <PaymentsTab data={data} onUpdate={loadData}/>}
-    {activeTab === "economy" && profile?.role !== "coach" && <EconomyTab userId={user.id} payments={data.payments} players={data.players} members={data.memberCards} onPaymentsChanged={refreshPayments}/>}
+    {["economy","payments"].includes(activeTab) && profile?.role !== "coach" && <EconomyTab key={activeTab} initialView={activeTab==="payments"?"payments":"overview"} teams={data.teams} userId={user.id} payments={data.payments} players={data.players} members={data.memberCards} onPaymentsChanged={refreshPayments}/>}
     {activeTab === "messages" && <MessagesTab data={data} onUpdate={loadData}/>}
     {activeTab === "users" && <UsersTab key={memberAdd?.key || "users"} data={data} initialShowCoach={memberAdd?.kind === "coach"} onCloseAdd={()=>setMemberAdd(null)} currentUserId={user.id} onUpdate={loadData}/>}
     </>}

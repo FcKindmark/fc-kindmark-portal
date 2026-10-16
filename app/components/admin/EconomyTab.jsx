@@ -1,4 +1,5 @@
 "use client";
+import PaymentsTab from "./PaymentsTab";
 import {documentPaymentState} from '../../lib/documentPaymentState';
 import {useStockholmToday} from '../../lib/useStockholmToday';
 import {SWISH_INCOME} from '../../lib/swish-income';
@@ -45,6 +46,7 @@ const emptyEntry = () => ({
 export default function EconomyTab({
   userId = "",
   payments = [],
+  teams = [],
   players = [],
   members = [],
   onPaymentsChanged,
@@ -54,7 +56,7 @@ export default function EconomyTab({
 }) {
   const paymentToday=useStockholmToday();
   const [documentFilter,setDocumentFilter]=useState(['unpaid','paid','other'].includes(initialDocumentFilter)?initialDocumentFilter:'unpaid');
-  const [view, setView] = usePortalView("economy", ["overview","documents","bank","partners","journal","reports"], initialView, userId);
+  const [view, setView] = usePortalView("economy", ["overview","payments","documents","bank","partners","journal","reports"], initialView, userId);
   const [savedYear, setSavedYear] = usePortalView("economyYear", Array.from({length:101},(_,i)=>String(2000+i)), today().slice(0,4), userId);
   const year=Number(savedYear);
   const setYear=value=>setSavedYear(String(value));
@@ -521,12 +523,13 @@ export default function EconomyTab({
           setYear(Number(e.target.value));
           setReviewed(false);
         }}>{Array.from(new Set([year, ...data.years.map(y => y.year), ...data.bank.map(b => Number(b.date.slice(0, 4))), 2026, 2027, 2028])).sort().map(y => <option key={y}>{y}</option>)}</Select></label></div>
- <div className="economy-tabs" role="group" aria-label="Ekonomisidor">{[['overview', 'Översikt'], ['documents', 'Fakturor & kvitton'], ['bank', 'Stäm av konto'], ['partners', 'Sponsorer & stöd'], ['journal', 'Bokföring'], ['reports', 'Rapporter & bokslut']].map(([id, label]) => <Button key={id} variant={view === id ? 'primary' : 'secondary'} aria-pressed={view === id} onClick={() => {
+ <div className="economy-tabs" role="group" aria-label="Ekonomisidor">{[['overview', 'Översikt'], ['payments', 'Betalningar'], ['documents', 'Fakturor & kvitton'], ['bank', 'Stäm av konto'], ['partners', 'Sponsorer & stöd'], ['journal', 'Bokföring'], ['reports', 'Rapporter & bokslut']].map(([id, label]) => <Button key={id} variant={view === id ? 'primary' : 'secondary'} aria-pressed={view === id} onClick={() => {
         setView(id);
         setEntry(null);
       }}>{label}</Button>)}</div>
  {error && <p className="error-banner" role="alert">{error}</p>}{notice && <p className="economy-notice" role="status">{notice}</p>}{locked && <p className="economy-notice">{year} är låst.</p>}
  {loading ? <p role="status">Läser ekonomin…</p> : <>
+ {view === 'payments' && <PaymentsTab data={{payments,players,memberCards:members,teams}} onUpdate={async()=>{await onPaymentsChanged?.();await load();}}/>}
  {view === 'overview' && <><div className="economy-stats">{[['Intäkter', summary.income], ['Bokförda kostnader', summary.expense], ['Resultat', summary.result], ['Bokfört banksaldo', summary.bank], ['Bankens utbetalningar', -yearBank.filter(b=>b.amount<0).reduce((total,b)=>total+cents(b.amount),0)]].map(([label, n]) => <Card key={label}><span>{label}</span><strong>{money(n / 100)}</strong></Card>)}</div>{advancePanel}<Card><h2>Bankutdrag · {year}</h2><p>Inbetalt: <strong>{money(yearBank.filter(b=>b.amount>0).reduce((total,b)=>total+Number(b.amount),0))}</strong> · Utbetalt: <strong>{money(-yearBank.filter(b=>b.amount<0).reduce((total,b)=>total+Number(b.amount),0))}</strong></p><p>Faktiska bankrörelser från importerade utdrag; kostnader ovan räknas från bokföringen.</p><h2>Att göra</h2><p>{unmatched.length} bankrader att stämma av · {yearJournal.filter(j => j.status === 'draft').length} utkast · {yearDocuments.length} underlag</p><div className="economy-actions"><Button onClick={() => setView('documents')}>Lägg till faktura eller kvitto</Button><Button variant="secondary" onClick={() => setView('bank')}>Importera bankutdrag</Button></div><p>Beloppen räknas endast från bokförda verifikationer. Medlemsavgifter i Betalningar är betalningskrav och räknas inte som en extra intäkt här.</p></Card></>}
  {view === 'documents' && <><div className="button-group" role="group" aria-label="Fakturornas betalningsstatus">{[['unpaid','Obetalda'],['paid','Betalda'],['other','Övriga underlag / utkast']].map(([key,label])=><Button key={key} variant={documentFilter===key?'primary':'secondary'} aria-pressed={documentFilter===key} onClick={()=>{setDocumentFilter(key);setDocument(null);setEntry(null);}}>{label} ({yearDocuments.filter(d=>documentPaymentState(d,data,paymentToday).key===key).length})</Button>)}</div><p>Betalningsstatus bygger på bokförda, kopplade betalningar. Delbetalningar ligger under Obetalda tills hela beloppet är betalt. Förfallna obetalda rader markeras rött.</p><InvoiceEditor data={data} paymentFilter={documentFilter} paymentToday={paymentToday} year={year} busy={busy} run={run} onReload={load} onSettlement={id=>{setError('');setSettlement({invoiceId:id});}} /><div className="page-heading"><h2>Fakturor och kvitton</h2><Button disabled={reading} onClick={() => {
             setReadText('');
