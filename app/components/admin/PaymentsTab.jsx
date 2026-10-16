@@ -8,8 +8,10 @@ import {downloadMembershipReport,confirmedMemberCount,membershipPayments} from "
 import PaymentInstructions from "../PaymentInstructions";
 import {PAYMENT_CATEGORIES,paymentCategory,paymentYear,filterPayments} from "../../lib/paymentFilters.mjs";
 import MembershipFees from "./MembershipFees";
+import PlayerPaymentCorrection from "./PlayerPaymentCorrection";
 import PaymentForm from "./PaymentForm";
 export default function PaymentsTab({data,onUpdate,initialView="payments"}) {
+  const [correction,setCorrection]=useState(null);
   const [view,setView]=useState(initialView);
   const payments=data?.payments || [],players=data?.players || [],members=data?.memberCards || [];
   const [editor,setEditor]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[query,setQuery]=useState(''),[filter,setFilter]=useState('all');
@@ -41,9 +43,10 @@ export default function PaymentsTab({data,onUpdate,initialView="payments"}) {
     {!rows.length ? <Empty message={payments.length ? 'Inga betalningar matchar filtret' : 'Inga betalningar än'}/> : <div className="payment-list">{rows.map(p=><Card key={p.id}>
       <div className="payment-row-heading"><div><h3>{p.player_name}</h3><p className="muted">{PAYMENT_CATEGORIES.find(([id])=>id===paymentCategory(p))?.[1]} · {p.description || "Betalning"}</p>{!p.player_id && !p.member_id && <p className="muted">Utan spelarkoppling · välj spelare via Ändra</p>}</div><Badge variant={p.status==='paid' ? 'success':'pending'}>{p.status==='paid' ? 'Betald':overdue(p,today) ? 'Förfallen':'Väntande'}</Badge></div>
       <p className="payment-amount">{sek(p.amount)}</p>{p.due_date && <p className="muted">Förfallodatum: {p.due_date}</p>}<details className="payment-extra"><summary>Referens och betalningsdetaljer</summary><div className="payment-details">{p.membership_no && <p>Medlemsnummer: {p.membership_no}{p.membership_year ? ` · Medlemsår: ${p.membership_year}` : ''}</p>}{p.due_date && <p>Förfallodatum: {p.due_date}</p>}{p.status==='paid' && p.paid_date && <p>Betald: {p.paid_date}</p>}{p.status==='paid' && p.paid_reference && <p>Transaktionsreferens: {p.paid_reference}</p>}{p.reference && <p>Betalningsreferens: {p.reference}</p>}{p.swish && <p>Swish: <strong>{p.swish}</strong></p>}{p.bankgiro && <p>Bankgiro: <strong>{p.bankgiro}</strong></p>}</div></details>
-      <details className="payment-extra"><summary>Betalningsinstruktioner</summary><PaymentInstructions payment={p}/></details><div className="button-group"><Button disabled={busy} variant="secondary" onClick={()=>{setError('');setEditor({payment:p});}}>Ändra</Button><Button disabled={busy} variant={p.status==='paid'?'secondary':'primary'} onClick={()=>status(p)}>{p.status==='paid' ? 'Markera väntande':'Markera betald'}</Button><Button disabled={busy} variant="danger" onClick={()=>remove(p)}>Ta bort</Button></div>
+      <details className="payment-extra"><summary>Betalningsinstruktioner</summary><PaymentInstructions payment={p}/></details><div className="button-group"><Button disabled={busy} variant="secondary" onClick={()=>{setError('');setEditor({payment:p});}}>Ändra</Button><Button disabled={busy} variant={p.status==='paid'?'secondary':'primary'} onClick={()=>status(p)}>{p.status==='paid' ? 'Markera väntande':'Markera betald'}</Button>{p.status==="paid"&&p.payment_kind==="membership"&&Number(p.amount)===50&&p.player_id&&<Button disabled={busy} variant="secondary" onClick={()=>setCorrection(p)}>Rätta spelare · 850 SEK</Button>}<Button disabled={busy} variant="danger" onClick={()=>remove(p)}>Ta bort</Button></div>
     </Card>)}</div>}
     </>}
+    {correction&&<PlayerPaymentCorrection payment={correction} players={players} onClose={()=>setCorrection(null)} onSaved={async()=>{await onUpdate();setNotice("Rättelsen är genomförd. 50 SEK medlemsavgift och 800 SEK träningskläder är kopplade till rätt spelare.");}}/>}
     {editor && <div className="club-modal"><Card role="dialog" aria-modal="true" aria-labelledby="payment-form-title"><PaymentForm key={editor.payment?.id || 'new'} payment={editor.payment} players={players} members={members} onSave={save} busy={busy} onClose={()=>setEditor(null)}/></Card></div>}
   </>;
 }
