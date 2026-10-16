@@ -8,6 +8,7 @@ import PushSettings from "./PushSettings";
 import TelegramSettings from "./TelegramSettings";
 import {preparePhoto} from "../lib/photos";
 export default function MyProfile({user,profile,photo,onClose,onSaved,showNotifications=true}){
+  const canEditPhoto=profile?.role!=="player";
   const dialog=useRef(null),gallery=useRef(null),camera=useRef(null);
   const [name,setName]=useState(profile?.full_name||""),[newPhoto,setNewPhoto]=useState(null),[preview,setPreview]=useState(photo||""),[removePhoto,setRemovePhoto]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState("");
   useEffect(()=>{dialog.current?.showModal();},[]);
@@ -29,7 +30,8 @@ export default function MyProfile({user,profile,photo,onClose,onSaved,showNotifi
     <form onSubmit={save}>
       <div className="profile-photo">{preview&&!removePhoto?<img src={preview} alt="Din profilbild"/>:<span aria-label="Ingen profilbild">{(name||user.email||"?").slice(0,1).toUpperCase()}</span>}</div>
       <input ref={gallery} type="file" accept="image/*" hidden onChange={choosePhoto}/><input ref={camera} type="file" accept="image/*" capture="user" hidden onChange={choosePhoto}/>
-      <div className="button-group"><Button variant="secondary" disabled={busy} onClick={()=>gallery.current.click()}>Välj foto</Button><Button variant="secondary" disabled={busy} onClick={()=>camera.current.click()}>Ta foto</Button>{(preview||profile?.avatar_path)&&!removePhoto&&<Button variant="secondary" disabled={busy} onClick={()=>{setNewPhoto(null);setRemovePhoto(true);setPreview("");}}>Ta bort bild</Button>}</div>
+      {canEditPhoto&&<div className="button-group"><Button variant="secondary" disabled={busy} onClick={()=>gallery.current.click()}>Välj foto</Button><Button variant="secondary" disabled={busy} onClick={()=>camera.current.click()}>Ta foto</Button>{(preview||profile?.avatar_path)&&!removePhoto&&<Button variant="secondary" disabled={busy} onClick={()=>{setNewPhoto(null);setRemovePhoto(true);setPreview("");}}>Ta bort bild</Button>}</div>}
+      {!canEditPhoto&&<p className="muted">Spelarens foto hanteras av föreningen i spelarprofilen.</p>}
       <label className="field">Namn<input required maxLength={100} value={name} disabled={busy} onChange={e=>setName(e.target.value)}/></label>
       <label className="field">E-post<input value={user.email||""} disabled readOnly/></label>
       {error&&<p role="alert" className="error-banner">{error}</p>}
