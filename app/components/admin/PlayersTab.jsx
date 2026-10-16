@@ -1,4 +1,5 @@
 "use client";
+import PlayerAccount from "./PlayerAccount";
 import AdminPlayerProfile from "./AdminPlayerProfile";
 import PersonAvatar from "../PersonAvatar";
 import { useState } from "react";
@@ -10,6 +11,7 @@ import {canHavePlayerAccount} from "../../lib/memberProfiles.mjs";
 export default function PlayersTab({ data, onUpdate, readOnly = false, onAddPlayer, onOpenMember }) {
   const players = data?.players || [];
   const teams = data?.teams || [];
+  const [accountPlayer,setAccountPlayer]=useState(null);
   const [profilePlayer,setProfilePlayer]=useState(null);
   const [yearFilter, setYearFilter] = useState("");
   const [genderFilter, setGenderFilter] = useState("");
@@ -45,12 +47,13 @@ export default function PlayersTab({ data, onUpdate, readOnly = false, onAddPlay
                   <h3>{player.name}</h3>
                   <p>{[player.birth_year,teams.find(t=>t.id===player.team_id)?.name||"Ej lagfördelad"].filter(Boolean).join(" · ")}</p>
                 </div>
-                <Button variant="secondary" onClick={()=>setProfilePlayer(player.id)}>Spelarprofil</Button>
+                <Button variant="secondary" onClick={()=>setProfilePlayer(player.id)}>Spelarprofil</Button>{!readOnly&&<Button variant="secondary" onClick={()=>setAccountPlayer(player.id)}>Spelarinloggning</Button>}
               </div>
             ))}
           </div>
         </Card>
       )}
+      {accountPlayer&&!readOnly&&players.some(p=>p.id===accountPlayer)&&<PlayerAccount key={accountPlayer} player={players.find(p=>p.id===accountPlayer)} accounts={data.profiles||[]} onUpdate={onUpdate} onClose={()=>setAccountPlayer(null)}/>}
       {profilePlayer&&players.some(player=>player.id===profilePlayer)&&<AdminPlayerProfile key={profilePlayer} player={players.find(player=>player.id===profilePlayer)} teams={teams} accounts={data.profiles||[]} onOpenMember={readOnly?undefined:onOpenMember} readOnly={readOnly} onUpdate={onUpdate} onClose={()=>setProfilePlayer(null)}/>}
     </>
   );

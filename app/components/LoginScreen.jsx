@@ -21,6 +21,7 @@ export default function LoginScreen({ onLogin }) {
     setLoading(true);
     try {
       if (isRecovery) {
+        if(!email.includes("@"))throw new Error("Spelarkonto utan e-post: be tränaren eller administratören sätta ett nytt lösenord.");
         const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {redirectTo: `${window.location.origin}/?recovery=1`});
         if (error) throw error;
         setMessage("Om adressen har ett konto får du ett mejl med en återställningslänk. Kontrollera även skräpposten.");
@@ -29,7 +30,7 @@ export default function LoginScreen({ onLogin }) {
         if (signupError) throw signupError;
         if (data?.user) setMessage("Kontrollera din e-post för att bekräfta registreringen");
       } else {
-        const { data, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error: loginError } = await supabase.auth.signInWithPassword({ email: email.trim().includes("@")?email.trim():email.trim().toLowerCase()+"@players.login.fckindmark.se", password });
         if (loginError) throw loginError;
         if (data?.user) onLogin(data.user);
       }
@@ -52,8 +53,8 @@ export default function LoginScreen({ onLogin }) {
 
         <div style={{ display: "flex", flexDirection: "column", gap: "20px", marginBottom: "32px" }}>
           <div>
-            <label htmlFor="login-email" style={{ display: "block", marginBottom: "10px", fontWeight: "600", color: "var(--text-dark)", fontSize: "14px" }}>E-postadress</label>
-            <Input id="login-email" required autoComplete="email" type="email" placeholder="din@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <label htmlFor="login-email" style={{ display: "block", marginBottom: "10px", fontWeight: "600", color: "var(--text-dark)", fontSize: "14px" }}>{isSignup||isRecovery?"E-postadress":"E-post eller användarnamn"}</label>
+            <Input id="login-email" required autoComplete={isSignup||isRecovery?"email":"username"} autoCapitalize="none" autoCorrect="off" type={isSignup||isRecovery?"email":"text"} placeholder={isSignup||isRecovery?"din@email.com":"E-post eller användarnamn"} value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
           {!isRecovery && <div>
             <label htmlFor="login-password" style={{ display: "block", marginBottom: "10px", fontWeight: "600", color: "var(--text-dark)", fontSize: "14px" }}>Lösenord</label>
