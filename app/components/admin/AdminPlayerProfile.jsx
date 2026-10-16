@@ -10,7 +10,7 @@ import PlayerMeasurements from "../PlayerMeasurements";
 import PlayerRecords from "../PlayerRecords";
 const sizes=['104','110','116','122','128','134','140','146','152','158','164','170','176','XXS','XS','S','M','L','XL','XXL','3XL'];
 const positions={Forward:'Anfallare',Midfielder:'Mittfältare',Defender:'Försvarare',Goalkeeper:'Målvakt'};
-function initial(player){return Object.fromEntries(['name','birth_year','gender','number','position','team_id','membership_category','email','mother_name','mother_phone','mother_email','father_name','father_phone','father_email'].map(key=>[key,player[key]??(key==='membership_category'?'new':'')]));}
+function initial(player){return Object.fromEntries(['name','birth_date','birth_year','gender','number','position','team_id','membership_category','email','mother_name','mother_phone','mother_email','father_name','father_phone','father_email'].map(key=>[key,player[key]??(key==='membership_category'?'new':'')]));}
 export default function AdminPlayerProfile({player,teams=[],accounts=[],mode="football",memberCard,memberActions,onOpenMember,readOnly=false,onUpdate,onClose}){
  const membership=mode==="membership"||mode==="simple";
  const simple=mode==="simple";
@@ -42,7 +42,7 @@ export default function AdminPlayerProfile({player,teams=[],accounts=[],mode="fo
   {loading?<p role="status">Läser profil…</p>:!failed&&<form onSubmit={save}>
    <fieldset disabled={readOnly||busy} className="player-profile-fields">
     <section className="player-profile-section"><h3>{membership?"Personuppgifter":"Lag, position och tröjnummer"}</h3><div className="form-grid">
-     {membership&&<>{input('name','Namn','text',{required:true,maxLength:160})}{input('birth_year','Födelseår','number',{min:1900,max:new Date().getFullYear()})}</>}
+     {membership&&<>{input('name','Namn','text',{required:true,maxLength:160})}{input('birth_date','Födelsedatum','date',{min:'1900-01-01',max:new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Stockholm'})})}</>}
      {(!membership||simple)&&<>
      <label className="field">Lag<select value={fields.team_id} onChange={change('team_id')}><option value="">Ej lagfördelad</option>{teams.map(team=><option key={team.id} value={team.id}>{team.name}</option>)}</select></label>
      {input('number','Tröjnummer','number',{min:0,max:999})}
