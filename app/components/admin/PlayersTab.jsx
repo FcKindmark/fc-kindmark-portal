@@ -1,4 +1,5 @@
 "use client";
+import BulkPlayerLogins from "./BulkPlayerLogins";
 import PlayerAccount from "./PlayerAccount";
 import AdminPlayerProfile from "./AdminPlayerProfile";
 import PersonAvatar from "../PersonAvatar";
@@ -35,6 +36,7 @@ export default function PlayersTab({ data, onUpdate, readOnly = false, onAddPlay
         <select aria-label="Filtrera lag" value={teamFilter} onChange={e => setTeamFilter(e.target.value)}><option value="">Alla lag</option><option value="unassigned">Ej lagfördelade</option>{teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select>
         <span>{filteredPlayers.length} spelare</span>
       </div>
+      {!readOnly&&<BulkPlayerLogins players={filteredPlayers} onUpdate={onUpdate}/>}
       {filteredPlayers.length === 0 ? (
         <Empty message="Inga spelare än" />
       ) : (
