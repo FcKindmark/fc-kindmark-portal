@@ -402,3 +402,5 @@ body{background:var(--beige)}h1,h2,h3{font-weight:700}.club-sidebar{width:248px;
 .payment-settings>.button-group{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px;margin-top:10px;border:1px solid #e5e8ed;border-radius:12px;background:#f8f9fb}
 .payment-settings .club-button{font-size:14px;padding:10px;min-height:44px}
 @media(max-width:450px){.payment-settings>.button-group{grid-template-columns:1fr}}
+
+.payment-settings>summary{width:44px;height:44px;min-height:44px;padding:0;border-radius:50%;box-sizing:border-box}
