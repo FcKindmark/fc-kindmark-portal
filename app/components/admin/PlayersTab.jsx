@@ -2,7 +2,7 @@
 import PlayerAccount from "./PlayerAccount";
 import AdminPlayerProfile from "./AdminPlayerProfile";
 import PersonAvatar from "../PersonAvatar";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, Input, Button, Empty } from "../UI";
 import { supabase } from "../../lib/supabaseClient";
 import {inviteAccount} from "../../lib/invitations";
@@ -53,9 +53,17 @@ export default function PlayersTab({ data, onUpdate, readOnly = false, onAddPlay
           </div>
         </Card>
       )}
-      {accountPlayer&&!readOnly&&players.some(p=>p.id===accountPlayer)&&<PlayerAccount key={accountPlayer} player={players.find(p=>p.id===accountPlayer)} accounts={data.profiles||[]} onUpdate={onUpdate} onClose={()=>setAccountPlayer(null)}/>}
+      {accountPlayer&&!readOnly&&players.some(p=>p.id===accountPlayer)&&<PlayerInviteDialog key={accountPlayer} player={players.find(p=>p.id===accountPlayer)} accounts={data.profiles||[]} onUpdate={onUpdate} onClose={()=>setAccountPlayer(null)}/>}
       {profilePlayer&&players.some(player=>player.id===profilePlayer)&&<AdminPlayerProfile key={profilePlayer} player={players.find(player=>player.id===profilePlayer)} teams={teams} accounts={data.profiles||[]} onOpenMember={readOnly?undefined:onOpenMember} readOnly={readOnly} onUpdate={onUpdate} onClose={()=>setProfilePlayer(null)}/>}
     </>
   );
 }
 
+
+function PlayerInviteDialog({player,accounts,onUpdate,onClose}){
+ const dialog=useRef(null);
+ useEffect(()=>{const node=dialog.current;if(node&&!node.open)node.showModal();},[]);
+ return <dialog ref={dialog} className="member-details-dialog" onCancel={onClose} aria-label={"Bjud in "+player.name}>
+ <PlayerAccount player={player} accounts={accounts} onUpdate={onUpdate} onClose={onClose}/>
+ </dialog>;
+}

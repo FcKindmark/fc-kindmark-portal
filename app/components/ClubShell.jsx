@@ -22,6 +22,7 @@ export default function ClubShell({ tabs, active, onChange, user, role, onLogout
   async function openProfile(){setExpanded(false);if(!account)await loadProfile();setShowProfile(true);}
   const primary = (role === "Stödmedlem" ? ["overview","matches","news","membership"] : (tabs.some(t=>t.id==="calls")?["overview","calendar","calls","matches","children","messages"]:["overview", "calendar", "matches", "children", "players", "messages"])).map(id => tabs.find(t => t.id === id)).filter(Boolean);
   function navigate(id) { onChange(id); setExpanded(false); }
+  useEffect(()=>{window.scrollTo({top:0,left:0,behavior:"instant"});},[active]);
   return <PortraitProvider key={user.id} userId={user.id}><div className={`club-shell${role === "Admin" ? " admin-portal" : ""}`}><aside className="club-sidebar">
     <div className="club-brand"><img src="/logo.png" alt="FC Kindmark"/><div><strong>FC KINDMARK</strong><span>Medlemsportal</span></div></div>
     <div className="sidebar-caption">DIN KLUBB</div>
