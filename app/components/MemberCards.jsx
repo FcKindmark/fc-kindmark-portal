@@ -36,6 +36,7 @@ export function MemberCard({ card }) {
 
 export default function MemberCards({ admin = false, adminData, onAddPlayer, initialSelectedPlayerId, initialShowAdd = false, initialMembershipType = "supporter", onCloseAdd, onUpdate }) {
   const [selectedId,setSelectedId]=useState(null);
+  const [inviteId,setInviteId]=useState(null);
 
   const roster=adminData?.players||[];
   const [showAdd,setShowAdd]=useState(initialShowAdd);
@@ -113,6 +114,7 @@ export default function MemberCards({ admin = false, adminData, onAddPlayer, ini
     else await load();
     setSaving(false);
   }
+  const inviteCard=cards.find(card=>card.id===inviteId);
   const selected=cards.find(card=>card.id===selectedId);
   const visible = cards.filter(c => (!admin || memberMatchesProfileFilter(c,memberFilter)) && `${c.name} ${c.membership_no || ""} ${c.member_number}`.toLocaleLowerCase("sv").includes(search.toLocaleLowerCase("sv")));
   return <section>
@@ -126,8 +128,10 @@ export default function MemberCards({ admin = false, adminData, onAddPlayer, ini
       <div className="member-admin-identity"><strong className="person-name"><PersonAvatar playerId={card.player_id} profileId={card.user_id} name={card.name}/>{card.name}</strong><span className="muted">{memberProfileKind(card)==="player"?"Spelare · Medlem":memberProfileKind(card)==="supporter"?"Stödmedlem":"Medlem"} · {card.status==="active"?"Aktiv":"Inaktiv"}</span></div>
       <div className="member-admin-code"><span>Medlemsnummer</span><strong>{card.membership_no||"—"}</strong></div>
       <div className="member-admin-code"><span>Rabattkod</span><strong>{card.member_number}</strong></div>
+      <Button aria-label={`Bjud in ${card.name}`} onClick={()=>setInviteId(card.id)}>Bjud in</Button>
       <Button variant="secondary" aria-label={`Hantera ${card.name}`} onClick={()=>setSelectedId(card.id)}>Hantera</Button>
     </article>)}</div> : <div className="member-cards-grid">{visible.map(card=><MemberCard key={card.id} card={card}/>)}</div> : <Empty message="Inga medlemskort att visa"/>}
+    {admin&&inviteCard&&<MemberInvite key={inviteCard.id} card={inviteCard} player={roster.find(p=>p.id===inviteCard.player_id)} accounts={adminData?.profiles||accounts} onClose={()=>setInviteId(null)} onReload={async()=>{await load();await onUpdate?.();}}/>}
     {admin&&selected&&(selected.player_id&&roster.find(p=>p.id===selected.player_id)?<AdminPlayerProfile key={selected.id} mode="membership" memberCard={selected} player={roster.find(p=>p.id===selected.player_id)} teams={adminData?.teams||[]} accounts={adminData?.profiles||accounts} onClose={()=>setSelectedId(null)} onUpdate={async()=>{await load();await onUpdate?.();}} memberActions={<div className="button-group"><Button variant="secondary" disabled={saving} onClick={()=>toggle(selected)}>{selected.status==="active"?"Inaktivera kort":"Aktivera kort"}</Button></div>}/>:<MemberDetails key={selected.id} card={selected} players={roster} accounts={adminData?.profiles||accounts} saving={saving} error={error} onClose={()=>setSelectedId(null)} onChange={changeCard} onToggle={toggle} onDelete={deleteCard} onReload={async()=>{await load();await onUpdate?.();}}/>)}
 
   </section>;
@@ -147,3 +151,12 @@ function MemberDetails({card,player,players,accounts,saving,error,onClose,onOpen
   </dialog>;
 }
 
+
+function MemberInvite({card,player,accounts,onClose,onReload}){
+ const dialog=useRef(null);
+ useEffect(()=>{dialog.current?.showModal();},[]);
+ return <dialog ref={dialog} className="member-details-dialog" onCancel={onClose} aria-labelledby="member-invite-title">
+ <div className="page-heading"><h2 id="member-invite-title">Bjud in · {card.name}</h2><Button variant="secondary" onClick={onClose}>Stäng</Button></div>
+ {card.player_id?(player?<PlayerAccount simple player={player} accounts={accounts} onClose={onClose} onUpdate={onReload}/>:<p role="alert">Spelaren kunde inte läsas. Uppdatera listan.</p>):<><p>Skicka en inbjudan till medlemmens e-postadress. Ett befintligt konto kopplas utan att skapa en dubblett.</p><InviteAccountForm kind="member" cardId={card.id} name={card.name} onSaved={onReload}/></>}
+ </dialog>;
+}

@@ -47,7 +47,7 @@ export default function PlayersTab({ data, onUpdate, readOnly = false, onAddPlay
                   <h3>{player.name}</h3>
                   <p>{[player.birth_year,teams.find(t=>t.id===player.team_id)?.name||"Ej lagfördelad"].filter(Boolean).join(" · ")}</p>
                 </div>
-                <Button variant="secondary" onClick={()=>setProfilePlayer(player.id)}>Spelarprofil</Button>{!readOnly&&<Button variant="secondary" onClick={()=>setAccountPlayer(player.id)}>Spelarinloggning</Button>}
+                <Button variant="secondary" onClick={()=>setProfilePlayer(player.id)}>Spelarprofil</Button>{!readOnly&&<Button variant="secondary" onClick={()=>setAccountPlayer(player.id)} aria-label={`Bjud in ${player.name}`}>Bjud in</Button>}
               </div>
             ))}
           </div>

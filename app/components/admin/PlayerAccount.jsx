@@ -16,7 +16,7 @@ export default function PlayerAccount({player,accounts,onUpdate,onClose,simple=f
  }
  const linked=accounts.filter(a=>a.role==="player"&&links.some(l=>l.user_id===a.id));
  const eligible=canHavePlayerAccount(player);
- if(!eligible)return <section className="player-actions-panel"><h3>Spelarkonto · {player.name}</h3><ManagedPlayerLogin player={player} onSaved={async()=>{await load();await onUpdate();}}/><Button variant="secondary" onClick={onClose}>Stäng</Button></section>;
+ if(!eligible)return <section className="player-actions-panel"><h3>Bjud in spelare · {player.name}</h3><p>Utan e-post: skapa användarnamn och lösenord nedan.</p><ManagedPlayerLogin player={player} onSaved={async()=>{await load();await onUpdate();}}/><Button variant="secondary" onClick={onClose}>Stäng</Button></section>;
  return <section className="player-actions-panel"><div className="page-heading"><h3>Bjud in spelare · {player.name}</h3>{!simple&&<Button disabled={busy} variant="secondary" onClick={onClose}>Stäng</Button>}</div>
  <ManagedPlayerLogin player={player} onSaved={async()=>{await load();await onUpdate();}}/><h3>Alternativ: e-post för äldre spelare</h3><p>Spelare född {player.birth_year} · eget spelarkonto. Bjud in med spelarens egen e-postadress, inte en förälders. Spelaren ser sin profil, kalender, kallelser och medlemskort. Föräldrakopplingarna finns kvar separat.</p>
  {error&&<p role="alert" className="error-banner">{error}</p>}
