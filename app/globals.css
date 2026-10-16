@@ -404,3 +404,8 @@ body{background:var(--beige)}h1,h2,h3{font-weight:700}.club-sidebar{width:248px;
 @media(max-width:450px){.payment-settings>.button-group{grid-template-columns:1fr}}
 
 .payment-settings>summary{width:44px;height:44px;min-height:44px;padding:0;border-radius:50%;box-sizing:border-box}
+
+.payment-status-tabs{display:flex;gap:8px;margin:22px 0 16px}
+.payment-status-tabs .club-button{flex:1;min-height:48px;padding:12px 8px;display:flex;align-items:center;justify-content:center;gap:8px}
+.payment-status-tabs span{font-size:13px;border-radius:20px;background:#0000000d;padding:2px 7px}
+@media(max-width:450px){.payment-status-tabs .club-button{font-size:15px;gap:5px}}
