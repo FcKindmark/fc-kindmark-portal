@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const source=readFileSync(new URL('../app/lib/payments.js',import.meta.url),'utf8').replace("import { stockholmToday } from './schedule.js';","const stockholmToday=()=> '2026-10-16';");
+const {paymentPayload}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const base={amount:'450,00',status:'pending',player_name:'Player',payment_kind:'other',payment_category:'clothing'};
+assert.equal(paymentPayload(base,[]).payment_category,'clothing');
+assert.equal(paymentPayload({...base,payment_category:'training'},[]).payment_category,'training');
+assert.equal(paymentPayload({...base,payment_category:undefined},[]).payment_category,'other');
+assert.equal(paymentPayload({...base,payment_kind:'membership',membership_year:2026},[]).payment_category,null);
+assert.throws(()=>paymentPayload({...base,status:'paid'},[]),/transaktionsreferensen/);
+const member={id:'member',name:'Supporter',membership_type:'supporter',membership_no:12,player_id:null};
+assert.throws(()=>paymentPayload({...base,member_id:'member',payment_kind:'membership',membership_year:2026},[],[member]),/150 SEK/);
+const fee=paymentPayload({...base,amount:'150',member_id:'member',payment_kind:'membership',membership_year:2026},[],[member]);
+assert.equal(fee.reference,'12-2026');assert.equal(fee.payment_kind,'membership');
+console.log('PASS: categories persist without changing membership references, supporter prices, or paid-payment verification.');
