@@ -17,7 +17,7 @@ export default function ManagedPlayerLogin({player,onSaved}){
  <form onSubmit={save}><div className="form-grid">
  <label className="field">Åtgärd<select disabled={busy} value={action} onChange={e=>{setAction(e.target.value);setMessage("");}}><option value="create">Skapa spelarkonto</option><option value="reset">Sätt nytt lösenord</option></select></label>
  <label className="field">Användarnamn<input required autoCapitalize="none" autoCorrect="off" autoComplete="off" pattern="[a-zA-Z0-9][a-zA-Z0-9._-]{2,31}" minLength={3} maxLength={32} value={username} onChange={e=>setUsername(e.target.value)} disabled={busy}/></label>
- <label className="field">Lösenord · minst 12 tecken<input required type="password" autoComplete="new-password" minLength={12} maxLength={128} value={password} onChange={e=>setPassword(e.target.value)} disabled={busy}/></label></div>
+ <label className="field">Lösenord · minst 8 tecken<input required type="password" autoComplete="new-password" minLength={8} maxLength={128} value={password} onChange={e=>setPassword(e.target.value)} disabled={busy}/></label></div>
  <p>Lämna användarnamn och lösenord direkt till spelaren eller vårdnadshavaren. Spelaren loggar in på portal.fckindmark.se och kan lägga appen på hemskärmen.</p>
  <Button type="submit" disabled={busy}>{busy?"Sparar…":action==="create"?"Skapa spelarkonto":"Spara nytt lösenord"}</Button></form>
  {error&&<p role="alert" className="error-banner">{error}</p>}{message&&<p role="status" className="success-banner">{message}</p>}

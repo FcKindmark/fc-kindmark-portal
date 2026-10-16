@@ -10,7 +10,7 @@ export default function BulkPlayerLogins({players,onUpdate}){
   setBusy(true);setResults([]);
   try{
    for(const p of rows){
-    const password=p.birth_date+"!!";
+    const password=p.birth_date.replaceAll("-","");
     try{
      const {data,error}=await supabase.functions.invoke("club-player-login",{body:{player_id:p.id,username:p.username,password,action:"create"}});
      let message=data?.message;
@@ -22,7 +22,7 @@ export default function BulkPlayerLogins({players,onUpdate}){
   }finally{setBusy(false);}
  }
  return <Card><Button variant="secondary" disabled={busy} onClick={()=>setOpen(!open)}>Skapa spelarinloggningar för valt urval</Button>
- {open&&<><h3>Spelarkonton utan e-post</h3><p>{rows.length} spelare med fullständigt födelsedatum. {players.length-rows.length} saknar datum och hoppas över.</p><p>Användarnamn: namn med punkter. Första lösenord: födelsedatum i formatet ÅÅÅÅ-MM-DD följt av två utropstecken (!!), totalt 12 tecken. Lämna uppgifterna direkt till varje spelare eller vårdnadshavare. Befintliga konton skrivs inte över.</p>
+ {open&&<><h3>Spelarkonton utan e-post</h3><p>{rows.length} spelare med fullständigt födelsedatum. {players.length-rows.length} saknar datum och hoppas över.</p><p>Användarnamn: namn med punkter. Första lösenord: födelsedatum i formatet ÅÅÅÅMMDD, exakt 8 siffror. Lämna uppgifterna direkt till varje spelare eller vårdnadshavare. Befintliga konton skrivs inte över.</p>
  <ul>{rows.map(p=><li key={p.id}>{p.name} · {p.username}</li>)}</ul>
  <Button disabled={busy||!rows.length} onClick={createAll}>{busy?"Skapar konton…":"Skapa "+rows.length+" spelarkonton"}</Button>
  {results.length>0&&<div role="status">{results.map(r=><p key={r.id}><strong>{r.name}:</strong> {r.ok?"Klart · "+r.username:r.message}</p>)}</div>}</>}

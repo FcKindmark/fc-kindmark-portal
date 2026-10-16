@@ -33,3 +33,5 @@ test("failed linking removes newly created account",async()=>{const r=await run(
 test("existing username is never taken over",async()=>{const r=await run({profile:{id:"old",role:"parent"}});assert.equal(r.status,409);assert.equal(r.created,0);assert.equal(r.updated,0);});
 test("reset rejects accounts belonging to another child",async()=>{const r=await run({body:{action:"reset"},profile:{id:"old",role:"player"},accountChild:"other"});assert.equal(r.status,400);assert.equal(r.updated,0);});
 test("reset requires an active link and changes only the managed account",async()=>{const r=await run({body:{action:"reset"},profile:{id:"old",role:"player"},link:{user_id:"old"}});assert.equal(r.status,200);assert.equal(r.updated,1);assert.equal(r.created,0);});
+
+test("eight-digit initial date passwords are accepted",async()=>{const r=await run({body:{password:"20140101"}});assert.equal(r.status,200);assert.equal(r.created,1);});

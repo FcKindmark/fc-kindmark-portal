@@ -20,7 +20,7 @@ Deno.serve(async(req:Request)=>{
   const password=String(body.password||"");
   const playerId=String(body.player_id||"");
   const action=body.action||"create";
-  if(!/^[a-z0-9][a-z0-9._-]{2,31}$/.test(username)||password.length<12||password.length>128||!["create","reset"].includes(action))return reply(400,{error:"Användarnamn: 3–32 tecken (a–z, 0–9, punkt, bindestreck). Lösenord: minst 12 tecken."});
+  if(!/^[a-z0-9][a-z0-9._-]{2,31}$/.test(username)||password.length<8||password.length>128||!["create","reset"].includes(action))return reply(400,{error:"Användarnamn: 3–32 tecken (a–z, 0–9, punkt, bindestreck). Lösenord: minst 8 tecken."});
   const {data:player,error:playerError}=await caller.from("players").select("id,name,birth_year").eq("id",playerId).single();
   if(playerError||!player)return reply(404,{error:"Spelaren finns inte."});
   if(!Number.isInteger(player.birth_year)||player.birth_year<1900||player.birth_year>new Date().getFullYear())return reply(400,{error:"Ange spelarens födelseår först."});
