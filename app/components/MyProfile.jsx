@@ -8,7 +8,9 @@ import PushSettings from "./PushSettings";
 import TelegramSettings from "./TelegramSettings";
 import {preparePhoto} from "../lib/photos";
 export default function MyProfile({user,profile,photo,onClose,onSaved,showNotifications=true}){
-  const canEditPhoto=profile?.role!=="player";
+  const isPlayer=profile?.role==="player"||Boolean(user.email?.endsWith("@players.login.fckindmark.se"));
+  const canEditPhoto=!isPlayer;
+  const [mobile,setMobile]=useState(profile?.mobile||"");
   const dialog=useRef(null),gallery=useRef(null),camera=useRef(null);
   const [name,setName]=useState(profile?.full_name||""),[newPhoto,setNewPhoto]=useState(null),[preview,setPreview]=useState(photo||""),[removePhoto,setRemovePhoto]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState("");
   useEffect(()=>{dialog.current?.showModal();},[]);
@@ -19,7 +21,7 @@ export default function MyProfile({user,profile,photo,onClose,onSaved,showNotifi
     try{
       let path=removePhoto?null:profile?.avatar_path||null;
       if(newPhoto){uploaded=`${user.id}/${crypto.randomUUID()}.jpg`;const {error}=await supabase.storage.from(bucket).upload(uploaded,newPhoto,{contentType:"image/jpeg",upsert:false});if(error)throw error;path=uploaded;}
-      const {data,error}=await supabase.from("profiles").update({full_name:name.trim(),avatar_path:path}).eq("id",user.id).select("id,full_name,avatar_path").single();
+      const {data,error}=await supabase.from("profiles").update({full_name:name.trim(),avatar_path:path,mobile:mobile.trim()||null}).eq("id",user.id).select("id,full_name,avatar_path").single();
       if(error)throw error;if(!data)throw new Error("Profilen kunde inte sparas.");
       if(profile?.avatar_path&&profile.avatar_path!==path)await supabase.storage.from(bucket).remove([profile.avatar_path]);
       await onSaved(data);onClose();
@@ -33,12 +35,13 @@ export default function MyProfile({user,profile,photo,onClose,onSaved,showNotifi
       {canEditPhoto&&<div className="button-group"><Button variant="secondary" disabled={busy} onClick={()=>gallery.current.click()}>Välj foto</Button><Button variant="secondary" disabled={busy} onClick={()=>camera.current.click()}>Ta foto</Button>{(preview||profile?.avatar_path)&&!removePhoto&&<Button variant="secondary" disabled={busy} onClick={()=>{setNewPhoto(null);setRemovePhoto(true);setPreview("");}}>Ta bort bild</Button>}</div>}
       {!canEditPhoto&&<p className="muted">Spelarens foto hanteras av föreningen i spelarprofilen.</p>}
       <label className="field">Namn<input required maxLength={100} value={name} disabled={busy} onChange={e=>setName(e.target.value)}/></label>
-      <label className="field">E-post<input value={user.email||""} disabled readOnly/></label>
+      <label className="field">Mobilnummer<input type="tel" inputMode="tel" autoComplete="tel" placeholder="+46…" maxLength={25} pattern="[+]?[0-9 ()-]{5,25}" value={mobile} disabled={busy} onChange={e=>setMobile(e.target.value)}/></label>
+      {!isPlayer&&<label className="field">E-post<input value={user.email||""} disabled readOnly/></label>}
       {error&&<p role="alert" className="error-banner">{error}</p>}
       <Button type="submit" disabled={busy||!name.trim()}>{busy?"Sparar…":"Spara profil"}</Button>
     </form>
+    <TelegramSettings userId={user.id} isAdmin={user.app_metadata?.club_role==="admin"}/>
     <MyPlayerProfiles userId={user.id}/>
     {showNotifications&&<PushSettings userId={user.id}/>}
-    <TelegramSettings userId={user.id} isAdmin={user.app_metadata?.club_role==="admin"}/>
   </dialog>;
 }

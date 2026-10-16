@@ -14,7 +14,7 @@ export default function ClubShell({ tabs, active, onChange, user, role, onLogout
   const [expanded, setExpanded] = useState(false);
   const [showProfile,setShowProfile]=useState(false),[account,setAccount]=useState(null),[photo,setPhoto]=useState(""),[profileError,setProfileError]=useState("");
   const loadProfile=useCallback(async()=>{
-    const {data,error}=await supabase.from("profiles").select("id,full_name,avatar_path").eq("id",user.id).single();
+    const {data,error}=await supabase.from("profiles").select("id,role,full_name,avatar_path,mobile").eq("id",user.id).single();
     if(error){setProfileError(error.message);return;}setAccount(data);setProfileError("");
     if(data.avatar_path){const result=await supabase.storage.from("club-profile-photos").createSignedUrl(data.avatar_path,3600);setPhoto(result.data?.signedUrl||"");}else setPhoto("");
   },[user.id]);
