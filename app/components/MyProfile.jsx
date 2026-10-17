@@ -3,6 +3,7 @@ import {useEffect,useRef,useState} from "react";
 import {supabase} from "../lib/supabaseClient";
 import {Button} from "./UI";
 import PersonAvatar from "./PersonAvatar";
+import PlayerCard from "./PlayerCard";
 const bucket="club-profile-photos";
 import MyPlayerProfiles from "./MyPlayerProfiles";
 import PushSettings from "./PushSettings";
@@ -32,10 +33,10 @@ export default function MyProfile({user,profile,photo,onClose,onSaved,showNotifi
   return <Container ref={inline?undefined:dialog} className={inline?"club-card profile-dialog":"member-details-dialog profile-dialog"} onCancel={e=>{if(busy)e.preventDefault();else onClose();}} aria-labelledby="profile-title">
     <div className="page-heading"><h2 id="profile-title">Min profil</h2>{!inline&&<Button variant="secondary" disabled={busy} onClick={onClose}>Stäng</Button>}</div>
     <form onSubmit={save}>
-      <div className="profile-photo">{inline&&player?<PersonAvatar playerId={player.id} name={player.name}/>:preview&&!removePhoto?<img src={preview} alt="Din profilbild"/>:<span aria-label="Ingen profilbild">{(name||user.email||"?").slice(0,1).toUpperCase()}</span>}</div>
+      {inline&&player?<PlayerCard player={player}/>:(<div className="profile-photo">{inline&&player?<PersonAvatar playerId={player.id} name={player.name}/>:preview&&!removePhoto?<img src={preview} alt="Din profilbild"/>:<span aria-label="Ingen profilbild">{(name||user.email||"?").slice(0,1).toUpperCase()}</span>}</div>)}
       <input ref={gallery} type="file" accept="image/*" hidden onChange={choosePhoto}/><input ref={camera} type="file" accept="image/*" capture="user" hidden onChange={choosePhoto}/>
       {canEditPhoto&&<div className="button-group"><Button variant="secondary" disabled={busy} onClick={()=>gallery.current.click()}>Välj foto</Button><Button variant="secondary" disabled={busy} onClick={()=>camera.current.click()}>Ta foto</Button>{(preview||profile?.avatar_path)&&!removePhoto&&<Button variant="secondary" disabled={busy} onClick={()=>{setNewPhoto(null);setRemovePhoto(true);setPreview("");}}>Ta bort bild</Button>}</div>}
-      {!canEditPhoto&&<p className="muted">Spelarens foto hanteras av föreningen i spelarprofilen.</p>}
+      {!inline&&!canEditPhoto&&<p className="muted">Spelarens foto hanteras av föreningen i spelarprofilen.</p>}
       <label className="field">Namn<input required maxLength={100} value={name} disabled={busy} onChange={e=>setName(e.target.value)}/></label>
       <label className="field">Mobilnummer<input type="tel" inputMode="tel" autoComplete="tel" placeholder="+46…" maxLength={25} pattern="[+]?[0-9 ()-]{5,25}" value={mobile} disabled={busy} onChange={e=>setMobile(e.target.value)}/></label>
       {!isPlayer&&<label className="field">E-post<input value={user.email||""} disabled readOnly/></label>}

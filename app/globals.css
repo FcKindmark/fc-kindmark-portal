@@ -423,3 +423,22 @@ dialog[open]{position:fixed;inset:0;margin:auto;max-height:calc(100dvh - 32px);o
  .player-mobile-nav>button>.mobile-nav-label{display:block;width:100%;max-width:100%;font-size:10px;font-weight:600;line-height:1.2;white-space:normal;overflow-wrap:anywhere;text-align:center;letter-spacing:0}
  .player-mobile-nav>button>span:first-child{font-size:24px;height:26px;line-height:26px;flex:none}
 }
+
+.kindo-card-wrap{display:flex;justify-content:center;padding:12px 0 28px}
+.kindo-player-card{isolation:isolate;position:relative;width:min(100%,320px);aspect-ratio:0.72;overflow:hidden;clip-path:polygon(9% 4%,50% 0,91% 4%,100% 14%,97% 83%,88% 92%,50% 100%,12% 92%,3% 83%,0 14%);background:linear-gradient(135deg,#f6e2a3 0%,#b49348 24%,#ffe9aa 47%,#927029 74%,#e7cd85 100%);padding:3px;color:#f7e2a0;filter:drop-shadow(0 10px 18px #20190d25)}
+.kindo-player-card:before{content:"";position:absolute;inset:3px;background:radial-gradient(ellipse at 50% 43%,#393124 0%,#171819 49%,#090b0d 90%);clip-path:inherit;z-index:-2}
+.kindo-card-texture{position:absolute;inset:0;z-index:-1;background:repeating-linear-gradient(125deg,transparent 0 24px,#e2bd5b07 25px 26px),linear-gradient(65deg,transparent 45%,#e7c87813 45%,transparent 72%)}
+.kindo-card-top{position:absolute;top:9%;left:11%;right:11%;display:flex;justify-content:space-between;align-items:flex-start;z-index:2}
+.kindo-card-top>div{display:flex;flex-direction:column;align-items:center}
+.kindo-card-number{font-size:48px;font-weight:800;line-height:1;letter-spacing:-2px}
+.kindo-card-position{font-size:12px;letter-spacing:1.5px;margin-top:7px;font-weight:700}
+.kindo-card-top>img{width:40px;height:48px;object-fit:contain}
+.kindo-card-mascot{position:absolute;inset:13% 15% 32%;display:flex;align-items:center;justify-content:center}
+.kindo-card-mascot>img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 12px 14px #0007)}
+.kindo-card-identity{position:absolute;left:12%;right:12%;bottom:11%;text-align:center}
+.kindo-card-club{font-size:10px;letter-spacing:3px;color:#d0b873}
+.kindo-card-identity h3{margin:8px 0 10px!important;color:#fff2c8!important;font-size:25px!important;font-weight:800;line-height:1.12;text-transform:uppercase;overflow-wrap:anywhere}
+.kindo-card-rule{width:75%;height:1px;margin:0 auto;background:linear-gradient(90deg,transparent,#c2a45c,transparent)}
+.kindo-card-identity p{color:#d7c38a;margin:9px 0;font-size:11px;letter-spacing:2px}
+.kindo-card-motto{font-size:9px;letter-spacing:2px;color:#a69260}
+@media(prefers-reduced-motion:no-preference){.kindo-player-card{animation:kindo-card-reveal .4s ease-out}@keyframes kindo-card-reveal{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}}
