@@ -50,10 +50,9 @@ export default function AdminPlayerProfile({player,teams=[],accounts=[],mode="fo
      </>}
      {membership&&<><label className="field">Pojke / flicka<select value={fields.gender} onChange={change('gender')}><option value="">Ej angivet</option><option value="boy">Pojke</option><option value="girl">Flicka</option></select></label><label className="field">Medlemskategori<select value={fields.membership_category} onChange={change('membership_category')}><option value="new">Ny medlem</option><option value="full">Medlem</option></select></label></>}
     </div></section>
-    {membership&&<section className="player-profile-section"><h3>Kontakt och storlekar</h3><div className="form-grid">
+    {membership&&<section className="player-profile-section"><h3>Kontakt och klädstorlek</h3><div className="form-grid">
      {input('mobile','Mobilnummer','tel',phone)}{input('email','E-post','email',{maxLength:254})}
      <label className="field">Klädstorlek<select value={fields.clothing_size} onChange={change('clothing_size')}><option value="">Välj storlek</option>{sizes.map(size=><option key={size}>{size}</option>)}</select></label>
-     {input('shoe_size','Skostorlek','number',{min:15,max:55,step:0.5})}
      {input('telegram_username','Telegram-användarnamn (valfritt)','text',{maxLength:33,pattern:'@?[A-Za-z][A-Za-z0-9_]{4,31}',placeholder:'@användarnamn'})}
     </div></section>}
     {membership&&!simple&&['mother','father'].map((parent,index)=><section key={parent} className="player-profile-section"><h3>Förälder {index+1}{index===0?' · Mamma':' · Pappa'}</h3><div className="form-grid">

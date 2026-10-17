@@ -24,7 +24,6 @@ export default function PlayerProfile({player,onClose,readOnly=false}){
   {loading?<p>Läser profil…</p>:loadFailed?null:<form onSubmit={save}><fieldset disabled={readOnly||busy||!!error&&loading} className="player-profile-fields">
     <label className="field">Mobilnummer<input type="tel" autoComplete="tel" inputMode="tel" pattern="\+?[0-9 ()-]{5,25}" maxLength={25} value={mobile} onChange={e=>setMobile(e.target.value)} placeholder="+46…"/></label>
     <label className="field">Klädstorlek<select value={size} onChange={e=>setSize(e.target.value)}><option value="">Välj storlek</option>{sizes.map(s=><option key={s}>{s}</option>)}</select></label>
-    <label className="field">Skostorlek<input type="number" min="15" max="55" step="0.5" value={shoe} onChange={e=>setShoe(e.target.value)}/></label>
     <label className="field">Telegram-användarnamn (valfritt)<input maxLength={33} value={telegram} onChange={e=>setTelegram(e.target.value)} placeholder="@användarnamn" pattern="@?[A-Za-z][A-Za-z0-9_]{4,31}"/></label>
     {!readOnly&&<Button type="submit" disabled={busy}>{busy?'Sparar…':'Spara spelarprofil'}</Button>}
   </fieldset></form>}
