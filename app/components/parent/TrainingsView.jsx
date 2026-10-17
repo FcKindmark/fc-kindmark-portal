@@ -35,12 +35,12 @@ export default function TrainingsView({ data, userEmail, linkedPlayerIds = [], o
   const myTeamIds = new Set(myChildren.map((c) => c.team_id).filter(Boolean));
 
   // Filter trainings for user's children's teams
-  const myTrainings = nextSevenDays(trainings.filter((t) => myTeamIds.has(t.team_id)), today);
+  const myTrainings = nextSevenDays(trainings.filter((t) => myTeamIds.has(t.team_id)&&calls.some(row=>row.training_id===t.id&&myChildren.some(child=>child.id===row.player_id))), today);
 
   // Load attendance data
   useEffect(() => {
     loadAttendance();
-  }, [data.trainings, data.players, userEmail, linkedPlayerIds.join(","), today]);
+  }, [data.trainings, data.players, userEmail, linkedPlayerIds.join(","), today, callsReady, calls]);
 
   async function loadAttendance() {
     try {
@@ -130,13 +130,14 @@ export default function TrainingsView({ data, userEmail, linkedPlayerIds = [], o
         <p className="muted">Kommande 7 dagar</p>
       </div>
 
-      {myTrainings.length === 0 ? (
-        <Empty message={self?"Inga träningar för dig de kommande 7 dagarna":"Inga träningar för dina barn de kommande 7 dagarna"} />
+      {callError&&<p role="alert" className="error-banner">{callError}</p>}
+      {!callsReady&&!callError?<p role="status">Läser kallelser…</p>:myTrainings.length === 0 ? (
+        <Empty message={"Inga träningskallelser de kommande 7 dagarna"} />
       ) : (
         <div style={{ display: "grid", gap: "20px" }}>
           {myTrainings.map((training) => {
             const information=memberEventInfo(training.admin_comment);
-            const childrenInTraining = myChildren.filter((c) => c.team_id === training.team_id && (!training.calls_sent_at||(callsReady&&calls.some(row=>row.training_id===training.id&&row.player_id===c.id))));
+            const childrenInTraining = myChildren.filter((c) => c.team_id === training.team_id && calls.some(row=>row.training_id===training.id&&row.player_id===c.id));
             
             return (
               <Card key={training.id}>
