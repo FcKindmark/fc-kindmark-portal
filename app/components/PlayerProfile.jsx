@@ -2,7 +2,7 @@
 import {useEffect,useRef,useState} from "react";
 import {supabase} from "../lib/supabaseClient";
 import {Button} from "./UI";
-import PersonAvatar from "./PersonAvatar";
+import PlayerCard from "./PlayerCard";
 import PlayerMeasurements from "./PlayerMeasurements";
 import PlayerRecords from "./PlayerRecords";
 const sizes=['104','110','116','122','128','134','140','146','152','158','164','170','176','XXS','XS','S','M','L','XL','XXL','3XL'];
@@ -20,7 +20,7 @@ export default function PlayerProfile({player,onClose,readOnly=false}){
  }catch(e){setError(e.message);}finally{setBusy(false);}}
  return <dialog ref={dialog} className="member-details-dialog profile-dialog" onCancel={e=>{if(busy)e.preventDefault();else onClose();}} aria-labelledby="player-profile-title">
   <div className="page-heading"><h2 id="player-profile-title">Spelarprofil</h2><Button variant="secondary" disabled={busy} onClick={onClose}>Stäng</Button></div>
-  <div className="player-profile-hero"><PersonAvatar playerId={player.id} name={player.name}/><h3>{player.name}</h3><p>{[player.number!=null?`Tröjnummer ${player.number}`:null,player.position].filter(Boolean).join(' · ')}</p></div>
+  <PlayerCard player={player}/>
   {loading?<p>Läser profil…</p>:loadFailed?null:<form onSubmit={save}><fieldset disabled={readOnly||busy||!!error&&loading} className="player-profile-fields">
     <label className="field">Mobilnummer<input type="tel" autoComplete="tel" inputMode="tel" pattern="\+?[0-9 ()-]{5,25}" maxLength={25} value={mobile} onChange={e=>setMobile(e.target.value)} placeholder="+46…"/></label>
     <label className="field">Klädstorlek<select value={size} onChange={e=>setSize(e.target.value)}><option value="">Välj storlek</option>{sizes.map(s=><option key={s}>{s}</option>)}</select></label>
