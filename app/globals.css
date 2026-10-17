@@ -416,6 +416,7 @@ dialog[open]{position:fixed;inset:0;margin:auto;max-height:calc(100dvh - 32px);o
 .club-modal>.club-card{max-height:calc(100dvh - 40px);overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
 .mobile-more{overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
 
+.mobile-nav>button>.mobile-nav-label{font-size:inherit;line-height:1.2}
 @media(max-width:760px){
  .player-mobile-nav{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));align-items:stretch;gap:0;padding:6px 4px calc(6px + env(safe-area-inset-bottom));box-sizing:border-box}
  .player-mobile-nav>button{width:100%;min-width:0;max-width:100%;min-height:58px;padding:5px 1px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:6px;overflow:hidden}
