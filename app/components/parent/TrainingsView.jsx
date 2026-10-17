@@ -35,7 +35,7 @@ export default function TrainingsView({ data, userEmail, linkedPlayerIds = [], o
   const myTeamIds = new Set(myChildren.map((c) => c.team_id).filter(Boolean));
 
   // Filter trainings for user's children's teams
-  const myTrainings = nextSevenDays(trainings.filter((t) => myTeamIds.has(t.team_id)&&calls.some(row=>row.training_id===t.id&&myChildren.some(child=>child.id===row.player_id))), today);
+  const myTrainings = nextSevenDays(trainings.filter((t) => myTeamIds.has(t.team_id)), today);
 
   // Load attendance data
   useEffect(() => {
@@ -131,8 +131,8 @@ export default function TrainingsView({ data, userEmail, linkedPlayerIds = [], o
       </div>
 
       {callError&&<p role="alert" className="error-banner">{callError}</p>}
-      {!callsReady&&!callError?<p role="status">Läser kallelser…</p>:myTrainings.length === 0 ? (
-        <Empty message={"Inga träningskallelser de kommande 7 dagarna"} />
+      {myTrainings.length === 0 ? (
+        <Empty message={"Inga träningar de kommande 7 dagarna"} />
       ) : (
         <div style={{ display: "grid", gap: "20px" }}>
           {myTrainings.map((training) => {
@@ -165,7 +165,7 @@ export default function TrainingsView({ data, userEmail, linkedPlayerIds = [], o
 
                 {expandedTraining === training.id && (
                   <div style={{ borderTop: "1px solid #ddd", paddingTop: "16px" }}>
-                    <h4 style={{ color: "var(--text-dark)", marginBottom: "12px", fontWeight: "600" }}>{self?"Din kallelse":"Kallade barn"}</h4>{callError&&<p role="alert" className="error-banner">{callError}</p>}{training.calls_sent_at&&!callsReady&&!callError&&<p>Läser kallelse…</p>}{training.calls_sent_at&&callsReady&&!childrenInTraining.length&&<p>Ingen av dina kopplade spelare är kallad till denna träning.</p>}
+                    <h4 style={{ color: "var(--text-dark)", marginBottom: "12px", fontWeight: "600" }}>{self?"Ditt svar":"Kallade barn"}</h4>{callError&&<p role="alert" className="error-banner">{callError}</p>}{!callsReady&&!callError&&<p>Läser kallelse…</p>}{callsReady&&!childrenInTraining.length&&<p>{self?"Du har inte fått någon kallelse till denna träning ännu.":"Ingen av dina kopplade spelare är kallad till denna träning."}</p>}
                     {childrenInTraining.map((child) => {
                       const isAttending = attendance[`${training.id}_${child.id}`];
                       return (
