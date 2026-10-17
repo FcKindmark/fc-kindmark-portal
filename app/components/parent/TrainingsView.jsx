@@ -165,7 +165,7 @@ export default function TrainingsView({ data, userEmail, linkedPlayerIds = [], o
 
                 {expandedTraining === training.id && (
                   <div style={{ borderTop: "1px solid #ddd", paddingTop: "16px" }}>
-                    <h4 style={{ color: "var(--text-dark)", marginBottom: "12px", fontWeight: "600" }}>{self?"Ditt svar":"Kallade barn"}</h4>{callError&&<p role="alert" className="error-banner">{callError}</p>}{!callsReady&&!callError&&<p>Läser kallelse…</p>}{callsReady&&!childrenInTraining.length&&<p>{self?"Du har inte fått någon kallelse till denna träning ännu.":"Ingen av dina kopplade spelare är kallad till denna träning."}</p>}
+                    <h4 style={{ color: "var(--text-dark)", marginBottom: "12px", fontWeight: "600" }}>{self?"Ditt svar":"Dina barn"}</h4>{callError&&<p role="alert" className="error-banner">{callError}</p>}{!callsReady&&!callError&&<p>Läser kallelse…</p>}{callsReady&&!childrenInTraining.length&&<p>{self?"Du har inte fått någon kallelse till denna träning ännu.":"Inget av dina barn har fått någon kallelse till denna träning ännu."}</p>}
                     {childrenInTraining.map((child) => {
                       const isAttending = attendance[`${training.id}_${child.id}`];
                       return (
