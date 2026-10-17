@@ -1,3 +1,12 @@
+export function activeFamilyMessages(data,invitations){
+ const targets=new Map((data.messageTargets||[]).map(t=>[t.message_id,t]));
+ return (data.messages||[]).filter(message=>{
+  const target=targets.get(message.id);
+  if(!target)return true;
+  const called=invitations.filter(i=>i.kind===target.event_kind&&i.event.id===target.event_id);
+  return !called.length||called.some(i=>i.answer!==true&&i.answer!==false);
+ });
+}
 export function familyInvitations(data,players){
  const people=new Map(players.map(p=>[p.id,p]));
  return [{kind:"training",events:data.trainings||[],calls:data.trainingCalls||[],replies:data.trainingReplies||[],idKey:"training_id",valueKey:"attended"},{kind:"match",events:data.matches||[],calls:data.matchCalls||[],replies:data.matchReplies||[],idKey:"match_id",valueKey:"attending"}].flatMap(group=>{
@@ -12,7 +21,7 @@ export function familyInvitations(data,players){
 }
 export function familyNotifications(data,invitations,today){
  const read=new Set((data.messageReads||[]).map(r=>r.message_id));
- const unread=(data.messages||[]).filter(m=>!read.has(m.id));
+ const unread=activeFamilyMessages(data,invitations).filter(m=>!read.has(m.id));
  const notices=new Map();
  for(const item of invitations){
   if(item.answer!==undefined||item.event.date<today)continue;

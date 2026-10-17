@@ -9,7 +9,7 @@ import MemberCards from "../MemberCards";
 import ClubNews from "../ClubNews";
 import EventSchedule from "../EventSchedule";
 import KallelserView from "./KallelserView";
-import {familyInvitations,familyNotifications} from "../../lib/familyNotifications";
+import {familyInvitations,familyNotifications,activeFamilyMessages} from "../../lib/familyNotifications";
 import {useStockholmToday} from "../../lib/useStockholmToday";
 import {memberEventInfo} from "../../lib/schedule";
 import MemberOverview from "./MemberOverview";
@@ -99,6 +99,7 @@ export default function ParentDashboard({ user, profile, onLogout, onBackToStaff
   const teamIds = new Set(mine.map(p => p.team_id).filter(Boolean));
   const invitations=[...familyInvitations(data,mine),...(data.coachInvitations||[])];
   const notificationState=familyNotifications(data,invitations,today);
+  const inboxData={...data,messages:activeFamilyMessages(data,invitations)};
   const allTabs = [
     { id: "overview", label: "Hem" },
     ...(isPlayer?[{id:"team",label:"Mitt lag"}]:[]),
@@ -132,7 +133,7 @@ export default function ParentDashboard({ user, profile, onLogout, onBackToStaff
     {activeTab === "calls"&&<KallelserView invitations={invitations} today={today} target={target} onShowAll={()=>navigate("calls")} onRefresh={loadData}/>}
     {activeTab === "matches" && <MatchesView self={isPlayer} data={memberData} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)} onRefresh={loadData}/>}
     {activeTab === "payments" && <PaymentsView self={profile?.role==="player"} data={data} ownMemberIds={data.ownMemberIds} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)}/>}
-    {activeTab === "messages" && <MessagesView targetId={target?.messageId} onRead={readMessage} onOpenCall={t=>navigate("calls",{kind:t.event_kind,eventId:t.event_id})} data={data} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)} onRefresh={loadData}/>}
+    {activeTab === "messages" && <MessagesView targetId={target?.messageId} onRead={readMessage} onOpenCall={t=>navigate("calls",{kind:t.event_kind,eventId:t.event_id})} data={inboxData} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)} onRefresh={loadData}/>}
     {activeTab === "equipment" && <PlayerRecords players={mine} kind="equipment" readOnly/>}
     {activeTab === "development" && <PlayerRecords players={mine} kind="development" readOnly/>}
     </>}
