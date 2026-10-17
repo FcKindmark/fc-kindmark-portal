@@ -2,18 +2,19 @@
 import {useEffect,useRef,useState} from "react";
 import {supabase} from "../lib/supabaseClient";
 import {Button} from "./UI";
+import PersonAvatar from "./PersonAvatar";
 const bucket="club-profile-photos";
 import MyPlayerProfiles from "./MyPlayerProfiles";
 import PushSettings from "./PushSettings";
 import TelegramSettings from "./TelegramSettings";
 import {preparePhoto} from "../lib/photos";
-export default function MyProfile({user,profile,photo,onClose,onSaved,showNotifications=true}){
+export default function MyProfile({user,profile,photo,onClose,onSaved,showNotifications=true,inline=false,player,onLogout}){
   const isPlayer=profile?.role==="player"||Boolean(user.email?.endsWith("@players.login.fckindmark.se"));
   const canEditPhoto=!isPlayer;
   const [mobile,setMobile]=useState(profile?.mobile||"");
   const dialog=useRef(null),gallery=useRef(null),camera=useRef(null);
   const [name,setName]=useState(profile?.full_name||""),[newPhoto,setNewPhoto]=useState(null),[preview,setPreview]=useState(photo||""),[removePhoto,setRemovePhoto]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState("");
-  useEffect(()=>{dialog.current?.showModal();},[]);
+  useEffect(()=>{if(!inline)dialog.current?.showModal();},[inline]);
   useEffect(()=>{if(!newPhoto)return;const url=URL.createObjectURL(newPhoto);setPreview(url);return()=>URL.revokeObjectURL(url);},[newPhoto]);
   async function choosePhoto(e){const file=e.target.files?.[0];e.target.value="";if(!file)return;setBusy(true);setError("");try{setNewPhoto(await preparePhoto(file));setRemovePhoto(false);}catch(e){setError(e.message);}finally{setBusy(false);}}
   async function save(e){
@@ -24,13 +25,14 @@ export default function MyProfile({user,profile,photo,onClose,onSaved,showNotifi
       const {data,error}=await supabase.from("profiles").update({full_name:name.trim(),avatar_path:path,mobile:mobile.trim()||null}).eq("id",user.id).select("id,full_name,avatar_path").single();
       if(error)throw error;if(!data)throw new Error("Profilen kunde inte sparas.");
       if(profile?.avatar_path&&profile.avatar_path!==path)await supabase.storage.from(bucket).remove([profile.avatar_path]);
-      await onSaved(data);onClose();
+      await onSaved(data);if(!inline)onClose();
     }catch(e){if(uploaded)await supabase.storage.from(bucket).remove([uploaded]);setError(e.message);}finally{setBusy(false);}
   }
-  return <dialog ref={dialog} className="member-details-dialog profile-dialog" onCancel={e=>{if(busy)e.preventDefault();else onClose();}} aria-labelledby="profile-title">
-    <div className="page-heading"><h2 id="profile-title">Min profil</h2><Button variant="secondary" disabled={busy} onClick={onClose}>Stäng</Button></div>
+  const Container=inline?"section":"dialog";
+  return <Container ref={inline?undefined:dialog} className={inline?"club-card profile-dialog":"member-details-dialog profile-dialog"} onCancel={e=>{if(busy)e.preventDefault();else onClose();}} aria-labelledby="profile-title">
+    <div className="page-heading"><h2 id="profile-title">Min profil</h2>{!inline&&<Button variant="secondary" disabled={busy} onClick={onClose}>Stäng</Button>}</div>
     <form onSubmit={save}>
-      <div className="profile-photo">{preview&&!removePhoto?<img src={preview} alt="Din profilbild"/>:<span aria-label="Ingen profilbild">{(name||user.email||"?").slice(0,1).toUpperCase()}</span>}</div>
+      <div className="profile-photo">{inline&&player?<PersonAvatar playerId={player.id} name={player.name}/>:preview&&!removePhoto?<img src={preview} alt="Din profilbild"/>:<span aria-label="Ingen profilbild">{(name||user.email||"?").slice(0,1).toUpperCase()}</span>}</div>
       <input ref={gallery} type="file" accept="image/*" hidden onChange={choosePhoto}/><input ref={camera} type="file" accept="image/*" capture="user" hidden onChange={choosePhoto}/>
       {canEditPhoto&&<div className="button-group"><Button variant="secondary" disabled={busy} onClick={()=>gallery.current.click()}>Välj foto</Button><Button variant="secondary" disabled={busy} onClick={()=>camera.current.click()}>Ta foto</Button>{(preview||profile?.avatar_path)&&!removePhoto&&<Button variant="secondary" disabled={busy} onClick={()=>{setNewPhoto(null);setRemovePhoto(true);setPreview("");}}>Ta bort bild</Button>}</div>}
       {!canEditPhoto&&<p className="muted">Spelarens foto hanteras av föreningen i spelarprofilen.</p>}
@@ -41,7 +43,8 @@ export default function MyProfile({user,profile,photo,onClose,onSaved,showNotifi
       <Button type="submit" disabled={busy||!name.trim()}>{busy?"Sparar…":"Spara profil"}</Button>
     </form>
     <TelegramSettings userId={user.id} isAdmin={user.app_metadata?.club_role==="admin"}/>
-    <MyPlayerProfiles userId={user.id}/>
+    {!inline&&<MyPlayerProfiles userId={user.id}/>}
     {showNotifications&&<PushSettings userId={user.id}/>}
-  </dialog>;
+    {inline&&onLogout&&<Button variant="secondary" onClick={onLogout}>Logga ut</Button>}
+  </Container>;
 }

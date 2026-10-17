@@ -16,6 +16,7 @@ import MemberOverview from "./MemberOverview";
 import PlayerRecords from "../PlayerRecords";
 import PlayerTeam from "../PlayerTeam";
 import ChildrenView from "./ChildrenView";
+import MyProfile from "../MyProfile";
 import TrainingsView from "./TrainingsView";
 import MatchesView from "./MatchesView";
 import PaymentsView from "./PaymentsView";
@@ -23,7 +24,7 @@ import MessagesView from "./MessagesView";
 
 export default function ParentDashboard({ user, profile, onLogout, onBackToStaff, staffRole }) {
   const isPlayer=profile?.role==="player";
-  const [activeTab, setActiveTab] = usePortalView("family", ["overview",...(isPlayer?["team"]:[]),"calendar","membership","news",isPlayer?"profile":"children","equipment","development","trainings","matches","calls","payments","messages"], "overview", user.id);
+  const [activeTab, setActiveTab] = usePortalView("family", ["overview",...(isPlayer?["team"]:[]),"calendar","membership","news",isPlayer?"profile":"children","equipment","development","trainings","matches","calls","payments","messages"], isPlayer?"profile":"overview", user.id);
   const [data, setData] = useState({
     players: [],
     trainings: [],
@@ -98,7 +99,7 @@ export default function ParentDashboard({ user, profile, onLogout, onBackToStaff
   const teamIds = new Set(mine.map(p => p.team_id).filter(Boolean));
   const invitations=[...familyInvitations(data,mine),...(data.coachInvitations||[])];
   const notificationState=familyNotifications(data,invitations,today);
-  const tabs = [
+  const allTabs = [
     { id: "overview", label: "Hem" },
     ...(isPlayer?[{id:"team",label:"Mitt lag"}]:[]),
     { id: "calendar", label: "Kalender" },
@@ -113,9 +114,11 @@ export default function ParentDashboard({ user, profile, onLogout, onBackToStaff
     { id: "payments", label: "Betalningar", icon: "💳" },
     { id: "messages", label: "Meddelanden", count:notificationState.unreadCount, icon: "💬" },
   ];
+  const tabs=isPlayer?[{id:"profile",label:"Min profil"},{id:"calendar",label:"Kalender"},{id:"trainings",label:"Träningar"},{id:"matches",label:"Matcher"},{id:"membership",label:"Medlemskort"},{id:"development",label:"Utveckling"}]:allTabs;
+  useEffect(()=>{if(isPlayer&&!["profile","calendar","trainings","matches","membership","development","calls","messages"].includes(activeTab))setActiveTab("profile");},[isPlayer,activeTab,setActiveTab]);
   const memberData = {...data, players:mine, teams:data.teams.filter(t=>teamIds.has(t.id)), trainings:data.trainings.filter(t=>teamIds.has(t.team_id)), matches:data.matches.filter(m=>teamIds.has(m.team_id))};
   return <ClubShell notifications={notificationState.notifications} onOpenNotification={openNotification} tabs={tabs} active={activeTab} onChange={navigate} user={user} role={profile?.role === "player" ? "Spelare" : "Förälder"} onLogout={onLogout}>
-    <div className="page-heading"><p>{profile?.role==="player"?"Spelarportal · Min profil":"Föräldraportal · Mina barn"}</p><div className="button-group"><Button variant="secondary" disabled={loading} onClick={loadData}>Uppdatera</Button>{onBackToStaff&&<Button onClick={onBackToStaff}>{staffRole==="admin"?"Till administratörsportalen":staffRole==="coach"?"Till tränarportalen":"Till min portal"}</Button>}</div></div>
+    {!isPlayer&&<div className="page-heading"><p>{profile?.role==="player"?"Spelarportal · Min profil":"Föräldraportal · Mina barn"}</p><div className="button-group"><Button variant="secondary" disabled={loading} onClick={loadData}>Uppdatera</Button>{onBackToStaff&&<Button onClick={onBackToStaff}>{staffRole==="admin"?"Till administratörsportalen":staffRole==="coach"?"Till tränarportalen":"Till min portal"}</Button>}</div></div>}
     {error && <p className="error-banner" role="alert">{error}<button onClick={loadData}>Försök igen</button></p>}
     {loading ? <p role="status">Läser in…</p> : <>
     {activeTab === "overview" && <MemberOverview self={profile?.role==="player"} data={memberData} players={mine} onNavigate={navigate}/>}
@@ -123,7 +126,8 @@ export default function ParentDashboard({ user, profile, onLogout, onBackToStaff
     {activeTab === "news" && <ClubNews/>}
     {activeTab === "membership" && <MemberCards/>}
     {activeTab === "calendar" && <EventSchedule data={memberData} member onNavigate={navigate}/>}
-    {activeTab === (isPlayer?"profile":"children") && <ChildrenView self={isPlayer} data={memberData} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)}/>}
+    {isPlayer&&activeTab==="profile"&&<MyProfile inline player={mine[0]} user={user} profile={{...parentInfo,role:"player"}} photo="" onClose={()=>{}} onLogout={onLogout} onSaved={()=>loadData({silent:true})}/>}
+    {!isPlayer&&activeTab === "children" && <ChildrenView self={isPlayer} data={memberData} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)}/>}
     {activeTab === "trainings" && <TrainingsView self={isPlayer} data={memberData} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)} onRefresh={loadData}/>}
     {activeTab === "calls"&&<KallelserView invitations={invitations} today={today} target={target} onShowAll={()=>navigate("calls")} onRefresh={loadData}/>}
     {activeTab === "matches" && <MatchesView self={isPlayer} data={memberData} userEmail={user.email} linkedPlayerIds={access.map(a => a.player_id)} onRefresh={loadData}/>}
