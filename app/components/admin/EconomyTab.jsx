@@ -1,5 +1,6 @@
 "use client";
 import PaymentsTab from "./PaymentsTab";
+import {retryRead, isNetworkReadError} from "../../lib/retryRead.mjs";
 import {withBookedClothing} from "../../lib/bookedClothing.mjs";
 import {documentPaymentState} from '../../lib/documentPaymentState';
 import {useStockholmToday} from '../../lib/useStockholmToday';
@@ -76,6 +77,7 @@ export default function EconomyTab({
     [loading, setLoading] = useState(!initialData),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
+    [loadError, setLoadError] = useState(''),
     [notice, setNotice] = useState(''),
     [entry, setEntry] = useState(null),
     [settlement, setSettlement] = useState(null),
@@ -98,13 +100,14 @@ export default function EconomyTab({
     [readText, setReadText] = useState('');
   async function load() {
     setLoading(true);
+    setLoadError('');
     try {
-      const result = await supabase.rpc('club_econ_snapshot');
+      const result = await retryRead(() => supabase.rpc('club_econ_snapshot'));
       if (result.error) throw result.error;
       setData(result.data);
       return result.data;
     } catch (e) {
-      setError(e.message);
+      setLoadError(isNetworkReadError(e) ? 'Kunde inte ansluta till ekonomin. Kontrollera internetanslutningen och försök igen.' : e.message);
     } finally {
       setLoading(false);
     }
@@ -528,6 +531,7 @@ export default function EconomyTab({
         setView(id);
         setEntry(null);
       }}>{label}</Button>)}</div>
+ {loadError && <div className="error-banner" role="alert"><p>{loadError}</p><Button variant="secondary" disabled={loading} onClick={()=>load()}>Försök igen</Button></div>}
  {error && <p className="error-banner" role="alert">{error}</p>}{notice && <p className="economy-notice" role="status">{notice}</p>}{locked && <p className="economy-notice">{year} är låst.</p>}
  {loading ? <p role="status">Läser ekonomin…</p> : <>
  {view === 'payments' && <PaymentsTab data={{payments:withBookedClothing(payments,data,players,members),players,memberCards:members,teams}} onUpdate={async()=>{await onPaymentsChanged?.();await load();}}/>}
