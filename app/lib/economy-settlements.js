@@ -2,6 +2,8 @@ import { cents } from './economy';
 import { SWISH_INCOME } from './swish-income';
 
 export const incomingInvoice = d => ['sales','sponsor','grant'].includes(d.kind);
+export const supplierProforma = d => d?.kind==='purchase' && d.is_proforma===true;
+export const paymentDocument = d => ['sales','sponsor','grant','purchase','receipt'].includes(d.kind) && (!d.is_proforma || supplierProforma(d));
 export function invoiceSettlement(d, data) {
   const posted = new Set(data.journal.filter(j=>j.status==='posted').map(j=>j.id));
   const allocations = data.document_links || [];
@@ -38,11 +40,11 @@ export function settlementProposal(bank, allocations, paymentIds, data, payments
   }
   for(const a of allocations) {
     const d=data.documents.find(d=>d.id===a.document_id), amount=cents(a.amount);
-    if(!d || seen.has(d.id) || d.is_proforma || !['sales','sponsor','grant','purchase','receipt'].includes(d.kind) || incomingInvoice(d)!==incoming) throw Error('Kontrollera fakturorna och betalningsriktningen.');
+    if(!d || seen.has(d.id) || !paymentDocument(d) || incomingInvoice(d)!==incoming) throw Error('Kontrollera fakturorna och betalningsriktningen.');
     seen.add(d.id);
     const state=invoiceSettlement(d,data);
     if(!Number.isFinite(amount) || amount<=0 || amount>cents(state.remaining)) throw Error('Beloppet måste rymmas i fakturans kvarvarande belopp.');
-    const account=!incoming && bank.date<d.document_date?'1480':state.booked?state.account:(a.account || state.account);
+    const account=!incoming && (supplierProforma(d) || bank.date<d.document_date)?'1480':state.booked?state.account:(a.account || state.account);
     documents.push({document_id:d.id,amount:amount/100,account});add(account,amount);allocated+=amount;
   }
   const unique=[...new Set(paymentIds)];
@@ -82,6 +84,7 @@ export function settlementDraft(bank, data) {
 }
 
 export function invoiceBookingProposal(d,data) {
+ if(d.is_proforma)throw Error('Slutfaktura krävs innan förskottet avräknas eller kostnaden bokförs.');
  const state=invoiceSettlement(d,data),incoming=incomingInvoice(d);
  const account=d.kind==='sponsor'?'3910':d.kind==='grant'?'3980':incoming?'3990':'6990';
  if(incoming)return [{account:'1510',debit:Number(d.amount),credit:0},{account,debit:0,credit:Number(d.amount)}];
@@ -94,7 +97,7 @@ export function invoiceBookingProposal(d,data) {
 export function supplierAdvances(data, year) {
   const cutoff = `${year}-12-31`;
   const snapshot = {...data, journal:data.journal.filter(j=>j.date<=cutoff)};
-  return data.documents.filter(d=>['purchase','receipt'].includes(d.kind) && !d.is_proforma)
+  return data.documents.filter(d=>['purchase','receipt'].includes(d.kind))
     .map(document=>({document,amount:invoiceSettlement(document,snapshot).advance}))
     .filter(a=>a.amount>0);
 }

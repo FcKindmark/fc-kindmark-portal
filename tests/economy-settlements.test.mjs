@@ -76,3 +76,16 @@ assert.equal(supplierAdvances(advanceReport,2024).length,0);
 assert.equal(supplierAdvances(advanceReport,2026)[0].amount,100);
 assert.equal(supplierAdvances(advanceReport,2027).length,0);
 console.log('PASS: advance report includes previous-year payments and respects year-end clearing cutoff.');
+
+const proforma={id:'proforma',kind:'purchase',amount:1000,is_proforma:true,document_date:'2026-10-22'};
+const proformaData={...data,documents:[proforma]};
+for(const date of ['2026-10-21','2026-10-22','2026-10-23']){
+ const p=settlementProposal({id:'bank',date,amount:-300},[{document_id:'proforma',amount:300,account:'6990'}],[],proformaData,[]);
+ assert.equal(p.document_allocations[0].account,'1480');assert.equal(p.lines[1].account,'1480');assert.equal(p.remaining,0);
+}
+assert.throws(()=>settlementProposal({...bank,amount:300},[{document_id:'proforma',amount:300}],[],proformaData,[]),/betalningsriktningen/);
+assert.throws(()=>settlementProposal({...bank,amount:1000},[{document_id:'proforma',amount:1000}],[],{...proformaData,documents:[{...proforma,kind:'sales'}]},[]),/Kontrollera/);
+assert.throws(()=>invoiceBookingProposal(proforma,proformaData),/Slutfaktura/);
+const proformaPaid={...proformaData,journal:[{id:'p',status:'posted',bank_id:'bank',date:'2026-10-23'}],document_links:[{journal_id:'p',document_id:'proforma',amount:300,account:'1480'}]};
+assert.equal(invoiceSettlement(proforma,proformaPaid).remaining,700);assert.equal(supplierAdvances(proformaPaid,2026)[0].amount,300);
+console.log('PASS: supplier proforma advances before/on/after document date, immutable advance account, direction restrictions, outstanding report and no premature expense.');
