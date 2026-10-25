@@ -105,7 +105,7 @@ function MatchCallEditor({match,squad,calls,replies,busy,canDelete,onClear,onSen
   async function send(event){
     event.preventDefault();setSending(true);setError("");setNotice("");
     try{
-      const {data,error}=await supabase.rpc("club_send_match_call",{target:match.id,selected,note:""});
+      const {data,error}=await supabase.rpc("club_send_match_call",{target:match.id,selected,note:matchInformation(match.admin_comment).slice(0,1000)});
       if(error)throw error;
       setNotice(`Kallelse skickad till ${data.players} spelare. ${data.recipients} mottagare har fått ett meddelande i portalen.`);
       await onSent();
