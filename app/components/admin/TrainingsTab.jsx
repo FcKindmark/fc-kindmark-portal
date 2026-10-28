@@ -34,7 +34,7 @@ export default function TrainingsTab({ data, userId, onUpdate, canDelete=false, 
   async function loadCalls(){const {data:rows,error}=await supabase.from("club_training_calls").select("training_id,player_id");if(error)setCallError(error.message);else setCalls(rows||[]);}
 
   function openCall(training){setCallTraining(training);setCallError("");setCallNote("");setSelected(training.calls_sent_at?calls.filter(c=>c.training_id===training.id).map(c=>c.player_id):players.filter(p=>p.team_id===training.team_id).map(p=>p.id));}
-  async function sendCall(e){e.preventDefault();setLoading(true);setCallError("");setCallNotice("");try{const {data:result,error}=await supabase.rpc("club_send_training_call",{target:callTraining.id,selected,note:callNote.trim()});if(error)throw error;setCallNotice(`Kallelse sparad för ${result.players} spelare. ${result.recipients} mottagare har fått ett meddelande i portalen.`);setCallTraining(null);await loadCalls();await onUpdate();}catch(e){setCallError(e.message);}finally{setLoading(false);}}
+  async function sendCall(e){e.preventDefault();setLoading(true);setCallError("");setCallNotice("");try{const {data:result,error}=await supabase.rpc("club_send_training_call",{target:callTraining.id,selected,note:[callTraining.admin_comment?.trim(),callNote.trim()].filter(Boolean).join("\n").slice(0,1000)});if(error)throw error;setCallNotice(`Kallelse sparad för ${result.players} spelare. ${result.recipients} mottagare har fått ett meddelande i portalen.`);setCallTraining(null);await loadCalls();await onUpdate();}catch(e){setCallError(e.message);}finally{setLoading(false);}}
 
   useEffect(() => {
     const refresh=()=>{loadCalls();loadAttendance();};
