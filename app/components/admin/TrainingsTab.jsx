@@ -223,7 +223,7 @@ export default function TrainingsTab({ data, userId, onUpdate, canDelete=false, 
                         <div className="training-count-waiting"><span>Svar väntas</span><strong>{waitingCount}</strong></div>
                       </div>:<p className="muted">Kallelse ej skickad</p>}
                     </div>
-                    <Button variant="secondary" aria-expanded={expandedId===t.id} onClick={()=>setExpandedId(expandedId===t.id?null:t.id)}>{expandedId===t.id?"Stäng":"Öppna"}</Button>
+                    <Button variant="primary" aria-expanded={expandedId===t.id} onClick={()=>setExpandedId(expandedId===t.id?null:t.id)} style={{ backgroundColor: "#D4A62C", color: "#101010", borderColor: "#D4A62C", fontWeight: 700 }}>{expandedId===t.id?"Stäng":"Öppna"}</Button>
                   </div>
 
                   {expandedId === t.id && (
