@@ -223,16 +223,16 @@ export default function TrainingsTab({ data, userId, onUpdate, canDelete=false, 
                         <div className="training-count-waiting"><span>Svar väntas</span><strong>{waitingCount}</strong></div>
                       </div>:<p className="muted">Kallelse ej skickad</p>}
                     </div>
-                    <div className="training-card-actions">
-                      <Button variant="secondary" aria-expanded={expandedId===t.id} onClick={()=>setExpandedId(expandedId===t.id?null:t.id)}>Träningsplan</Button>
-                      <Button disabled={loading} onClick={()=>openCall(t)}>Kallelse</Button>
-                      <Button variant="secondary" onClick={() => startEdit(t)}>Redigera</Button>
-                      <Button variant="danger" onClick={() => deleteTraining(t.id)} disabled={loading}>Ta bort</Button>
-                    </div>
+                    <Button variant="secondary" aria-expanded={expandedId===t.id} onClick={()=>setExpandedId(expandedId===t.id?null:t.id)}>{expandedId===t.id?"Stäng":"Öppna"}</Button>
                   </div>
 
                   {expandedId === t.id && (
                     <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #ddd" }}>
+                      <div className="training-card-actions" style={{ marginBottom: "16px", display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                        <Button disabled={loading} onClick={()=>openCall(t)}>Kallelse</Button>
+                        <Button variant="secondary" onClick={() => startEdit(t)}>Redigera</Button>
+                        <Button variant="danger" onClick={() => deleteTraining(t.id)} disabled={loading}>Ta bort</Button>
+                      </div>
                       {t.calls_sent_at&&<CoachEventReplies kind="training" eventId={t.id} userId={userId} revision={t.calls_sent_at}/> }
                       <TrainingExercisePlan trainingId={t.id} canManage={canManageExercises} addExerciseId={pendingPlan?.trainingId===t.id?pendingPlan.exerciseId:null} onAdded={onPlanAdded}/>
                       <h4 style={{ color: "var(--text-dark)", marginBottom: "12px", fontSize: "14px", fontWeight: "600" }}>Deltagare ({teamPlayers.length}):</h4>
