@@ -227,7 +227,12 @@ export default function TrainingsTab({ data, userId, onUpdate, canDelete=false, 
                   </div>
 
                   {expandedId === t.id && (
-                    <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #ddd" }}>
+                    <div role="presentation" onClick={(e)=>{if(e.target===e.currentTarget)setExpandedId(null);}} style={{position:"fixed",inset:0,zIndex:1100,background:"rgba(0,0,0,0.72)",display:"flex",alignItems:"center",justifyContent:"center",padding:"16px"}}>
+                      <div role="dialog" aria-modal="true" aria-label={`Träning ${t.date}`} style={{background:"var(--white, #fff)",color:"var(--text-dark)",border:"2px solid #D4A62C",borderRadius:"14px",width:"min(780px,100%)",maxHeight:"90dvh",overflowY:"auto",padding:"20px",boxShadow:"0 20px 60px rgba(0,0,0,.4)"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:"12px",marginBottom:"16px"}}>
+                        <div><h3 style={{margin:0}}>Träning · {t.date} kl {t.time?.slice(0,5)}</h3><p style={{margin:"4px 0 0"}}>{teams.find(team=>team.id===t.team_id)?.name} · {t.location}</p></div>
+                        <Button variant="secondary" onClick={()=>setExpandedId(null)}>✕ Stäng</Button>
+                      </div>
                       <div className="training-card-actions" style={{ marginBottom: "16px", display: "flex", flexWrap: "wrap", gap: "8px" }}>
                         <Button disabled={loading} onClick={()=>openCall(t)}>Kallelse</Button>
                         <Button variant="secondary" onClick={() => startEdit(t)}>Redigera</Button>
@@ -271,6 +276,7 @@ export default function TrainingsTab({ data, userId, onUpdate, canDelete=false, 
                             </div>
                           );
                         })}
+                      </div>
                       </div>
                     </div>
                   )}
