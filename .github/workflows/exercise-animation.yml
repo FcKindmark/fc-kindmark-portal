@@ -1,0 +1,29 @@
+name: Exercise animations
+on:
+  pull_request:
+    paths:
+      - 'app/components/admin/Exercise*.jsx'
+      - 'app/lib/*Exercise.mjs'
+      - 'app/lib/exercise*.mjs'
+      - 'tests/exercise*.mjs'
+      - 'tests/render-exercises.cjs'
+      - '.github/workflows/exercise-animation.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: node tests/exercise-library.test.mjs
+      - run: node tests/exercise-animation.test.mjs
+      - run: node tests/render-exercises.cjs
+      - run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: public-build-test
