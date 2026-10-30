@@ -1,6 +1,8 @@
+import {BOBEK_EXERCISE} from './bobekExercise.mjs';
 // Original FC Kindmark practices. Sources support principles, not copied drill text.
 import {FEDERATION_SOURCES,EXPANSION_GROUPS} from './exerciseExpansion.mjs';
 export const EXERCISE_SOURCES = {
+  bobek:{title:'Bobek · videoreferens från Saldanha Futsal',url:'https://www.facebook.com/share/r/1YUV7DNBBB/',supports:'Klubbanpassad kombination utifrån videon som Bobek delade. Avslutningen är ett träningsförslag.'},
   ball: {title:'FIFA · Dribbling and awareness',url:'https://www.fifatrainingcentre.com/en/practice/grassroots/8-to-12/dribbling-and-awareness.php',supports:'Bollkontroll, blick och val av fri yta.'},
   games: {title:'FIFA · Technical activation and small-sided games',url:'https://www.fifatrainingcentre.com/en/practice/grassroots/8-to-12/technical-activation-and-small-sided-games.php',supports:'Tekniskt lärande som överförs till smålagsspel.'},
   passing: {title:'FIFA · Passing to keep possession',url:'https://www.fifatrainingcentre.com/en/practice/futsal/block-1/passing-to-keep-possession.php',supports:'Passningsval och spelbarhet på begränsad yta.'},
@@ -184,9 +186,11 @@ for(const n of [104,109])exercises[n-1].source='figcBase';
 for(const n of [134,135,139])exercises[n-1].source='rfefGame';
 for(const n of [157,158,159,160])exercises[n-1].source='fffAlign';
 for(const n of [193,194,198,200])exercises[n-1].source='figcTransition';
+exercises.push(BOBEK_EXERCISE);
 export const EXERCISE_LIBRARY=Object.freeze(exercises);
 export function filterExercises({sport='all',phase='all',category='all',query='',archived=false,states=[]}={}){
   const removed=new Set(states.filter(s=>s.archived_at).map(s=>s.exercise_id));
   const q=query.trim().toLocaleLowerCase('sv');
   return EXERCISE_LIBRARY.filter(e=>(sport==='all'||e.sport===sport||e.sport==='both')&&(phase==='all'||e.framework===phase)&&(category==='all'||e.category===category)&&removed.has(e.id)===archived&&(!q||`${e.id} ${e.title} ${e.organisation} ${e.observe} ${e.category}`.toLocaleLowerCase('sv').includes(q)));
 }
+
