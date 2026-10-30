@@ -1,5 +1,5 @@
 export const BOBEK_EXERCISE={
- id:'fck-ex-201',title:'Bobek',sport:'futsal',framework:'development',category:'Uppspel och pivot',source:'bobek',
+ id:'fck-ex-201',title:'Frigör vänsterkanten – väggspel med pivot',collection:'Bobek Library',sport:'futsal',framework:'development',category:'Uppspel och pivot',source:'bobek',
  organisation:'4 utespelare och målvakt mot 4 utespelare och målvakt på 40 × 20 m. Börja utan motstånd. Animationen visar anfallarna; försvararna är utelämnade.',
  equipment:'Futsalbollar, västar, två mål och koner.',timing:'20 min: 5 min utan motstånd, 5 min med passiva försvarare, 3 × 3 min spel och totalt 1 min paus.',
  steps:['4 lämnar vänsterkanten och löper diagonalt högt åt höger.','5 går fram till höger; 2 går in centralt framför målvakten som säkring.','Pivot 3 öppnar till vänster efter att ytan har frigjorts.','Målvakt 1 passar direkt till 3 medan 5 erbjuder centralt stöd.','3 passar till 5 och löper fram längs vänsterkanten. 5 spelar tillbaka i ytan.','4 går mot bortre stolpen. På träningen fortsätter 3 med skott eller pass till 4 beroende på försvar och målvakt.'],

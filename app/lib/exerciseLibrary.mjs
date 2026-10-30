@@ -188,9 +188,9 @@ for(const n of [157,158,159,160])exercises[n-1].source='fffAlign';
 for(const n of [193,194,198,200])exercises[n-1].source='figcTransition';
 exercises.push(BOBEK_EXERCISE);
 export const EXERCISE_LIBRARY=Object.freeze(exercises);
-export function filterExercises({sport='all',phase='all',category='all',query='',archived=false,states=[]}={}){
+export function filterExercises({sport='all',phase='all',category='all',collection='all',query='',archived=false,states=[]}={}){
   const removed=new Set(states.filter(s=>s.archived_at).map(s=>s.exercise_id));
   const q=query.trim().toLocaleLowerCase('sv');
-  return EXERCISE_LIBRARY.filter(e=>(sport==='all'||e.sport===sport||e.sport==='both')&&(phase==='all'||e.framework===phase)&&(category==='all'||e.category===category)&&removed.has(e.id)===archived&&(!q||`${e.id} ${e.title} ${e.organisation} ${e.observe} ${e.category}`.toLocaleLowerCase('sv').includes(q)));
+  return EXERCISE_LIBRARY.filter(e=>(collection==='all'||e.collection===collection)&&(sport==='all'||e.sport===sport||e.sport==='both')&&(phase==='all'||e.framework===phase)&&(category==='all'||e.category===category)&&removed.has(e.id)===archived&&(!q||`${e.id} ${e.title} ${e.collection||''} ${e.organisation} ${e.observe} ${e.category}`.toLocaleLowerCase('sv').includes(q)));
 }
 

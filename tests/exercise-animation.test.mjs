@@ -25,7 +25,7 @@ for(const exercise of EXERCISE_LIBRARY){
  }
  assert.equal(JSON.stringify(exercise),before,'animation must not mutate the exercise catalog');
 }
-const bobek=EXERCISE_LIBRARY.find(e=>e.title==='Bobek'),frames=animationFrames(bobek);
+const bobek=EXERCISE_LIBRARY.find(e=>e.id==='fck-ex-201'),frames=animationFrames(bobek);
 assert.equal(bobek.id,'fck-ex-201');assert.equal(frames.length,7);
 for(let i=1;i<frames.length;i++)assert.deepEqual(frames[i].start,frames[i-1].end,'Bobek must be continuous');
 assert.deepEqual(frames[5].end.players.find(p=>p.id==='4'),{id:'4',x:62,y:8,team:'blue'});
