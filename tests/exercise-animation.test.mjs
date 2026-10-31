@@ -32,3 +32,15 @@ assert.deepEqual(frames[5].end.players.find(p=>p.id==='4'),{id:'4',x:62,y:8,team
 assert.deepEqual(frames[5].end.players.find(p=>p.id==='2'),{id:'2',x:50,y:84,team:'blue'});
 assert.deepEqual(frames[5].end.ballPoints,[{x:16.6,y:14.5}]);
 console.log(`PASS: ${EXERCISE_LIBRARY.length} exercises, ${actions} actions; finite geometry, balls preserved, immutable source, continuous Bobek combination.`);
+
+
+const second=EXERCISE_LIBRARY.find(e=>e.id==='fck-ex-202'),secondFrames=animationFrames(second);
+assert.equal(second.collection,'Bobek Library');
+assert.equal(secondFrames.length,15);
+assert.equal(second.diagram.players.length,10);
+for(let i=1;i<secondFrames.length;i++)assert.deepEqual(secondFrames[i].start,secondFrames[i-1].end);
+assert.deepEqual(secondFrames[0].end.ballPoints,[{x:54.6,y:16.5}]);
+assert.deepEqual(secondFrames[11].end.ballPoints,[{x:63.4,y:72.5}]);
+assert.equal(secondFrames[12].end.players.find(p=>p.id==='D5').x,32);
+assert.deepEqual(secondFrames[14].end.ballPoints,[{x:43,y:100}]);
+console.log('PASS: second Bobek combination, 15 continuous steps, defenders and shot.');

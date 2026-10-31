@@ -20,7 +20,7 @@ export default function ExerciseAnimation({exercise,renderDiagram}){
  function play(){if(playing){setPlaying(false);return;}if(index<0||(index===frames.length-1&&progress>=1)){setIndex(0);progressRef.current=0;setProgress(0);}setPlaying(true);}
  const frame=frames[index],scene=frame?interpolateScene(frame.start,frame.end,progress):initialScene(exercise.diagram);
  const diagram={...exercise.diagram,...scene,arrows:frame?.arrow?[frame.arrow]:[],caption:frame?.text||exercise.diagram.caption};
- return <div className="exercise-animation"><p>{exercise.animation?'Sammanhängande kombination · anfall uppåt':'Animerade exempel från skissen · varje pil visas från sin startposition'}</p>{renderDiagram(diagram)}
+ return <div className="exercise-animation"><p>{exercise.animation?(exercise.animationLabel||'Sammanhängande kombination · anfall uppåt'):'Animerade exempel från skissen · varje pil visas från sin startposition'}</p>{renderDiagram(diagram)}
   <div className="button-group" aria-label="Animationskontroller" style={{display:'flex',flexWrap:'wrap',gap:8}}>
    <Button onClick={play} disabled={!frames.length} aria-pressed={playing}>{playing?'Pausa':'Spela'}</Button>
    <Button variant="secondary" onClick={()=>select(index-1)} disabled={index<0}>← Föregående</Button><Button variant="secondary" onClick={()=>select(index+1)} disabled={index>=frames.length-1}>Nästa →</Button><Button variant="secondary" onClick={reset}>Börja om</Button>
@@ -28,3 +28,4 @@ export default function ExerciseAnimation({exercise,renderDiagram}){
   </div><div aria-live="polite" style={{minHeight:100,marginTop:12}}><strong>{frame?`${index+1}/${frames.length} · ${frame.title}`:'Startposition'}</strong><p>{frame?.text||exercise.diagram.caption}</p></div>
  </div>;
 }
+
