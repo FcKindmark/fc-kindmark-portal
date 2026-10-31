@@ -1,7 +1,9 @@
+import {BOBEK_CENTRAL_FINISH} from './bobekCentralFinish.mjs';
 import {BOBEK_EXERCISE} from './bobekExercise.mjs';
 // Original FC Kindmark practices. Sources support principles, not copied drill text.
 import {FEDERATION_SOURCES,EXPANSION_GROUPS} from './exerciseExpansion.mjs';
 export const EXERCISE_SOURCES = {
+  bobekRecording:{title:'Saldanha Futsal · andra videon delad av Bobek',supports:'Rekonstruerad från skärminspelningen 30 oktober 2026 kl. 21:16. Schematisk klubbanpassning med försvararnas rörelser.'},
   bobek:{title:'Bobek · videoreferens från Saldanha Futsal',url:'https://www.facebook.com/share/r/1YUV7DNBBB/',supports:'Klubbanpassad kombination utifrån videon som Bobek delade. Avslutningen är ett träningsförslag.'},
   ball: {title:'FIFA · Dribbling and awareness',url:'https://www.fifatrainingcentre.com/en/practice/grassroots/8-to-12/dribbling-and-awareness.php',supports:'Bollkontroll, blick och val av fri yta.'},
   games: {title:'FIFA · Technical activation and small-sided games',url:'https://www.fifatrainingcentre.com/en/practice/grassroots/8-to-12/technical-activation-and-small-sided-games.php',supports:'Tekniskt lärande som överförs till smålagsspel.'},
@@ -186,11 +188,12 @@ for(const n of [104,109])exercises[n-1].source='figcBase';
 for(const n of [134,135,139])exercises[n-1].source='rfefGame';
 for(const n of [157,158,159,160])exercises[n-1].source='fffAlign';
 for(const n of [193,194,198,200])exercises[n-1].source='figcTransition';
-exercises.push(BOBEK_EXERCISE);
+exercises.push(BOBEK_EXERCISE,BOBEK_CENTRAL_FINISH);
 export const EXERCISE_LIBRARY=Object.freeze(exercises);
 export function filterExercises({sport='all',phase='all',category='all',collection='all',query='',archived=false,states=[]}={}){
   const removed=new Set(states.filter(s=>s.archived_at).map(s=>s.exercise_id));
   const q=query.trim().toLocaleLowerCase('sv');
   return EXERCISE_LIBRARY.filter(e=>(collection==='all'||e.collection===collection)&&(sport==='all'||e.sport===sport||e.sport==='both')&&(phase==='all'||e.framework===phase)&&(category==='all'||e.category===category)&&removed.has(e.id)===archived&&(!q||`${e.id} ${e.title} ${e.collection||''} ${e.organisation} ${e.observe} ${e.category}`.toLocaleLowerCase('sv').includes(q)));
 }
+
 
