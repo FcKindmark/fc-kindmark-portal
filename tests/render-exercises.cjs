@@ -2,7 +2,7 @@ const fs=require('fs'),path=require('path'),assert=require('node:assert/strict')
 process.env.NEXT_PUBLIC_SUPABASE_URL='https://example.supabase.co';process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY='public-test';
 const cache=new Map();
 function load(file){const filename=path.resolve(file);if(cache.has(filename))return cache.get(filename);const code=babel.transformSync(fs.readFileSync(filename,'utf8'),{filename,configFile:false,babelrc:false,presets:[[require('next/dist/compiled/babel/preset-react'),{runtime:'automatic'}]],plugins:[require('next/dist/compiled/babel/plugin-transform-modules-commonjs')]}).code,m={exports:{}};const r=name=>name.startsWith('.')?load(path.resolve(path.dirname(filename),name+(path.extname(name)?'':fs.existsSync(path.resolve(path.dirname(filename),name+'.jsx'))?'.jsx':'.js'))):require(name);new Function('require','module','exports',code)(r,m,m.exports);cache.set(filename,m.exports);return m.exports;}
-const {ExerciseDiagram}=load('app/components/admin/ExerciseLibrary.jsx'),{EXERCISE_LIBRARY}=load('app/lib/exerciseLibrary.mjs');
+const {ExerciseDiagram,StaticExerciseDiagram}=load('app/components/admin/ExerciseLibrary.jsx'),{EXERCISE_LIBRARY}=load('app/lib/exerciseLibrary.mjs');
 const warnings=[],originalError=console.error;console.error=(...args)=>warnings.push(args);
 const html=renderToStaticMarkup(React.createElement('main',null,EXERCISE_LIBRARY.map(e=>React.createElement('article',{key:e.id,id:e.id},React.createElement('h2',null,e.id+' · '+e.title),React.createElement(ExerciseDiagram,{exercise:e}),React.createElement('p',null,e.organisation),React.createElement('ol',null,e.steps.map(s=>React.createElement('li',{key:s},s)))))));
 console.error=originalError;assert.equal(warnings.length,0,'SVG rendering must not produce React warnings');
@@ -12,3 +12,20 @@ if(process.argv[2]){fs.mkdirSync(path.dirname(process.argv[2]),{recursive:true})
 console.log('PASS: all 202 diagrams render without invalid geometry; all SVG labels and markers are unique.');
 
 
+
+const {animationFrames,interpolateScene}=load('app/lib/exerciseAnimation.mjs');
+console.error=(...args)=>warnings.push(args);
+let renderedFrames=0;
+for(const exercise of EXERCISE_LIBRARY){
+ for(const frame of animationFrames(exercise)){
+  for(const progress of [0,.5,1]){
+   const scene=interpolateScene(frame.start,frame.end,progress);
+   const markup=renderToStaticMarkup(React.createElement(StaticExerciseDiagram,{exercise:{...exercise,diagram:{...exercise.diagram,...scene,arrows:frame.arrows||[],caption:frame.text}},animated:true}));
+   assert.ok(!/NaN|undefined|Infinity/.test(markup),exercise.id+' frame markup');
+   renderedFrames++;
+  }
+ }
+}
+console.error=originalError;
+assert.equal(warnings.length,0,'Animation frames must not produce React warnings');
+console.log(`PASS: ${renderedFrames} start, midpoint and end SVG frame renders.`);
