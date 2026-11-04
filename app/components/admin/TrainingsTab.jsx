@@ -21,6 +21,22 @@ export default function TrainingsTab({ data, userId, onUpdate, canDelete=false, 
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
+  const modalOpen = expandedId !== null || showAdd;
+  useEffect(() => {
+    if (!modalOpen) return;
+    const body = document.body, root = document.documentElement;
+    const x = window.scrollX, y = window.scrollY;
+    const saved = {position:body.style.position, top:body.style.top, left:body.style.left, width:body.style.width, overflow:body.style.overflow};
+    const rootOverflow = root.style.overflow;
+    Object.assign(body.style, {position:"fixed", top:`-${y}px`, left:`-${x}px`, width:"100%", overflow:"hidden"});
+    root.style.overflow = "hidden";
+    return () => {
+      Object.assign(body.style, saved);
+      root.style.overflow = rootOverflow;
+      window.scrollTo(x, y);
+    };
+  }, [modalOpen]);
+
   useEffect(()=>{if(pendingPlan){setExpandedId(pendingPlan.trainingId);const t=data?.trainings?.find(t=>t.id===pendingPlan.trainingId);if(t)setShowPast(t.date<today);}},[pendingPlan,data?.trainings,today]);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
@@ -228,7 +244,7 @@ export default function TrainingsTab({ data, userId, onUpdate, canDelete=false, 
 
                   {expandedId === t.id && (
                     <div role="presentation" onClick={(e)=>{if(e.target===e.currentTarget)setExpandedId(null);}} style={{position:"fixed",inset:0,zIndex:1100,background:"rgba(0,0,0,0.72)",display:"flex",alignItems:"center",justifyContent:"center",padding:"16px"}}>
-                      <div role="dialog" aria-modal="true" aria-label={`Träning ${t.date}`} style={{background:"var(--white, #fff)",color:"var(--text-dark)",border:"2px solid #D4A62C",borderRadius:"14px",width:"min(780px,100%)",maxHeight:"90dvh",overflowY:"auto",padding:"20px",boxShadow:"0 20px 60px rgba(0,0,0,.4)"}}>
+                      <div role="dialog" aria-modal="true" aria-label={`Träning ${t.date}`} style={{background:"var(--white, #fff)",color:"var(--text-dark)",border:"2px solid #D4A62C",borderRadius:"14px",width:"min(780px,100%)",maxHeight:"90dvh",overflowY:"auto",overscrollBehaviorY:"contain",WebkitOverflowScrolling:"touch",padding:"20px",boxShadow:"0 20px 60px rgba(0,0,0,.4)"}}>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:"12px",marginBottom:"16px"}}>
                         <div><h3 style={{margin:0}}>Träning · {t.date} kl {t.time?.slice(0,5)}</h3><p style={{margin:"4px 0 0"}}>{teams.find(team=>team.id===t.team_id)?.name} · {t.location}</p></div>
                         <Button variant="secondary" onClick={()=>setExpandedId(null)}>✕ Stäng</Button>
