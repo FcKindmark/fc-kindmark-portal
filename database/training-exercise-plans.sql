@@ -26,8 +26,7 @@ create policy draft_admin on public.club_training_plan_drafts for all to authent
 create policy publication_admin_write on public.club_training_plan_publications for all to authenticated
  using((select public.is_admin())) with check((select public.is_admin()));
 create policy publication_coach_read on public.club_training_plan_publications for select to authenticated
- using(coalesce(auth.jwt()->'app_metadata'->>'club_role'='coach',false) and
- exists(select 1 from public.trainings t where t.id=training_id and public.club_staff_team(t.team_id)));
+ using(exists(select 1 from public.trainings t where t.id=training_id and public.club_staff_team(t.team_id)));
 -- Prevent bypass of versioning/validation by direct REST writes. Invoker RPC sets this
 -- transaction-local flag only after checking the existing trusted admin claim.
 create function public.club_training_plan_guard() returns trigger
