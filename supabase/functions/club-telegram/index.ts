@@ -9,29 +9,34 @@ async function rpc(name:string,args:Record<string,unknown>={}){const {data,error
 // Do not show booking spreadsheet names or municipality reference numbers to parents.
 function formatTrainingInvitation(payload: any) {
  const original = typeof payload?.text === 'string' ? payload.text : '';
- if (!/Kallelse till träning/i.test(original)) return payload;
- const team = original.match(/Kallelse till träning\\s*[–-]\\s*FC Kindmark\\s*([^\\n]+)/i)?.[1]?.trim() || '';
- const date = original.match(/Datum:\\s*(\\d{4}-\\d{2}-\\d{2})/i)?.[1];
- const time = original.match(/Tid:\\s*(\\d{1,2}:\\d{2}\\s*[–-]\\s*\\d{1,2}:\\d{2})/i)?.[1]
-   || original.match(/kl\\s*(\\d{1,2}:\\d{2})/i)?.[1];
- const place = original.match(/Plats:\\s*(.*?)(?=\\s+Tid:|\\s+Kommunens bokningsnr:|\\n|$)/i)?.[1]?.trim();
+ const type = /Kallelse till (träning|match)/i.exec(original)?.[1]?.toLowerCase();
+ if (!type) return payload;
+ const team = /Kallelse till (?:träning|match)\s*[–-]\s*FC Kindmark\s+([^\n]+)/i.exec(original)?.[1]?.trim() || '';
+ const date = /Datum:\s*(\d{4}-\d{2}-\d{2})/i.exec(original)?.[1];
+ const time = /Tid:\s*(\d{1,2}:\d{2}(?:\s*[–-]\s*\d{1,2}:\d{2})?)/i.exec(original)?.[1]
+   || /Datum:\s*\d{4}-\d{2}-\d{2}\s+kl\s*(\d{1,2}:\d{2})/i.exec(original)?.[1];
+ const place = /Plats:\s*([^\n.]+?)(?=\.\s*(?:Samling|Svara|Kommunens)|\.\s*$|\n|$)/i.exec(original)?.[1]?.trim();
  if (!date || !time || !place) return payload;
- const person = original.match(/Hej!\\s*(.*?)\\s+är kallad/i)?.[1]?.trim();
+ const person = /Hej!\s*(.*?)\s+är kallad/i.exec(original)?.[1]?.trim();
+ const opponent = type === 'match' ? /match mot\s+(.+?)\s+med FC Kindmark/i.exec(original)?.[1]?.trim() : null;
+ const meeting = type === 'match' ? /Samling\s+kl\s*(\d{1,2}:\d{2})/i.exec(original)?.[1] : null;
  const safe = (value: string) => value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
- const dateParts = date.split('-').map(Number);
+ const [year,month,day] = date.split('-').map(Number);
  const weekday = new Intl.DateTimeFormat('sv-SE',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'UTC'})
-   .format(new Date(Date.UTC(dateParts[0],dateParts[1]-1,dateParts[2])));
+   .format(new Date(Date.UTC(year,month-1,day)));
  const lines = [
    '🖤💛 <b>FC KINDMARK</b>',
-   team ? '⚽ <b>Träningskallelse · '+safe(team)+'</b>' : '⚽ <b>Träningskallelse</b>',
+   '⚽ <b>'+(type === 'match' ? 'Matchkallelse' : 'Träningskallelse')+(team ? ' · '+safe(team) : '')+'</b>',
+   ...(opponent ? ['', '🏆 <b>FC Kindmark – '+safe(opponent)+'</b>'] : []),
    '',
    '📅 <b>'+safe(weekday)+'</b>',
-   '🕒 '+safe(time.replace(/\\s*[–-]\\s*/g,'–')),
+   '🕒 '+safe(time.replace(/\s*[–-]\s*/g,'–')),
    '📍 '+safe(place),
+   ...(meeting ? ['👥 Samling kl '+safe(meeting)] : []),
    '',
-   (person ? 'Hej '+safe(person)+'! ' : '')+'Kan du delta på träningen?'
+   (person ? 'Hej '+safe(person)+'! ' : '')+'Kan du delta på '+(type === 'match' ? 'matchen?' : 'träningen?')
  ];
- return {...payload,text:lines.join('\\n'),parse_mode:'HTML'};
+ return {...payload,text:lines.join('\n'),parse_mode:'HTML'};
 }
 
 Deno.serve(async req=>{
