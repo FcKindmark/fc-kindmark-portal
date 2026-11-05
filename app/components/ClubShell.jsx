@@ -44,14 +44,26 @@ export default function ClubShell({ tabs, active, onChange, user, role, onLogout
     sync();return()=>{observer.disconnect();unlock();};
   },[]);
 
-  const primary = role==="Spelare"?["profile","calendar","calls","matches","messages"].map(id=>tabs.find(t=>t.id===id)).filter(Boolean):(role === "Stödmedlem" ? ["overview","matches","news","membership"] : (tabs.some(t=>t.id==="calls")?["overview","calendar","calls","matches","children","messages"]:["overview", "calendar", "matches", "children", "players", "messages"])).map(id => tabs.find(t => t.id === id)).filter(Boolean);
-  const secondary = tabs.filter(tab => !primary.some(item => item.id === tab.id));
+  const mobileIds = role==="Spelare" ? ["profile","calendar","calls","matches","messages"] : role==="Tränare" ? ["overview","calendar","calls","trainings","matches"] : role==="Admin" ? ["overview","calendar","membership","teams","economy"] : role==="Stödmedlem" ? ["overview","matches","news","membership"] : ["overview","calendar","calls","matches","children","messages"];
+  const primary = mobileIds.map(id=>tabs.find(t=>t.id===id)).filter(Boolean);
+  const secondary = tabs.filter(tab=>!primary.some(item=>item.id===tab.id));
+  const navGroups = role==="Admin" ? [
+    {label:"START",ids:["overview","calendar","news"]},
+    {label:"MEDLEMMAR & LAG",ids:["applications","membership","players","teams","users"]},
+    {label:"SPORT",ids:["trainings","matches","attendance","development","programs","equipment","calls"]},
+    {label:"EKONOMI & KOMMUNIKATION",ids:["payments","economy","messages"]}
+  ] : role==="Tränare" ? [
+    {label:"ÖVERSIKT",ids:["overview","calendar","calls"]},
+    {label:"LAG & AKTIVITETER",ids:["players","trainings","matches","attendance","development"]}
+  ] : [{label:"DIN KLUBB",ids:tabs.map(t=>t.id)}];
+  const groupedTabs = navGroups.map(group=>({...group,tabs:group.ids.map(id=>tabs.find(t=>t.id===id)).filter(Boolean)})).filter(group=>group.tabs.length);
+  const extraTabs = tabs.filter(tab=>!navGroups.some(group=>group.ids.includes(tab.id)));
+  if(extraTabs.length)groupedTabs.push({label:"ÖVRIGT",tabs:extraTabs});
   function navigate(id) { onChange(id); setExpanded(false); }
   useEffect(()=>{window.scrollTo({top:0,left:0,behavior:"instant"});},[active]);
   return <PortraitProvider key={user.id} userId={user.id}><div className={`club-shell${role === "Admin" ? " admin-portal" : ""}`}><aside className="club-sidebar">
     <div className="club-brand"><img src="/logo.png" alt="FC Kindmark"/><div><strong>FC KINDMARK</strong><span>Medlemsportal</span></div></div>
-    <div className="sidebar-caption">DIN KLUBB</div>
-    <nav aria-label="Klubbportal">{tabs.map(tab => <button key={tab.id} aria-current={active === tab.id ? "page" : undefined} className={active === tab.id ? "active" : ""} onClick={() => navigate(tab.id)}><span className="nav-symbol" aria-hidden="true">{symbols[tab.id] || "•"}</span>{tab.label}{tab.count>0&&<span className="nav-count">{tab.count}</span>}</button>)}</nav>
+    <nav aria-label="Klubbportal">{groupedTabs.map(group=><div key={group.label}><div className="sidebar-caption">{group.label}</div>{group.tabs.map(tab=><button key={tab.id} aria-current={active===tab.id?"page":undefined} className={active===tab.id?"active":""} onClick={()=>navigate(tab.id)}><span className="nav-symbol" aria-hidden="true">{symbols[tab.id]||"•"}</span>{tab.label}{tab.count>0&&<span className="nav-count">{tab.count}</span>}</button>)}</div>)}</nav>
     <footer><div className="account-block"><span className="account-avatar" aria-hidden="true">{photo?<img src={photo} alt=""/>:(account?.full_name||user.email)?.slice(0,1).toUpperCase()}</span><div><strong>{account?.full_name||role}</strong><span>{user.email}</span></div></div>{role!=="Spelare"&&<button onClick={openProfile}>Min profil</button>}<button onClick={onLogout}>Logga ut</button></footer>
   </aside><div className="club-workspace"><header className="workspace-header"><span className="workspace-page-title">{tabs.find(t => t.id === active)?.label}</span><div className="profile-header-actions">{role!=="Admin"&&role!=="Spelare"&&<NotificationBell items={notificationItems} onOpen={openNotification} onSettings={openProfile} error={notifications===undefined?personalNotifications.error:""} onRetry={personalNotifications.refresh}/>}{role!=="Spelare"&&<button className="profile-link" onClick={openProfile}>Min profil</button>}<span className="role-pill">{role}</span></div></header><main className="club-content">{role!=="Admin"&&role!=="Spelare"&&<PushSettings key={user.id} userId={user.id} compact/>}{children}</main></div>
   <nav className={`mobile-nav${role==="Spelare"?" player-mobile-nav":""}`} aria-label="Snabbnavigering">{primary.map(tab => <button key={tab.id} aria-current={active === tab.id ? "page" : undefined} onClick={() => navigate(tab.id)} aria-label={tab.label}><span aria-hidden="true">{symbols[tab.id]}</span><span className="mobile-nav-label">{tab.id==="messages"?"Medd.":tab.label}</span>{tab.count>0&&<span className="nav-count">{tab.count}</span>}</button>)}{<button aria-expanded={expanded} aria-controls="mobile-more" onClick={() => setExpanded(!expanded)}><span aria-hidden="true">☰</span>Mer</button>}</nav>
