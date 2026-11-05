@@ -488,3 +488,7 @@ dialog[open]{position:fixed;inset:0;margin:auto;max-height:calc(100dvh - 32px);o
 .training-form-fields{display:flex;flex-direction:column;gap:12px}
 .training-call-editor{margin-bottom:16px}.training-call-editor .button-group .club-button{width:auto;min-height:34px;padding:7px 10px;font-size:12px}
 @media(max-width:600px){.training-page-heading h2{font-size:18px}.training-form-overlay{padding:6px;align-items:center}.training-form-overlay .training-form-card{padding:14px;max-height:calc(100dvh - 12px)}.training-form-fields{gap:10px}.training-call-editor{padding:12px}}
+
+/* Coach training list: direct invitation action and small secondary details. */
+.training-summary-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end}.training-summary-actions .club-button{width:auto;min-height:34px;padding:7px 10px;font-size:12px;white-space:nowrap}.training-summary h3{white-space:normal!important}
+@media(max-width:600px){.training-summary{gap:9px;align-items:flex-start}.training-summary-actions{flex-direction:column;align-items:stretch;flex-shrink:0;gap:5px}.training-summary-actions .club-button{min-height:31px;padding:5px 7px;font-size:11px}}
