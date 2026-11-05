@@ -4,6 +4,36 @@ const db=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVI
 const origins=new Set(['https://portal.fckindmark.se','https://app.fckindmark.se','https://fc-kindmark-portal-seven.vercel.app']);
 const webhookUrl=`${Deno.env.get('SUPABASE_URL')}/functions/v1/club-telegram`;
 async function rpc(name:string,args:Record<string,unknown>={}){const {data,error}=await db.rpc(name,args);if(error)throw new Error('Databasen kunde inte uppdateras.');return data;}
+
+// Telegram invitations stay compact while preserving the original inline RSVP keyboard.
+// Do not show booking spreadsheet names or municipality reference numbers to parents.
+function formatTrainingInvitation(payload: any) {
+ const original = typeof payload?.text === 'string' ? payload.text : '';
+ if (!/Kallelse till träning/i.test(original)) return payload;
+ const team = original.match(/Kallelse till träning\\s*[–-]\\s*FC Kindmark\\s*([^\\n]+)/i)?.[1]?.trim() || '';
+ const date = original.match(/Datum:\\s*(\\d{4}-\\d{2}-\\d{2})/i)?.[1];
+ const time = original.match(/Tid:\\s*(\\d{1,2}:\\d{2}\\s*[–-]\\s*\\d{1,2}:\\d{2})/i)?.[1]
+   || original.match(/kl\\s*(\\d{1,2}:\\d{2})/i)?.[1];
+ const place = original.match(/Plats:\\s*(.*?)(?=\\s+Tid:|\\s+Kommunens bokningsnr:|\\n|$)/i)?.[1]?.trim();
+ if (!date || !time || !place) return payload;
+ const person = original.match(/Hej!\\s*(.*?)\\s+är kallad/i)?.[1]?.trim();
+ const safe = (value: string) => value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+ const dateParts = date.split('-').map(Number);
+ const weekday = new Intl.DateTimeFormat('sv-SE',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'UTC'})
+   .format(new Date(Date.UTC(dateParts[0],dateParts[1]-1,dateParts[2])));
+ const lines = [
+   '🖤💛 <b>FC KINDMARK</b>',
+   team ? '⚽ <b>Träningskallelse · '+safe(team)+'</b>' : '⚽ <b>Träningskallelse</b>',
+   '',
+   '📅 <b>'+safe(weekday)+'</b>',
+   '🕒 '+safe(time.replace(/\\s*[–-]\\s*/g,'–')),
+   '📍 '+safe(place),
+   '',
+   (person ? 'Hej '+safe(person)+'! ' : '')+'Kan du delta på träningen?'
+ ];
+ return {...payload,text:lines.join('\\n'),parse_mode:'HTML'};
+}
+
 Deno.serve(async req=>{
  const origin=req.headers.get('origin')||'';
  const cors=origins.has(origin)?{'Access-Control-Allow-Origin':origin,'Vary':'Origin','Access-Control-Allow-Headers':'authorization,apikey,content-type,x-client-info','Access-Control-Allow-Methods':'POST,OPTIONS'}:{};
@@ -36,7 +66,7 @@ Deno.serve(async req=>{
      const payloads=Array.isArray(job.payload)?job.payload:(job.payload?[job.payload]:[]);
      let result={status:410,retryAfter:120};
      for(const payload of payloads){
-       result=await telegramRequest(config.token,'sendMessage',payload);
+       result=await telegramRequest(config.token,'sendMessage',formatTrainingInvitation(payload));
        if(result.status!==200)break;
      }
      await rpc('club_finish_telegram',{job:job.job_id,claim:job.lease_id,status:result.status,retry_seconds:result.retryAfter});
