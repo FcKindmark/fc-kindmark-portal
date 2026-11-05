@@ -25,6 +25,7 @@ export default function AttendanceTab({ data, canDelete=false, canExport=false, 
   const training=visibleTrainings.find(t => String(t.id) === trainingId);
   const unlocked = attendanceUnlocked(training,now);
   const players=data.players.filter(p => p.team_id === training?.team_id).sort((a,b)=>String(a.name||"").localeCompare(String(b.name||"")));
+  const registeredCount=players.filter(player=>records.some(record=>String(record.training_id)===String(trainingId)&&String(record.player_id)===String(player.id))).length;
   async function mark(playerId,present) {
     if (!attendanceUnlocked(training)) {setError("Närvaro kan registreras först efter träningens sluttid.");return;}
     setBusy(true);setError("");
