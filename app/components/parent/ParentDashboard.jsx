@@ -115,7 +115,7 @@ export default function ParentDashboard({ user, profile, onLogout, onBackToStaff
     { id: "payments", label: "Betalningar", icon: "💳" },
     { id: "messages", label: "Meddelanden", count:notificationState.unreadCount, icon: "💬" },
   ];
-  const tabs=isPlayer?[{id:"profile",label:"Min profil"},{id:"calendar",label:"Kalender"},{id:"trainings",label:"Träningar"},{id:"matches",label:"Matcher"},{id:"membership",label:"Medlemskort"},{id:"development",label:"Utveckling"}]:allTabs;
+  const tabs=isPlayer?[{id:"profile",label:"Min profil"},{id:"calendar",label:"Kalender"},{id:"trainings",label:"Träningar"},{id:"matches",label:"Matcher"},{id:"membership",label:"Medlemskort"},{id:"development",label:"Utveckling"},{id:"calls",label:"Kallelser",count:notificationState.pendingCount},{id:"messages",label:"Meddelanden",count:notificationState.unreadCount}]:allTabs;
   useEffect(()=>{if(isPlayer&&!["profile","calendar","trainings","matches","membership","development","calls","messages"].includes(activeTab))setActiveTab("profile");},[isPlayer,activeTab,setActiveTab]);
   const memberData = {...inboxData, players:mine, teams:data.teams.filter(t=>teamIds.has(t.id)), trainings:data.trainings.filter(t=>teamIds.has(t.team_id)), matches:data.matches.filter(m=>teamIds.has(m.team_id)&&(data.matchCalls||[]).some(c=>c.match_id===m.id&&mine.some(p=>p.id===c.player_id)))};
   return <ClubShell notifications={notificationState.notifications} onOpenNotification={openNotification} tabs={tabs} active={activeTab} onChange={navigate} user={user} role={profile?.role === "player" ? "Spelare" : "Förälder"} onLogout={onLogout}>
