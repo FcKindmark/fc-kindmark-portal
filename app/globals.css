@@ -453,3 +453,16 @@ dialog[open]{position:fixed;inset:0;margin:auto;max-height:calc(100dvh - 32px);o
 .month-cell.is-selected .day-number{outline:2px solid var(--gold);outline-offset:2px}
 .calendar-day-details{padding:14px;border-top:1px solid var(--border-color)}
 @media(max-width:600px){.calendar-toolbar .button-group{gap:4px}.calendar-toolbar .button-group .club-button,.calendar-toolbar .button-group button{padding:5px 7px;font-size:11px}.calendar-toolbar .button-group h2{font-size:14px}}
+
+/* Calendar compact layout for every portal role, including parent and coach. */
+.calendar-card .calendar-toolbar{gap:8px;margin-bottom:10px;align-items:center}
+.calendar-card .calendar-toolbar .button-group{gap:4px;margin:0}
+.calendar-card .calendar-toolbar .club-button{width:auto;min-width:0;min-height:28px;padding:3px 7px;font-size:11px;line-height:1.15;border-radius:5px}
+.calendar-card .calendar-toolbar .club-button[aria-label]{width:28px;height:28px;padding:0;font-size:17px}
+.calendar-card .calendar-toolbar h2{font-size:14px;line-height:1.2;margin:0 4px}
+.calendar-card .calendar-toolbar .calendar-filter{font-size:11px;gap:4px}
+.calendar-card .calendar-toolbar .calendar-filter select{width:auto;max-width:135px;padding:4px 6px;font-size:11px;min-height:28px}
+.calendar-card .calendar-toolbar .view-switch{padding:2px;gap:1px}
+.calendar-card .calendar-toolbar .view-switch button{min-height:25px;padding:3px 7px;font-size:11px}
+.calendar-day-details .section-heading .club-button,.event-dialog .page-heading .club-button{width:auto;min-width:0;min-height:28px;padding:4px 8px;font-size:11px}
+@media(max-width:600px){.calendar-card .calendar-toolbar{gap:6px}.calendar-card .calendar-toolbar .button-group{flex-wrap:nowrap}.calendar-card .calendar-toolbar h2{font-size:12px;white-space:nowrap}.calendar-card .calendar-toolbar .calendar-filter select{max-width:110px}}
