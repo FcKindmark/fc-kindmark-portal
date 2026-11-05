@@ -8,7 +8,7 @@ import {dateLabel} from "../../lib/schedule";
 import {matchVenue} from "../../lib/matches";
 export default function KallelserView({invitations,today,target,onShowAll,onRefresh}){
  const [busy,setBusy]=useState(""),[error,setError]=useState("");
- const visible=invitations.filter(i=>target?.eventId?i.event.id===target.eventId&&i.kind===target.kind:i.event.date>=today);
+ const visible=invitations.filter(i=>target?.eventId?String(i.event.id)===String(target.eventId)&&(!target.kind||i.kind===target.kind):i.event.date>=today).sort((a,b)=>Number(a.answer!==null&&a.answer!==undefined)-Number(b.answer!==null&&b.answer!==undefined)||a.event.date.localeCompare(b.event.date)||String(a.event.time||"").localeCompare(String(b.event.time||"")));
  async function respond(item,value){
   setBusy(item.key);setError("");
   try{
@@ -20,10 +20,10 @@ export default function KallelserView({invitations,today,target,onShowAll,onRefr
    await onRefresh({silent:true});
   }catch(e){setError(e.message);}finally{setBusy("");}
  }
- return <section><div className="page-heading"><div><h2>Kallelser</h2><p className="muted">Svara direkt på dina träningar och matcher.</p></div>{target?.eventId&&<Button variant="secondary" onClick={onShowAll}>Alla kallelser</Button>}</div>{error&&<p role="alert" className="error-banner">{error}</p>}
- {!visible.length?<Empty message={target?.eventId?"Kallelsen är inte längre tillgänglig.":"Inga kommande kallelser"}/>:<div className="match-list">{visible.map(item=>{
+ return <section><div className="page-heading"><div><h2>Kallelser</h2><p className="muted">Obesvarade kallelser visas först. Välj ett svar per spelare.</p></div>{target?.eventId&&<Button variant="secondary" onClick={onShowAll}>Alla kallelser</Button>}</div>{error&&<p role="alert" className="error-banner">{error}</p>}
+ {!visible.length?<Empty message={target?.eventId?"Kallelsen är inte längre tillgänglig.":"Inga kommande kallelser"}/>:<div className="match-list invitation-list">{visible.map(item=>{
   const e=item.event,venue=matchVenue(e);
-  return <Card key={item.key} className="compact-match-card"><h3 className="match-title"><span>{item.kind==="match"?`Match mot ${e.opponent}`:"Träning"}</span>{item.kind==="match"&&venue&&<small>{venue==="hemma"?"Hemma":"Borta"}</small>}</h3><p>{dateLabel(e.date,{weekday:"short",day:"numeric",month:"long"})} · {e.time?.slice(0,5)||"Tid ej angiven"}{e.end_time?`–${e.end_time.slice(0,5)}`:""} · {e.location||"Plats ej angiven"}</p><div className="invitation-person"><strong className="person-name"><PersonAvatar playerId={item.staff?undefined:item.player.id} profileId={item.staff?item.player.id:undefined} name={item.player.name}/>{item.player.name}</strong><ReplyStatus value={item.answer}/></div><div className="invitation-answer-buttons"><Button variant="secondary" className={`reply-button-yes ${item.answer===true?"selected":""}`} aria-pressed={item.answer===true} disabled={Boolean(busy)} onClick={()=>respond(item,true)}>Kommer</Button><Button variant="secondary" className={`reply-button-no ${item.answer===false?"selected":""}`} aria-pressed={item.answer===false} disabled={Boolean(busy)} onClick={()=>respond(item,false)}>Kommer inte</Button></div></Card>;
+  return <Card key={item.key} className={`compact-match-card invitation-card ${item.answer===null||item.answer===undefined?"needs-answer":"has-answer"}`}><h3 className="match-title"><span>{item.kind==="match"?`Match mot ${e.opponent}`:"Träning"}</span>{item.kind==="match"&&venue&&<small>{venue==="hemma"?"Hemma":"Borta"}</small>}</h3><p>{dateLabel(e.date,{weekday:"short",day:"numeric",month:"long"})} · {e.time?.slice(0,5)||"Tid ej angiven"}{e.end_time?`–${e.end_time.slice(0,5)}`:""} · {e.location||"Plats ej angiven"}</p><div className="invitation-person"><strong className="person-name"><PersonAvatar playerId={item.staff?undefined:item.player.id} profileId={item.staff?item.player.id:undefined} name={item.player.name}/>{item.player.name}</strong><ReplyStatus value={item.answer}/></div><div className="invitation-answer-buttons"><Button variant="secondary" className={`reply-button-yes ${item.answer===true?"selected":""}`} aria-pressed={item.answer===true} disabled={Boolean(busy)} onClick={()=>respond(item,true)}>{busy===item.key?"Sparar…":"Kommer"}</Button><Button variant="secondary" className={`reply-button-no ${item.answer===false?"selected":""}`} aria-pressed={item.answer===false} disabled={Boolean(busy)} onClick={()=>respond(item,false)}>{busy===item.key?"Sparar…":"Kommer inte"}</Button></div></Card>;
  })}</div>}
  </section>;
 }
