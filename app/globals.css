@@ -442,3 +442,14 @@ dialog[open]{position:fixed;inset:0;margin:auto;max-height:calc(100dvh - 32px);o
 .kindo-card-identity p{color:#d7c38a;margin:9px 0;font-size:11px;letter-spacing:2px}
 .kindo-card-motto{font-size:9px;letter-spacing:2px;color:#a69260}
 @media(prefers-reduced-motion:no-preference){.kindo-player-card{animation:kindo-card-reveal .4s ease-out}@keyframes kindo-card-reveal{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}}
+
+/* Compact calendar controls: keep navigation and dialog actions thumb-friendly without oversized buttons. */
+.calendar-toolbar .button-group{gap:6px;align-items:center;flex-wrap:wrap}
+.calendar-toolbar .button-group .club-button,.calendar-toolbar .button-group button{min-height:32px;padding:5px 9px;font-size:12px;line-height:1.2}
+.calendar-toolbar .button-group button[aria-label="Föregående månad"],.calendar-toolbar .button-group button[aria-label="Nästa månad"]{min-width:32px;padding:4px 8px;font-size:18px}
+.calendar-toolbar .button-group h2{font-size:clamp(14px,2.8vw,18px);margin:0 3px}
+.event-dialog .page-heading .club-button,.calendar-day-details .section-heading .club-button{min-height:32px;padding:5px 10px;font-size:12px}
+.calendar-day-button{border:0;background:transparent;cursor:pointer;border-radius:50%;padding:0}
+.month-cell.is-selected .day-number{outline:2px solid var(--gold);outline-offset:2px}
+.calendar-day-details{padding:14px;border-top:1px solid var(--border-color)}
+@media(max-width:600px){.calendar-toolbar .button-group{gap:4px}.calendar-toolbar .button-group .club-button,.calendar-toolbar .button-group button{padding:5px 7px;font-size:11px}.calendar-toolbar .button-group h2{font-size:14px}}
