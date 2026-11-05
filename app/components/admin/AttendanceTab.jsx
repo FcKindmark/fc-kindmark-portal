@@ -24,7 +24,7 @@ export default function AttendanceTab({ data, canDelete=false, canExport=false, 
   useEffect(() => { let active=true; supabase.from("club_attendance").select("*").then(({data,error}) => { if(active){setError(error ? "Närvaroregistret kunde inte läsas: " + error.message : "");setRecords(data || []);} }); return () => {active=false;}; },[]);
   const training=visibleTrainings.find(t => String(t.id) === trainingId);
   const unlocked = attendanceUnlocked(training,now);
-  const players=data.players.filter(p => p.team_id === training?.team_id);
+  const players=data.players.filter(p => p.team_id === training?.team_id).sort((a,b)=>String(a.name||"").localeCompare(String(b.name||"")));
   async function mark(playerId,present) {
     if (!attendanceUnlocked(training)) {setError("Närvaro kan registreras först efter träningens sluttid.");return;}
     setBusy(true);setError("");
