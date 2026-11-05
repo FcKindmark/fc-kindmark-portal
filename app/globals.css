@@ -469,3 +469,10 @@ dialog[open]{position:fixed;inset:0;margin:auto;max-height:calc(100dvh - 32px);o
 
 /* Coach home: one clear purpose per action, no duplicate stat tiles. */
 .coach-quick-actions{margin:0 0 18px}.coach-quick-actions h2{font-size:17px;margin:0 0 12px}.coach-action-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.coach-action-grid button{display:flex;flex-direction:column;align-items:flex-start;gap:7px;text-align:left;min-height:84px;padding:14px;border:1px solid var(--border-color);border-radius:10px;background:var(--card-bg,#fff);color:var(--text-dark);cursor:pointer}.coach-action-grid button strong{font-size:14px}.coach-action-grid button span{font-size:12px;color:#737b88}.coach-action-grid button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}@media(max-width:600px){.coach-action-grid{grid-template-columns:1fr;gap:7px}.coach-action-grid button{min-height:0;padding:12px 14px;gap:3px}}
+
+/* Family dashboard: concise, touch-friendly actions without large promotional panels. */
+.family-quick-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:0 0 18px}
+.family-quick-actions button{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:5px;border:1px solid var(--border-color);background:#fff;color:var(--text-dark);border-radius:10px;padding:13px;cursor:pointer;min-width:0}
+.family-quick-actions button strong{font-size:14px}.family-quick-actions button span{font-size:12px;color:#687080}
+.family-quick-actions button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+@media(max-width:600px){.family-quick-actions{grid-template-columns:1fr;gap:7px}.family-quick-actions button{padding:11px 13px;gap:2px}}
