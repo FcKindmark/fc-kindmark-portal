@@ -17,7 +17,6 @@ function formatTrainingInvitation(payload: any) {
    || /Datum:\s*\d{4}-\d{2}-\d{2}\s+kl\s*(\d{1,2}:\d{2})/i.exec(original)?.[1];
  const place = /Plats:\s*([^\n.]+?)(?=\.\s*(?:Samling|Svara|Kommunens)|\.\s*$|\n|$)/i.exec(original)?.[1]?.trim();
  if (!date || !time || !place) return payload;
- const person = /Hej!\s*(.*?)\s+är kallad/i.exec(original)?.[1]?.trim();
  const opponent = type === 'match' ? /match mot\s+(.+?)\s+med FC Kindmark/i.exec(original)?.[1]?.trim() : null;
  const meeting = type === 'match' ? /Samling\s+kl\s*(\d{1,2}:\d{2})/i.exec(original)?.[1] : null;
  const safe = (value: string) => value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -32,9 +31,7 @@ function formatTrainingInvitation(payload: any) {
    '📅 <b>'+safe(weekday)+'</b>',
    '🕒 '+safe(time.replace(/\s*[–-]\s*/g,'–')),
    '📍 '+safe(place),
-   ...(meeting ? ['👥 Samling kl '+safe(meeting)] : []),
-   '',
-   (person ? 'Hej '+safe(person)+'! ' : '')+'Kan du delta på '+(type === 'match' ? 'matchen?' : 'träningen?')
+   ...(meeting ? ['👥 Samling kl '+safe(meeting)] : [])
  ];
  return {...payload,text:lines.join('\n'),parse_mode:'HTML'};
 }
