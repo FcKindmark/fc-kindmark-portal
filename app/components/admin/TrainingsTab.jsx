@@ -230,7 +230,7 @@ export default function TrainingsTab({ data, userId, onUpdate, canDelete=false, 
                 <div key={t.id} style={{ padding: "15px", background: "var(--beige-light)", borderRadius: "8px", borderLeft: "4px solid var(--gold)" }}>
                   <div className="training-summary">
                     <div style={{ minWidth: 0 }}>
-                      <h3 style={{ color: "var(--text-dark)", fontSize: "15px", lineHeight: 1.4, whiteSpace: "nowrap", marginBottom: "5px", cursor: "pointer" }} onClick={() => setExpandedId(expandedId === t.id ? null : t.id)}>
+                      <h3 style={{ color: "var(--text-dark)", fontSize: "15px", lineHeight: 1.4, overflowWrap: "anywhere", marginBottom: "5px" }} >
                         <span aria-hidden="true" style={{ fontSize: "11px" }}>{expandedId === t.id ? "▾" : "▸"}</span> {t.date} kl {t.time?.slice(0,5)}
                       </h3>
                       <p style={{ color: "var(--text-light)", fontSize: "14px", marginBottom: "8px" }}>{teams.find(team=>team.id===t.team_id)?.name} · {t.location}</p>{t.calls_sent_at&&<p className="muted">Kallelse skickad · {teamPlayers.length} spelare</p>}
@@ -240,7 +240,7 @@ export default function TrainingsTab({ data, userId, onUpdate, canDelete=false, 
                         <div className="training-count-waiting"><span>Svar väntas</span><strong>{waitingCount}</strong></div>
                       </div>:<p className="muted">Kallelse ej skickad</p>}
                     </div>
-                    <Button variant="primary" aria-expanded={expandedId===t.id} onClick={()=>setExpandedId(expandedId===t.id?null:t.id)} style={{ backgroundColor: "#D4A62C", color: "#101010", borderColor: "#D4A62C", fontWeight: 700 }}>{expandedId===t.id?"Stäng":"Öppna"}</Button>
+                    <div className="training-summary-actions">{!t.calls_sent_at&&!showPast&&<Button disabled={loading} onClick={()=>openCall(t)}>Skicka kallelse</Button>}<Button variant="secondary" aria-expanded={expandedId===t.id} onClick={()=>setExpandedId(expandedId===t.id?null:t.id)}>{expandedId===t.id?"Stäng":"Detaljer"}</Button></div>
                   </div>
 
                   {expandedId === t.id && (
@@ -253,7 +253,7 @@ export default function TrainingsTab({ data, userId, onUpdate, canDelete=false, 
                       <div className="training-card-actions" style={{ marginBottom: "16px", display: "flex", flexWrap: "wrap", gap: "8px" }}>
                         <Button disabled={loading} onClick={()=>openCall(t)}>{t.calls_sent_at?"Ändra kallelse":"Skicka kallelse"}</Button>
                         <Button variant="secondary" onClick={() => startEdit(t)}>Redigera</Button>
-                        <Button variant="danger" onClick={() => deleteTraining(t.id)} disabled={loading}>Ta bort</Button>
+                        {canDelete && <Button variant="danger" onClick={() => deleteTraining(t.id)} disabled={loading}>Ta bort</Button>}
                       </div>
                       {t.calls_sent_at&&<CoachEventReplies kind="training" eventId={t.id} userId={userId} revision={t.calls_sent_at}/> }
                       <TrainingExercisePlan trainingId={t.id} canManage={canManageExercises} addExerciseId={pendingPlan?.trainingId===t.id?pendingPlan.exerciseId:null} onAdded={onPlanAdded}/>
