@@ -508,3 +508,20 @@ dialog[open]{position:fixed;inset:0;margin:auto;max-height:calc(100dvh - 32px);o
 .club-sidebar nav button.sidebar-group-toggle span[aria-hidden="true"]{font-size:18px;letter-spacing:0}
 .nav-symbol{font-size:22px;width:30px;flex:none}
 .mobile-nav button span[aria-hidden="true"]{font-size:22px}
+
+/* Compact one-line member rows (desktop) and sidebar overflow fix */
+.club-sidebar{overflow-x:hidden}
+.club-sidebar nav button,.admin-portal .club-sidebar nav button{font-size:16px;padding:10px 10px 10px 14px;white-space:normal;line-height:1.25;gap:10px;overflow-wrap:anywhere}
+.nav-symbol{width:26px}
+@media(min-width:1200px){
+  .member-admin-list{gap:10px}
+  .member-admin-row{grid-template-columns:minmax(240px,1fr) 130px auto;align-items:center;gap:18px;padding:12px 18px;border-radius:14px}
+  .member-admin-identity{flex-direction:column;gap:2px}
+  .member-admin-identity .person-name{font-size:17px;gap:12px}
+  .member-admin-identity .person-avatar{width:44px;height:44px;flex-basis:44px;font-size:15px}
+  .member-admin-identity .muted{font-size:14px;margin:0 0 0 56px}
+  .member-admin-code{text-align:left;font-size:12px}
+  .member-admin-code strong{font-size:17px;margin-top:2px}
+  .member-admin-row>.button-group{grid-column:auto;border-top:0;padding-top:0;flex-wrap:nowrap;justify-content:flex-end}
+  .member-admin-row .club-button{min-height:40px;padding:8px 14px;white-space:nowrap}
+}
