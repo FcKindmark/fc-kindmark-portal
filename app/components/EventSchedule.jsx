@@ -7,6 +7,7 @@ export default function EventSchedule({data, onNavigate, member = false}) {
   const [month,setMonth] = useState(today.slice(0,7));
   const [team,setTeam] = useState("");
   const [view,setView] = useState("calendar");
+  useEffect(()=>{if(window.matchMedia?.("(max-width: 760px)").matches)setView("list");},[]);
   const [selected,setSelected] = useState(null);
   const [selectedDay,setSelectedDay] = useState(null);
   const dialog = useRef(null);
@@ -14,7 +15,7 @@ export default function EventSchedule({data, onNavigate, member = false}) {
   const dayEvents = events.filter(e=>e.date===selectedDay);
   useEffect(() => {if(selected && dialog.current && !dialog.current.open) dialog.current.showModal();},[selected]);
   function close() {dialog.current?.close(); setSelected(null);}
-  function goToday() {const current=stockholmToday();setMonth(current.slice(0,7));setTeam("");setView("calendar");setSelectedDay(current);close();}
+  function goToday() {const current=stockholmToday();setMonth(current.slice(0,7));setTeam("");if(!window.matchMedia?.("(max-width: 760px)").matches)setView("calendar");setSelectedDay(current);close();}
   return <><div className="page-heading"><div><p className="eyebrow">PLANERA VECKAN</p><h1>Klubbens kalender</h1><p className="muted">Träningar och matcher, samlade på ett ställe.</p></div>{!member && <Button onClick={()=>onNavigate("trainings")}>Hantera träningar</Button>}</div>
   <Card className="calendar-card"><div className="calendar-toolbar"><div className="button-group"><Button variant="secondary" aria-label="Föregående månad" onClick={()=>setMonth(shiftMonth(month,-1))}>‹</Button><h2>{dateLabel(`${month}-01`,{month:"long",year:"numeric"})}</h2><Button variant="secondary" aria-label="Nästa månad" onClick={()=>setMonth(shiftMonth(month,1))}>›</Button><Button variant="secondary" onClick={goToday}>Idag</Button></div><div className="button-group"><label className="calendar-filter">Lag<select value={team} onChange={e=>setTeam(e.target.value)}><option value="">Alla lag</option>{data.teams.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></label><div className="view-switch" aria-label="Kalendervy"><button aria-pressed={view==="calendar"} onClick={()=>setView("calendar")}>Månad</button><button aria-pressed={view==="list"} onClick={()=>setView("list")}>Lista</button></div></div></div>
   <div className="calendar-legend"><span><i className="training-dot"/>Träning</span><span><i className="match-dot"/>Match</span></div>
