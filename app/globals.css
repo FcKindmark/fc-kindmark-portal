@@ -550,3 +550,10 @@ dialog[open]{position:fixed;inset:0;margin:auto;max-height:calc(100dvh - 32px);o
 .nav-symbol{font-size:14px;width:18px}
 .club-sidebar nav button,.admin-portal .club-sidebar nav button{gap:10px}
 .mobile-nav button span[aria-hidden="true"]{font-size:18px}
+
+/* Simple line icons instead of emoji */
+.nav-symbol{display:inline-flex;align-items:center;justify-content:center;width:20px;color:#8a909c;font-size:0}
+.nav-symbol svg{width:18px;height:18px}
+.club-sidebar nav button.active .nav-symbol{color:#7a5c12}
+.mobile-nav button span[aria-hidden="true"]{display:inline-flex}
+.mobile-nav button svg{width:22px;height:22px}
