@@ -530,3 +530,18 @@ dialog[open]{position:fixed;inset:0;margin:auto;max-height:calc(100dvh - 32px);o
   .members-hub .member-admin-row>.button-group{grid-column:auto;border-top:0;padding-top:0;flex-wrap:nowrap;justify-content:flex-end}
   .members-hub .member-admin-row .club-button{min-height:40px;padding:8px 14px;white-space:nowrap}
 }
+
+/* Calm, professional typography: lighter weights, softer menu */
+.club-sidebar nav button,.admin-portal .club-sidebar nav button{font-size:15px;font-weight:400;color:#3d4452;min-height:42px;padding:9px 12px 9px 14px;border-radius:8px}
+.club-sidebar nav button:hover{background:#f6f7f9}
+.club-sidebar nav button.active,.admin-portal .club-sidebar nav button.active{background:#fbf1d7;color:#2a2108;font-weight:500;box-shadow:inset 3px 0 0 var(--gold)}
+.club-sidebar nav button.sidebar-group-toggle,.admin-portal .club-sidebar nav button.sidebar-group-toggle{min-height:40px;margin:10px 0 2px;padding:8px 12px 8px 14px;font-size:12px;font-weight:600;letter-spacing:.1em;color:#8a909c;background:transparent;border-left:0;border-radius:8px}
+.club-sidebar nav button.sidebar-group-toggle[aria-expanded="true"]{background:transparent;color:#3d4452;border-left:0}
+.club-sidebar nav button.sidebar-group-toggle:hover{background:#f6f7f9;color:#3d4452}
+.club-sidebar nav button.sidebar-group-toggle span[aria-hidden="true"]{font-size:12px;color:#9aa0ab}
+.nav-symbol{font-size:18px;width:24px}
+@media(min-width:761px){.club-sidebar{width:260px}.club-workspace{margin-left:260px}}
+.members-hub .member-admin-identity .person-name,.members-hub .member-admin-identity strong{font-weight:500}
+.members-hub .member-admin-code strong{font-weight:500}
+.members-hub .member-admin-row .club-button{font-weight:500}
+.members-hub .member-admin-identity .muted{color:#7a8190}
