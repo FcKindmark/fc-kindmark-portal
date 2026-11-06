@@ -49,10 +49,12 @@ export default function ClubShell({ tabs, active, onChange, user, role, onLogout
   const primary = mobileIds.map(id=>tabs.find(t=>t.id===id)).filter(Boolean);
   const secondary = tabs.filter(tab=>!primary.some(item=>item.id===tab.id));
   const navGroups = role==="Admin" ? [
-    {label:"START",ids:["overview","calendar","news"]},
-    {label:"MEDLEMMAR & LAG",ids:["applications","membership","players","teams","users"]},
-    {label:"SPORT",ids:["trainings","matches","attendance","development","programs","equipment","calls"]},
-    {label:"EKONOMI & KOMMUNIKATION",ids:["payments","economy","messages"]}
+    {label:"START",ids:["overview","news"]},
+    {label:"KALENDER",ids:["calendar","trainings","matches"]},
+    {label:"LAG & SPELARE",ids:["teams","players","attendance","development","programs","equipment","calls"]},
+    {label:"MEDLEMMAR",ids:["membership","applications","users"]},
+    {label:"EKONOMI",ids:["payments","economy"]},
+    {label:"KOMMUNIKATION",ids:["messages"]}
   ] : role==="Tränare" ? [
     {label:"ÖVERSIKT",ids:["overview","calendar","calls"]},
     {label:"LAG & AKTIVITETER",ids:["players","trainings","matches","attendance","development"]}
