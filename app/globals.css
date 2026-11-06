@@ -557,3 +557,9 @@ dialog[open]{position:fixed;inset:0;margin:auto;max-height:calc(100dvh - 32px);o
 .club-sidebar nav button.active .nav-symbol{color:#7a5c12}
 .mobile-nav button span[aria-hidden="true"]{display:inline-flex}
 .mobile-nav button svg{width:22px;height:22px}
+
+/* Tighter menu spacing */
+.club-sidebar nav{gap:0}
+.club-sidebar nav button,.admin-portal .club-sidebar nav button{min-height:36px;padding:7px 12px 7px 14px}
+.club-sidebar nav button.sidebar-group-toggle,.admin-portal .club-sidebar nav button.sidebar-group-toggle{min-height:32px;margin:4px 0 0;padding:6px 12px 6px 14px}
+.club-brand{margin-bottom:24px}

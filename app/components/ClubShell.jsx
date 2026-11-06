@@ -27,8 +27,10 @@ const iconPaths = {
   economy: "M4 20V10M10 20V4M16 20v-8M22 20H2",
   messages: "M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM3 7l9 6 9-6"
 };
+const gold="#c79a1f",blue="#3b82c4",green="#3d9a63",purple="#8b5fbf",orange="#d9822b",teal="#1f9aa8";
+const iconColors = {overview:gold,news:gold,profile:purple,calendar:blue,trainings:blue,matches:blue,teams:green,players:green,children:green,attendance:green,development:green,programs:green,equipment:green,calls:green,membership:purple,applications:purple,users:purple,payments:orange,economy:orange,messages:teal};
 function NavIcon({id}) {
-  return <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d={iconPaths[id]||"M12 8v8M8 12h8"}/></svg>;
+  return <svg style={{color:iconColors[id]||"#8a909c"}} viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d={iconPaths[id]||"M12 8v8M8 12h8"}/></svg>;
 }
 export default function ClubShell({ tabs, active, onChange, user, role, onLogout, children, notifications, onOpenNotification }) {
   const personalNotifications=usePersonalNotifications(user,role!=="Admin"&&notifications===undefined);
