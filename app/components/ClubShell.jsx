@@ -6,7 +6,7 @@ import NotificationBell from "./NotificationBell";
 import PushSettings from "./PushSettings";
 import MyProfile from "./MyProfile";
 import usePersonalNotifications from "../lib/usePersonalNotifications";
-const symbols = {profile:"♙", calls:"✓", membership: "◈", news: "☷", overview: "◫", calendar: "▦", attendance: "✓", equipment: "◇", development: "↗", players: "♙", children: "♙", teams: "⚑", trainings: "▦", matches: "⚽", payments: "▤", economy: "◎", messages: "✉", users: "♧", applications: "✎", programs: "☰" };
+const symbols = {profile:"🙂", calls:"📣", membership: "👥", news: "📰", overview: "🏠", calendar: "📅", attendance: "✅", equipment: "🎽", development: "📈", players: "⚽", children: "🧒", teams: "🛡️", trainings: "🏃", matches: "🏆", payments: "💳", economy: "💰", messages: "💬", users: "🔑", applications: "📝", programs: "📋" };
 export default function ClubShell({ tabs, active, onChange, user, role, onLogout, children, notifications, onOpenNotification }) {
   const personalNotifications=usePersonalNotifications(user,role!=="Admin"&&notifications===undefined);
   const notificationItems=notifications??personalNotifications.items;

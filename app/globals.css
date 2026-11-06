@@ -498,5 +498,10 @@ dialog[open]{position:fixed;inset:0;margin:auto;max-height:calc(100dvh - 32px);o
 @media(max-width:600px){.attendance-row .button-group{gap:5px;flex-wrap:wrap}.attendance-row .button-group .club-button{min-height:32px;padding:6px 9px;font-size:11px}}
 
 /* Collapsible admin menu groups */
-.club-sidebar nav button.sidebar-group-toggle,.admin-portal .club-sidebar nav button.sidebar-group-toggle{display:flex;justify-content:space-between;align-items:center;width:100%;min-height:40px;margin:10px 0 4px;padding:8px 16px;font-size:12px;font-weight:700;letter-spacing:.14em;color:#6b7280;background:transparent;border-radius:8px}
-.club-sidebar nav button.sidebar-group-toggle:hover{background:#f6f7f9;color:#3d4452}
+.club-sidebar nav button.sidebar-group-toggle,.admin-portal .club-sidebar nav button.sidebar-group-toggle{display:flex;justify-content:space-between;align-items:center;width:100%;min-height:46px;margin:10px 0 4px;padding:9px 16px;font-size:14px;font-weight:800;letter-spacing:.08em;color:#6b4f0f;background:#fdf3d6;border-left:4px solid var(--gold);border-radius:8px}
+.club-sidebar nav button.sidebar-group-toggle:hover{background:#faeab9;color:#4f3908}
+.club-sidebar nav button,.admin-portal .club-sidebar nav button{font-size:17px;font-weight:600;color:#2f3644}
+.club-sidebar nav button.sidebar-group-toggle{font-size:14px;color:#6b4f0f}
+.club-sidebar nav button.active,.admin-portal .club-sidebar nav button.active{background:var(--gold);color:#1d1606;font-weight:800;box-shadow:none}
+.nav-symbol{font-size:22px;width:30px}
+.mobile-nav button span[aria-hidden="true"]{font-size:22px}
