@@ -644,3 +644,10 @@ dialog[open]{position:fixed;inset:0;margin:auto;max-height:calc(100dvh - 32px);o
 }
 
 .club-sidebar nav .group-toggle-end{display:inline-flex;align-items:center;gap:8px}
+
+/* Slim notification banner and parent page header */
+.push-settings-compact{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:10px 16px;margin:0 0 18px}
+.push-settings-compact .push-compact-text{margin:0;font-size:14px;color:#5b4a14}
+.push-settings-compact .button-group{margin:0}
+.push-settings-compact .club-button{min-height:36px;padding:7px 14px;font-size:14px;font-weight:500}
+.club-content .page-heading>p{font-size:15px;color:#6b7280;margin:0}
