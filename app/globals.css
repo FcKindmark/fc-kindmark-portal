@@ -496,3 +496,7 @@ dialog[open]{position:fixed;inset:0;margin:auto;max-height:calc(100dvh - 32px);o
 /* Coach attendance: compact progress and touch-friendly choices. */
 .attendance-progress{font-size:13px;font-weight:700;margin:12px 0;padding:9px 12px;border-radius:8px;background:var(--beige-light,#f7f5ed)}
 @media(max-width:600px){.attendance-row .button-group{gap:5px;flex-wrap:wrap}.attendance-row .button-group .club-button{min-height:32px;padding:6px 9px;font-size:11px}}
+
+/* Collapsible admin menu groups */
+.club-sidebar nav button.sidebar-group-toggle,.admin-portal .club-sidebar nav button.sidebar-group-toggle{display:flex;justify-content:space-between;align-items:center;width:100%;min-height:40px;margin:10px 0 4px;padding:8px 16px;font-size:12px;font-weight:700;letter-spacing:.14em;color:#6b7280;background:transparent;border-radius:8px}
+.club-sidebar nav button.sidebar-group-toggle:hover{background:#f6f7f9;color:#3d4452}

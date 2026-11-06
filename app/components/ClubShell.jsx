@@ -6,12 +6,13 @@ import NotificationBell from "./NotificationBell";
 import PushSettings from "./PushSettings";
 import MyProfile from "./MyProfile";
 import usePersonalNotifications from "../lib/usePersonalNotifications";
-const symbols = {profile:"♙", calls:"✓", membership: "◈", news: "☷", overview: "◫", calendar: "▦", attendance: "✓", equipment: "◇", development: "↗", players: "♙", children: "♙", teams: "⚑", trainings: "▦", matches: "⚽", payments: "▤", economy: "◎", messages: "✉", users: "♧" };
+const symbols = {profile:"♙", calls:"✓", membership: "◈", news: "☷", overview: "◫", calendar: "▦", attendance: "✓", equipment: "◇", development: "↗", players: "♙", children: "♙", teams: "⚑", trainings: "▦", matches: "⚽", payments: "▤", economy: "◎", messages: "✉", users: "♧", applications: "✎", programs: "☰" };
 export default function ClubShell({ tabs, active, onChange, user, role, onLogout, children, notifications, onOpenNotification }) {
   const personalNotifications=usePersonalNotifications(user,role!=="Admin"&&notifications===undefined);
   const notificationItems=notifications??personalNotifications.items;
   const openNotification=onOpenNotification||personalNotifications.open;
   const [expanded, setExpanded] = useState(false);
+  const [openGroup, setOpenGroup] = useState(null);
   const [showProfile,setShowProfile]=useState(false),[account,setAccount]=useState(null),[photo,setPhoto]=useState(""),[profileError,setProfileError]=useState("");
   const loadProfile=useCallback(async()=>{
     const {data,error}=await supabase.from("profiles").select("id,role,full_name,avatar_path,mobile").eq("id",user.id).single();
@@ -59,11 +60,15 @@ export default function ClubShell({ tabs, active, onChange, user, role, onLogout
   const groupedTabs = navGroups.map(group=>({...group,tabs:group.ids.map(id=>tabs.find(t=>t.id===id)).filter(Boolean)})).filter(group=>group.tabs.length);
   const extraTabs = tabs.filter(tab=>!navGroups.some(group=>group.ids.includes(tab.id)));
   if(extraTabs.length)groupedTabs.push({label:"ÖVRIGT",tabs:extraTabs});
+  const collapsible = role === "Admin";
+  const activeGroupLabel = groupedTabs.find(group => group.tabs.some(tab => tab.id === active))?.label;
+  const shownGroupLabel = openGroup ?? activeGroupLabel;
+  useEffect(() => { setOpenGroup(null); }, [active]);
   function navigate(id) { onChange(id); setExpanded(false); }
   useEffect(()=>{window.scrollTo({top:0,left:0,behavior:"instant"});},[active]);
   return <PortraitProvider key={user.id} userId={user.id}><div className={`club-shell${role === "Admin" ? " admin-portal" : ""}`}><aside className="club-sidebar">
     <div className="club-brand"><img src="/logo.png" alt="FC Kindmark"/><div><strong>FC KINDMARK</strong><span>Medlemsportal</span></div></div>
-    <nav aria-label="Klubbportal">{groupedTabs.map(group=><div key={group.label}><div className="sidebar-caption">{group.label}</div>{group.tabs.map(tab=><button key={tab.id} aria-current={active===tab.id?"page":undefined} className={active===tab.id?"active":""} onClick={()=>navigate(tab.id)}><span className="nav-symbol" aria-hidden="true">{symbols[tab.id]||"•"}</span>{tab.label}{tab.count>0&&<span className="nav-count">{tab.count}</span>}</button>)}</div>)}</nav>
+    <nav aria-label="Klubbportal">{groupedTabs.map(group=>{const open=!collapsible||shownGroupLabel===group.label;return <div key={group.label}>{collapsible?<button type="button" className="sidebar-caption sidebar-group-toggle" aria-expanded={open} onClick={()=>setOpenGroup(open?"":group.label)}><span>{group.label}</span><span aria-hidden="true">{open?"▾":"▸"}</span></button>:<div className="sidebar-caption">{group.label}</div>}{open&&group.tabs.map(tab=><button key={tab.id} aria-current={active===tab.id?"page":undefined} className={active===tab.id?"active":""} onClick={()=>navigate(tab.id)}><span className="nav-symbol" aria-hidden="true">{symbols[tab.id]||"•"}</span>{tab.label}{tab.count>0&&<span className="nav-count">{tab.count}</span>}</button>)}</div>})}</nav>
     <footer><div className="account-block"><span className="account-avatar" aria-hidden="true">{photo?<img src={photo} alt=""/>:(account?.full_name||user.email)?.slice(0,1).toUpperCase()}</span><div><strong>{account?.full_name||role}</strong><span>{user.email}</span></div></div>{role!=="Spelare"&&<button onClick={openProfile}>Min profil</button>}<button onClick={onLogout}>Logga ut</button></footer>
   </aside><div className="club-workspace"><header className="workspace-header"><span className="workspace-page-title">{tabs.find(t => t.id === active)?.label}</span><div className="profile-header-actions">{role!=="Admin"&&role!=="Spelare"&&<NotificationBell items={notificationItems} onOpen={openNotification} onSettings={openProfile} error={notifications===undefined?personalNotifications.error:""} onRetry={personalNotifications.refresh}/>}{role!=="Spelare"&&<button className="profile-link" onClick={openProfile}>Min profil</button>}<span className="role-pill">{role}</span></div></header><main className="club-content">{role!=="Admin"&&role!=="Spelare"&&<PushSettings key={user.id} userId={user.id} compact/>}{children}</main></div>
   <nav className={`mobile-nav${role==="Spelare"?" player-mobile-nav":""}`} aria-label="Snabbnavigering">{primary.map(tab => <button key={tab.id} aria-current={active === tab.id ? "page" : undefined} onClick={() => navigate(tab.id)} aria-label={tab.label}><span aria-hidden="true">{symbols[tab.id]}</span><span className="mobile-nav-label">{tab.id==="messages"?"Medd.":tab.label}</span>{tab.count>0&&<span className="nav-count">{tab.count}</span>}</button>)}{<button aria-expanded={expanded} aria-controls="mobile-more" onClick={() => setExpanded(!expanded)}><span aria-hidden="true">☰</span>Mer</button>}</nav>
