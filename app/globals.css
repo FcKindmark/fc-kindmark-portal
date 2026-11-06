@@ -616,3 +616,29 @@ dialog[open]{position:fixed;inset:0;margin:auto;max-height:calc(100dvh - 32px);o
   .club-content .calendar-toolbar .view-switch button{min-height:34px;padding:6px 16px;font-size:14px;font-weight:400;border-radius:6px}
   .club-content .calendar-toolbar .view-switch button[aria-pressed=true]{font-weight:500}
 }
+
+/* Readable sizes on Matcher, Lag and Betalningar (desktop) */
+@media(min-width:761px){
+  .club-content{font-size:15px}
+  .club-content .muted{font-size:14px}
+  .club-content label{font-size:14px}
+  .club-content :is(input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea){font-size:14px}
+  .club-content :is(input:not([type=checkbox]):not([type=radio]):not([type=file]),select){min-height:38px}
+  .club-content .person-name{font-weight:500}
+  .club-content .club-badge,.club-content .count-pill{font-size:12px;font-weight:500}
+
+  .club-content .match-title{font-size:17px;font-weight:600}
+  .club-content .compact-match-card :is(p,span,div):not(.club-badge):not(.match-score){font-size:14px}
+  .club-content .match-score{font-size:15px;font-weight:600}
+  .club-content .match-expand-toggle,.club-content .match-collapse-toggle{font-size:15px;font-weight:500;color:#7a5c12}
+  .club-content .match-card-tools .club-button{min-width:38px;min-height:38px;padding:0 10px}
+
+  .club-content .admin-team-heading :is(span,small,p){font-size:14px}
+  .club-content .team-coaches{font-size:14px}
+
+  .club-content :is(.payment-view-tabs,.payment-status-tabs){display:flex;flex-wrap:wrap;gap:8px;grid-template-columns:none}
+  .club-content :is(.payment-view-tabs,.payment-status-tabs) .club-button{width:auto;flex:none;padding:8px 18px}
+  .club-content .payment-record-card :is(p,span,div):not(.club-badge){font-size:14px}
+  .club-content .payment-record-card .payment-amount{font-size:17px;font-weight:500}
+  .club-content .payment-filters{gap:10px}
+}
