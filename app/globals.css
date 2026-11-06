@@ -545,3 +545,8 @@ dialog[open]{position:fixed;inset:0;margin:auto;max-height:calc(100dvh - 32px);o
 .members-hub .member-admin-code strong{font-weight:500}
 .members-hub .member-admin-row .club-button{font-weight:500}
 .members-hub .member-admin-identity .muted{color:#7a8190}
+
+/* Smaller menu icons */
+.nav-symbol{font-size:14px;width:18px}
+.club-sidebar nav button,.admin-portal .club-sidebar nav button{gap:10px}
+.mobile-nav button span[aria-hidden="true"]{font-size:18px}
