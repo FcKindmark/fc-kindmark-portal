@@ -70,12 +70,7 @@ export default function LoginScreen({ onLogin }) {
         </Button>
 
         {!isSignup && <div style={{textAlign:"center",marginTop:"16px"}}><button className="text-link" type="button" disabled={loading} onClick={()=>{setIsRecovery(!isRecovery);setError("");setMessage("");}}>{isRecovery ? "Tillbaka till inloggning" : "Glömt lösenordet?"}</button></div>}
-        {!isRecovery && <div style={{ textAlign: "center", marginTop: "24px", paddingTop: "24px", borderTop: "1px solid #eee" }}>
-          <span style={{ color: "var(--text-gray)", fontSize: "14px" }}>{isSignup ? "Har du redan ett konto? " : "Inget konto än? "}</span>
-          <button type="button" disabled={loading} onClick={() => {setIsSignup(!isSignup);setError("");setMessage("");}} style={{ background: "none", border: "none", color: "var(--gold)", fontWeight: "600", cursor: "pointer", fontSize: "14px" }} onMouseEnter={(e) => { e.currentTarget.style.color = "var(--gold-dark)"; }} onMouseLeave={(e) => { e.currentTarget.style.color = "var(--gold)"; }}>
-            {isSignup ? "Logga in" : "Registrera dig"}
-          </button>
-        </div>}
+        {!isRecovery && <div style={{ textAlign: "center", marginTop: "24px", paddingTop: "24px", borderTop: "1px solid #eee", color: "var(--text-gray)", fontSize: "14px", lineHeight: 1.5 }}>Konton skapas av klubben. Saknar du inloggning? Kontakta <a href="mailto:info@fckindmark.se" className="text-link">info@fckindmark.se</a></div>}
       </form></Card>
     </div>
   );
