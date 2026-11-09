@@ -651,3 +651,8 @@ dialog[open]{position:fixed;inset:0;margin:auto;max-height:calc(100dvh - 32px);o
 .push-settings-compact .button-group{margin:0}
 .push-settings-compact .club-button{min-height:36px;padding:7px 14px;font-size:14px;font-weight:500}
 .club-content .page-heading>p{font-size:15px;color:#6b7280;margin:0}
+
+/* Baseline for plain form fields that have no styling of their own (zero specificity, never overrides existing styles) */
+:where(.club-content input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]):not([type=hidden]),.club-content select,.club-content textarea){border:1px solid #cfd4dc;border-radius:8px;background:#fff;padding:9px 12px;font:inherit;color:inherit;max-width:100%}
+:where(.club-content input,.club-content select,.club-content textarea):focus{outline:2px solid var(--gold);outline-offset:1px}
+:where(.club-content textarea){min-height:96px;resize:vertical}
