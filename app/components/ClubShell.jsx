@@ -91,7 +91,7 @@ export default function ClubShell({ tabs, active, onChange, user, role, onLogout
   const groupedTabs = navGroups.map(group=>({...group,tabs:group.ids.map(id=>tabs.find(t=>t.id===id)).filter(Boolean)})).filter(group=>group.tabs.length);
   const extraTabs = tabs.filter(tab=>!navGroups.some(group=>group.ids.includes(tab.id)));
   if(extraTabs.length)groupedTabs.push({label:"ÖVRIGT",tabs:extraTabs});
-  const collapsible = role === "Admin" || role === "Förälder";
+  const collapsible = role === "Admin";
   const activeGroupLabel = groupedTabs.find(group => group.tabs.some(tab => tab.id === active))?.label;
   const shownGroupLabel = openGroup ?? activeGroupLabel;
   useEffect(() => { setOpenGroup(null); }, [active]);
