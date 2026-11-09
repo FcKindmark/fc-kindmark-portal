@@ -58,7 +58,7 @@ function receiptFallback(text, fields) {
     }
     if (found.length) fields.amount = Math.max(...found);
   }
-  if (!fields.document_date) {
+  if (!fields.document_date && !/fakturadatum|förfallodatum|forfallodatum|invoice date|due date/i.test(text)) {
     const m = text.match(/(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/) || text.match(/(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/) || text.match(/(\d{2})[-/.](\d{2})[-/.](\d{2})(?!\d)/);
     if (m) {
       let [a, b, c] = m.slice(1);
