@@ -38,7 +38,41 @@ export function invoiceFields(text) {
   const supplier = proforma && text.match(/(?:^|\n)\s*([^\n]{2,100}\bS\.P\.A\.)\s*(?:\n|$)/i);
   if (customer) { fields.party = customer[1].trim(); fields.kind = /sponsring/i.test(text) ? 'sponsor' : 'sales'; }
   else if (party || supplier) fields.party = (party || supplier)[1].trim();
+  receiptFallback(text, fields);
   return Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== undefined));
+}
+// Receipts: no invoice labels, so look for the total, any date and the shop name.
+function receiptFallback(text, fields) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  if (fields.amount === undefined && fields.original_amount === undefined) {
+    const money = '([0-9]{1,3}(?:[ .\\u00a0]?[0-9]{3})*[,.][0-9]{2}|[0-9]+[,.][0-9]{2})';
+    const label = /(totalt|total|summa|sum\b|att betala|belopp|betalat|kontant|kort|visa|mastercard|debit)/i;
+    const found = [];
+    for (const line of lines) {
+      if (!label.test(line) || /moms|mervärdesskatt|vat|växel|retur/i.test(line)) continue;
+      const m = line.match(new RegExp(money + '\\s*(?:kr|sek)?\\s*$', 'i')) || line.match(new RegExp(money, 'i'));
+      if (!m) continue;
+      const raw = m[1].replace(/[\s\u00a0]/g, '');
+      const value = Number(/[,.]\d{2}$/.test(raw) ? raw.slice(0, -3).replace(/[.,]/g, '') + '.' + raw.slice(-2) : raw);
+      if (Number.isFinite(value) && value > 0) found.push(value);
+    }
+    if (found.length) fields.amount = Math.max(...found);
+  }
+  if (!fields.document_date) {
+    const m = text.match(/(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/) || text.match(/(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/) || text.match(/(\d{2})[-/.](\d{2})[-/.](\d{2})(?!\d)/);
+    if (m) {
+      let [a, b, c] = m.slice(1);
+      let value;
+      if (a.length === 4) value = `${a}-${b.padStart(2,'0')}-${c.padStart(2,'0')}`;
+      else if (c.length === 4) value = `${c}-${b.padStart(2,'0')}-${a.padStart(2,'0')}`;
+      else value = `20${a}-${b}-${c}`;
+      if (!Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0,10) === value) fields.document_date = value;
+    }
+  }
+  if (!fields.party) {
+    const name = lines.slice(0, 6).find(l => /\p{L}{3}/u.test(l) && !/^\W*(kvitto|receipt|org|tel|www|kassa|datum)/i.test(l) && l.length <= 60);
+    if (name) fields.party = name.replace(/[^\p{L}\p{N}&.,' -]/gu, '').trim();
+  }
 }
 function dateFromEuropean(value) {
   const iso = value.split('/').reverse().join('-');
@@ -85,6 +119,24 @@ export async function readInvoice(file, progress = () => {}) {
     }
     return (await worker.recognize(image)).data.text;
   }
+  // Phone photos: scale to a readable size, grayscale and stretch contrast.
+  async function prepare(file) {
+    try {
+      const bitmap = await createImageBitmap(file);
+      const scale = Math.min(2.5, 2400 / Math.max(bitmap.width, bitmap.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(bitmap.width * scale); canvas.height = Math.round(bitmap.height * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const img = ctx.getImageData(0, 0, canvas.width, canvas.height), d = img.data;
+      let lo = 255, hi = 0;
+      for (let i = 0; i < d.length; i += 4) { const g = d[i]*0.299 + d[i+1]*0.587 + d[i+2]*0.114; d[i] = d[i+1] = d[i+2] = g; if (g < lo) lo = g; if (g > hi) hi = g; }
+      const range = Math.max(1, hi - lo);
+      for (let i = 0; i < d.length; i += 4) { const v = Math.max(0, Math.min(255, (d[i] - lo) * 255 / range)); d[i] = d[i+1] = d[i+2] = v; }
+      ctx.putImageData(img, 0, 0);
+      return canvas;
+    } catch { return file; }
+  }
   try {
     let text = '';
     if (/\.pdf$/i.test(file.name)) {
@@ -107,7 +159,7 @@ export async function readInvoice(file, progress = () => {}) {
         }
         text += pageText + '\n'; page.cleanup();
       }
-    } else if (/\.(png|jpe?g)$/i.test(file.name)) text = await recognize(file);
+    } else if (/\.(png|jpe?g|webp|heic|heif)$/i.test(file.name) || /^image\//.test(file.type)) text = await recognize(await prepare(file));
     else return {text:'', fields:{}};
     return {text, fields: invoiceFields(text)};
   } finally {

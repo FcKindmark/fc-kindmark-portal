@@ -158,7 +158,7 @@ export default function EconomyTab({
   }
   async function selectInvoice(f) {
     setFile(f); setReadText(''); setError('');
-    if (!f || !/\.(pdf|png|jpe?g)$/i.test(f.name)) return;
+    if (!f || !(/\.(pdf|png|jpe?g|webp)$/i.test(f.name) || /^image\//.test(f.type))) return;
     setDocument(previous => previous ? {...previous, partner_id:'', party:'', document_date:'', due_date:'', amount:'', reference:'', source_currency:'SEK', source_amount:'', is_proforma:false, conversion_note:''} : previous);
     setReading(true); setReadProgress('Förbereder läsning…');
     try {
