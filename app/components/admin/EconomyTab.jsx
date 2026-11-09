@@ -7,7 +7,7 @@ import {useStockholmToday} from '../../lib/useStockholmToday';
 import {SWISH_INCOME} from '../../lib/swish-income';
 import SwishIncomePanel from './SwishIncomePanel';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { Card, Button, Input, Select, Modal } from '../UI';
 import SettlementPanel from './SettlementPanel';
@@ -83,6 +83,7 @@ export default function EconomyTab({
     [settlement, setSettlement] = useState(null),
     [document, setDocument] = useState(null),
     [file, setFile] = useState(null),
+    scanRef = useRef(null),
     [partner, setPartner] = useState(null),
     [csv, setCSV] = useState(null),
     [mapping, setMapping] = useState({
@@ -148,6 +149,11 @@ export default function EconomyTab({
     });
     if (error) throw error;
     return path;
+  }
+  function startScan() {
+    setError(''); setNotice(''); setReadText(''); setFile(null);
+    setDocument({kind:'purchase', party:'', document_date:today(), due_date:'', amount:'', reference:'', partner_id:'', source_currency:'SEK', source_amount:'', is_proforma:false, conversion_note:''});
+    scanRef.current?.click();
   }
   async function selectInvoice(f) {
     setFile(f); setReadText(''); setError('');
@@ -418,7 +424,7 @@ export default function EconomyTab({
     const allocated=(data.document_links || []).filter(a=>data.documents.some(d=>d.id===a.document_id && d.partner_id===p.id) && data.journal.some(j=>j.id===a.journal_id && j.status==='posted' && j.bank_id && j.year===year && !ids.has(j.id))).reduce((n,a)=>n+cents(a.amount),0);
     return (legacy+allocated)/100;
   };
-  const documentEditor = document && <Card><form onSubmit={saveDocument} className="economy-form"><h3>{document.id ? 'Ändra underlag' : 'Nytt underlag'}</h3><fieldset disabled={reading} style={{border:0,padding:0,display:"contents"}}>{!document.id && <label>Fil<Input required type="file" accept=".pdf,.jpg,.jpeg,.png,.csv,.xlsx,.xls" disabled={reading || busy} onChange={e => selectInvoice(e.target.files[0])} /></label>}<p role="status">{readProgress}</p>{document.source_currency && document.source_currency !== 'SEK' && <p className="economy-notice">Fakturan är i {document.source_currency}. Bokföringsbeloppet anges i SEK med dokumenterad omräkning.</p>}{document.is_proforma && <p className="economy-notice">Proformafaktura: utbetalningen kan kopplas som förskott. Slutfaktura krävs innan kostnaden bokförs.</p>}{readText && <details><summary>Visa läst text för kontroll</summary><pre style={{whiteSpace:"pre-wrap"}}>{readText}</pre></details>}<label>Typ<Select disabled={reading} value={document.kind} onChange={e => setDocument({
+  const documentEditor = document && <Card><form onSubmit={saveDocument} className="economy-form"><h3>{document.id ? 'Ändra underlag' : 'Nytt underlag'}</h3><fieldset disabled={reading} style={{border:0,padding:0,display:"contents"}}>{!document.id && <label>Fil<Input required={!file} type="file" accept=".pdf,.jpg,.jpeg,.png,.csv,.xlsx,.xls" disabled={reading || busy} onChange={e => selectInvoice(e.target.files[0])} /></label>}<p role="status">{readProgress}</p>{document.source_currency && document.source_currency !== 'SEK' && <p className="economy-notice">Fakturan är i {document.source_currency}. Bokföringsbeloppet anges i SEK med dokumenterad omräkning.</p>}{document.is_proforma && <p className="economy-notice">Proformafaktura: utbetalningen kan kopplas som förskott. Slutfaktura krävs innan kostnaden bokförs.</p>}{readText && <details><summary>Visa läst text för kontroll</summary><pre style={{whiteSpace:"pre-wrap"}}>{readText}</pre></details>}<label>Typ<Select disabled={reading} value={document.kind} onChange={e => setDocument({
                 ...document,
                 kind: e.target.value
               })}>{Object.entries(kinds).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</Select></label><label>Leverantör / kund<Input required value={document.party} onChange={e => setDocument({
@@ -548,7 +554,7 @@ export default function EconomyTab({
               partner_id: '', source_currency:'SEK', source_amount:'', is_proforma:false, conversion_note:''
             });
             setFile(null);
-          }}>+ Lägg till underlag</Button></div><p>PDF, foto, CSV eller Excel. Fakturauppgifter registreras här; PDF och foton läses automatiskt på din enhet. Föreslagna fält kan ändras före sparande.</p>{document && !document.id && documentEditor}{yearDocuments.filter(d=>documentPaymentState(d,data,paymentToday).key===documentFilter).map(d => {
+          }}>+ Lägg till underlag</Button><Button variant="secondary" disabled={busy || reading} onClick={startScan}>Skanna med kameran</Button><input ref={scanRef} type="file" accept="image/*" capture="environment" hidden onChange={e => { const f = e.target.files && e.target.files[0]; e.target.value = ''; if (f) selectInvoice(f); }} /></div><p>PDF, foto, CSV eller Excel. Fakturauppgifter registreras här; PDF och foton läses automatiskt på din enhet. Föreslagna fält kan ändras före sparande.</p>{document && !document.id && documentEditor}{yearDocuments.filter(d=>documentPaymentState(d,data,paymentToday).key===documentFilter).map(d => {
           const paymentState=documentPaymentState(d,data,paymentToday);
           const booked = data.journal.some(j => j.document_id === d.id && j.status === 'posted') || (data.document_links || []).some(a=>a.document_id===d.id && data.journal.some(j=>j.id===a.journal_id && j.status==='posted'));
           return <Card key={d.id} className={paymentState.overdue?'payment-overdue-row':''}><p className="document-payment-status"><strong>{paymentState.label}</strong>{paymentState.overdue?` · Förfallodatum ${d.due_date} · betalning saknas`:null}</p><div className="page-heading"><div><h3>{d.party || d.name}</h3><p>{kinds[d.kind]} · {d.document_date} · {d.reference}</p></div><div><strong>{money(d.amount)}</strong>{d.source_currency !== 'SEK' && d.source_amount != null && <p>Original: {d.source_amount} {d.source_currency}</p>}{d.is_proforma && <p>Proformafaktura</p>}{d.kind==='purchase' && d.is_proforma && <p>Utbetalt förskott: {money(invoiceSettlement(d,data).paid)} · Kvar att betala: {money(invoiceSettlement(d,data).remaining)}</p>}</div></div>{d.partner_id && <p>Kopplat till {data.partners.find(p=>p.id===d.partner_id)?.name || 'sponsor / bidragsgivare'}</p>}{d.conversion_note && <p>{d.conversion_note}</p>}{d.kind!=='statement' && !d.is_proforma && <p>{incomingInvoice(d)?'Inbetalt':'Utbetalt'}: {money(invoiceSettlement(d,data).paid)} · Kvar: <strong>{money(invoiceSettlement(d,data).remaining)}</strong></p>}{!d.is_proforma && d.kind!=='statement' && invoiceSettlement(d,data).needsCorrection && <p className="economy-notice">Betalningen är kopplad; bokförd fordran/skuld behöver kontrolleras i Bokföring. Bokför inte betalningen igen.</p>}{!locked && incomingInvoice(d) && invoiceSettlement(d,data).needsCorrection && <Button variant="secondary" disabled={busy} onClick={()=>{if(confirm('Rätta betalningen mot den bokförda kundfordran? Originalet bevaras med en motverifikation. Ingen ny bankbetalning registreras.'))run(async()=>{const r=await supabase.rpc('club_econ_repair_invoice_payment',{p_document:d.id});if(r.error)throw r.error;setNotice('Dubbel intäkt rättad. Betalning och faktura är fortsatt kopplade.');});}}>Rätta dubbel bokföring</Button>}<p>{booked ? 'Kopplat till bokföring' : 'Ej bokfört'}{d.due_date ? ` · Förfallodatum ${d.due_date}` : ''}</p><div className="economy-actions">{paymentDocument(d) && Number(d.amount)>0 && <Button onClick={()=>{setError('');setSettlement({invoiceId:d.id});}}>{incomingInvoice(d)?'Inbetalningar':'Utbetalningar'}</Button>}<details><summary>Hantera faktura</summary><Button variant="secondary" disabled={busy} onClick={() => openDocument(d)}>Hämta fil</Button>{!locked && invoiceSettlement(d,data).advance>0 && <Button disabled={busy} onClick={()=>fromDocument(d)}>Avräkna förskott mot fakturan</Button>}{!locked && !booked && <><Button variant="secondary" onClick={() => {
