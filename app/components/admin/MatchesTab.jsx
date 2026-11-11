@@ -5,6 +5,7 @@ import { supabase } from "../../lib/supabaseClient";
 import ReplyStatus from "../ReplyStatus";
 import CoachEventReplies from "../CoachEventReplies";
 import PersonAvatar from "../PersonAvatar";
+import MatchGoals from "./MatchGoals";
 import { parseResult, resultLabel, matchVenue, matchInformation } from "../../lib/matches";
 
 function MatchResult({ match, onUpdate }) {
@@ -93,7 +94,7 @@ export default function MatchesTab({ data, userId, onUpdate, canDelete=false }) 
         <p>{selected.length} kallade · <span className="reply-count-yes">{answered.filter(r=>r.attending).length} kommer</span> · <span className="reply-count-no">{answered.filter(r=>!r.attending).length} kommer inte</span> · {selected.length-answered.length} väntar</p>
         <button type="button" className="match-expand-toggle" id={`match-toggle-${m.id}`} aria-controls={`match-panel-${m.id}`} aria-expanded={expandedId===m.id} onClick={()=>setExpandedId(expandedId===m.id?null:m.id)}><span>Kallelse / resultat</span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" style={{transform:expandedId===m.id?"rotate(180deg)":undefined}}><path d="m6 9 6 6 6-6"/></svg></button>
         {expandedId===m.id&&!callsReady&&<p role="status">Läser kallelser…</p>}
-        {expandedId===m.id && callsReady && <div className="match-management" id={`match-panel-${m.id}`}><CoachEventReplies kind="match" eventId={m.id} userId={userId} revision={m.calls_sent_at}/><MatchResult match={m} onUpdate={onUpdate}/><MatchCallEditor key={m.id} match={m} squad={squad} calls={selected} replies={answered} busy={busy} canDelete={canDelete} onClear={playerId=>clearAnswer(m.id,playerId)} onSent={async()=>{await loadCalls();await onUpdate();}}/><button type="button" className="match-collapse-toggle" onClick={()=>{setExpandedId(null);requestAnimationFrame(()=>document.getElementById(`match-toggle-${m.id}`)?.focus());}} aria-label="Stäng kallelse och resultat">↑ <span>Fäll ihop</span></button></div>}
+        {expandedId===m.id && callsReady && <div className="match-management" id={`match-panel-${m.id}`}><CoachEventReplies kind="match" eventId={m.id} userId={userId} revision={m.calls_sent_at}/><MatchResult match={m} onUpdate={onUpdate}/><MatchGoals match={m} squad={squad} players={players}/><MatchCallEditor key={m.id} match={m} squad={squad} calls={selected} replies={answered} busy={busy} canDelete={canDelete} onClear={playerId=>clearAnswer(m.id,playerId)} onSent={async()=>{await loadCalls();await onUpdate();}}/><button type="button" className="match-collapse-toggle" onClick={()=>{setExpandedId(null);requestAnimationFrame(()=>document.getElementById(`match-toggle-${m.id}`)?.focus());}} aria-label="Stäng kallelse och resultat">↑ <span>Fäll ihop</span></button></div>}
       </Card>;
     })}</div>
   </section>;
